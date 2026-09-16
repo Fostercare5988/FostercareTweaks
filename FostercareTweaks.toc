@@ -1,0 +1,68 @@
+## Interface: 11200
+## Title: FostercareTweaks
+## Notes: A unified, modernized collection of tweaks and enhancements for the Enhanced 1.12.1 Client Stack (ClassicAPI, SuperWoW, UnitXP).
+## Author: Fostercare
+## Version: 3.0.0
+## DefaultState: enabled
+## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
+
+# Core Architecture
+Core.lua
+Helpers.lua
+Options.lua
+
+# Action Bar Modules
+mods\hide-gryphons.lua
+mods\actionbar-float.lua
+mods\actionbar-reagents.lua
+mods\actionbar-right-center.lua
+mods\cooldown-numbers.lua
+mods\reduced-actionbar.lua
+mods\reduced-actionbar-bags.lua
+mods\reduced-actionbar-micromenu.lua
+
+# Unit Frame Modules
+mods\health-numbers.lua
+mods\health-color.lua
+mods\unitframes-bighealth.lua
+mods\unitframes-classcolor.lua
+mods\unitframes-classportrait.lua
+mods\move-unitframes.lua
+mods\target-castbar.lua
+mods\castbar-uninterruptible.lua
+mods\target-debufftimer.lua
+mods\unitframe-energytick.lua
+
+# Nameplate Modules
+mods\nameplate-scale.lua
+mods\nameplate-classcolor.lua
+mods\nameplate-castbar.lua
+
+# World & MiniMap Modules
+mods\worldmap-window.lua
+mods\worldmap-coordinates.lua
+mods\worldmap-colors.lua
+mods\minimap-clock.lua
+mods\minimap-square.lua
+mods\minimap-tweaks.lua
+
+# Bags & Item Modules
+mods\vendor-values.lua
+mods\sell-junk.lua
+mods\item-colors.lua
+mods\equip-compare.lua
+
+# Chat & Social Modules
+mods\chat-tweaks.lua
+mods\chat-links.lua
+mods\chat-timestamps.lua
+mods\chat-history.lua
+mods\chat-input-center.lua
+mods\social-colors.lua
+
+# General & Gameplay Modules
+mods\auto-dismount.lua
+mods\auto-stance.lua
+mods\blue-shaman.lua
+mods\hide-errors.lua
+mods\custom.lua
