@@ -48,9 +48,14 @@ module.enable = function(self)
 
     local function UpdateReputationWatchBar()
         if ReputationWatchBar and ReputationWatchBar:IsShown() then
-            MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, -5)
+            if MainMenuExpBar then
+                MainMenuExpBar:ClearAllPoints()
+                MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, -5)
+            end
+            ReputationWatchBar:ClearAllPoints()
             ReputationWatchBar:SetPoint("BOTTOM", MainMenuBar, "TOP", 0, -5)
         elseif MainMenuExpBar then
+            MainMenuExpBar:ClearAllPoints()
             MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, 0)
         end
     end
@@ -59,6 +64,7 @@ module.enable = function(self)
 
     local hideTextures = {
         MainMenuXPBarTexture0, MainMenuXPBarTexture1, MainMenuXPBarTexture2, MainMenuXPBarTexture3,
+        MainMenuMaxLevelBar0, MainMenuMaxLevelBar1, MainMenuMaxLevelBar2, MainMenuMaxLevelBar3,
         ReputationXPBarTexture0, ReputationXPBarTexture1, ReputationXPBarTexture2, ReputationXPBarTexture3,
         ReputationWatchBarTexture0, ReputationWatchBarTexture1, ReputationWatchBarTexture2, ReputationWatchBarTexture3,
         MainMenuBarTexture0, MainMenuBarTexture1, MainMenuBarTexture2, MainMenuBarTexture3,
@@ -66,5 +72,18 @@ module.enable = function(self)
     }
     for _, tex in ipairs(hideTextures) do
         if tex and tex.SetTexture then tex:SetTexture("") end
+    end
+
+    if MainMenuBarMaxLevelBar then
+        MainMenuBarMaxLevelBar:Hide()
+        if FostercareTweaks.HookScript then
+            FostercareTweaks.HookScript(MainMenuBarMaxLevelBar, "OnShow", function()
+                this:Hide()
+            end)
+        else
+            MainMenuBarMaxLevelBar:SetScript("OnShow", function()
+                this:Hide()
+            end)
+        end
     end
 end

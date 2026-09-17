@@ -2,14 +2,14 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.15.8+ & SuperWoW v2.2+)
-local MIN_CLASSIC_API = 11508
+-- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.15.10+ & SuperWoW v2.2+)
+local MIN_CLASSIC_API = 11510
 
-if not (CLASSIC_API_VERSION and SUPERWOW_VERSION) or 
+if not (CLASSIC_API_VERSION and SUPERWOW_VERSION) or
    (type(CLASSIC_API_VERSION) == "number" and CLASSIC_API_VERSION < MIN_CLASSIC_API) then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.15.8+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.", 
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.15.10+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -142,6 +142,15 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
     if cmd[1] == "reset" then
         FostercareTweaks_Config.overwrites = {}
         ReloadUI()
+    elseif cmd[1] == "resetuf" or cmd[1] == "ufreset" then
+        if FostercareTweaks_Config then
+            FostercareTweaks_Config.unitframe_positions = nil
+        end
+        ReloadUI()
+    elseif cmd[1] == "testraid" or cmd[1] == "raidtest" then
+        if FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ToggleRaidTest then
+            FostercareTweaks.UnitFrames:ToggleRaidTest()
+        end
     elseif cmd[1] == "options" or cmd[1] == "gui" or cmd[1] == "menu" or cmd[1] == "" then
         if FostercareTweaksSettingsGUI then
             if FostercareTweaksSettingsGUI:IsShown() then
@@ -170,6 +179,9 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
         else
             FostercareTweaks_Config.overwrites[index] = value
             FostercareTweaks.overwrites[index] = value
+            if index == "uf_scale" and FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ApplyScale then
+                FostercareTweaks.UnitFrames:ApplyScale(value)
+            end
             DEFAULT_CHAT_FRAME:AddMessage("Overwrite |cffffcc00" .. index .. "|r is now set to: |cffffcc00" .. input .. "|r", 1, 1, 1)
         end
     end

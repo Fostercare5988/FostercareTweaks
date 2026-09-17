@@ -8,7 +8,7 @@ local module = FostercareTweaks:register({
     enabled = true,
 })
 
-local movables = { "PlayerFrame", "TargetFrame" }
+local movables = { "PlayerFrame", "TargetFrame", "FCTweaksPlayerFrame", "FCTweaksTargetFrame", "FCTweaksRaidFrame" }
 
 module.enable = function(self)
     local unlocker = CreateFrame("Frame", "FCTweaksUnitFrameUnlocker", UIParent)
@@ -55,7 +55,22 @@ module.enable = function(self)
                         f:EnableMouse(true)
                         f:RegisterForDrag("LeftButton")
                         f:SetScript("OnDragStart", function() this:StartMoving() end)
-                        f:SetScript("OnDragStop", function() this:StopMovingOrSizing() end)
+                        f:SetScript("OnDragStop", function()
+                            this:StopMovingOrSizing()
+                            local saveKey = this.unit or (this.GetName and this:GetName() == "FCTweaksRaidFrame" and "raid")
+                            if saveKey and FostercareTweaks_Config then
+                                if not FostercareTweaks_Config.unitframe_positions then
+                                    FostercareTweaks_Config.unitframe_positions = {}
+                                end
+                                local point, _, relPoint, x, y = this:GetPoint()
+                                FostercareTweaks_Config.unitframe_positions[saveKey] = {
+                                    point = point or "CENTER",
+                                    relPoint = relPoint or "CENTER",
+                                    x = x or 0,
+                                    y = y or 0
+                                }
+                            end
+                        end)
                     end
                 end
 
@@ -69,6 +84,22 @@ module.enable = function(self)
                     f:SetScript("OnDragStart", function() end)
                     f:SetScript("OnDragStop", function() end)
                     f:StopMovingOrSizing()
+                    local saveKey = f.unit or (f.GetName and f:GetName() == "FCTweaksRaidFrame" and "raid")
+                    if saveKey and FostercareTweaks_Config then
+                        if not FostercareTweaks_Config.unitframe_positions then
+                            FostercareTweaks_Config.unitframe_positions = {}
+                        end
+                        local point, _, relPoint, x, y = f:GetPoint()
+                        FostercareTweaks_Config.unitframe_positions[saveKey] = {
+                            point = point or "CENTER",
+                            relPoint = relPoint or "CENTER",
+                            x = x or 0,
+                            y = y or 0
+                        }
+                    end
+                    if f.GetName and f:GetName() == "FCTweaksRaidFrame" then
+                        f:EnableMouse(false)
+                    end
                 end
             end
 

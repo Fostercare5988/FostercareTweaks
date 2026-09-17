@@ -2,7 +2,7 @@
 ## Title: FostercareTweaks
 ## Notes: A unified, modernized collection of tweaks and enhancements for the Enhanced 1.12.1 Client Stack (ClassicAPI, SuperWoW, UnitXP).
 ## Author: Fostercare
-## Version: 3.0.0
+## Version: 3.1.0
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 
@@ -22,6 +22,10 @@ mods\reduced-actionbar-bags.lua
 mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
+mods\unitframes\core.lua
+mods\unitframes\player.lua
+mods\unitframes\target.lua
+mods\unitframes\raid.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
