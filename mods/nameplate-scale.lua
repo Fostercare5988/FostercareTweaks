@@ -17,8 +17,6 @@ module.enable = function(self)
     local libnameplate = FostercareTweaks.libnameplate or (ShaguTweaks and ShaguTweaks.libnameplate)
     if not libnameplate then return end
 
-    local DEFAULT_FONT = "Fonts\\FRIZQT__.TTF"
-
     local function CaptureBaselines(plate)
         if not plate then return end
 
@@ -40,24 +38,6 @@ module.enable = function(self)
         if plate.glow and not plate.fctGlowOrigW and plate.glow.GetWidth and plate.glow:GetWidth() > 20 then
             plate.fctGlowOrigW = plate.glow:GetWidth()
             plate.fctGlowOrigH = plate.glow:GetHeight()
-        end
-
-        if plate.name and not plate.fctNameOrigFont and plate.name.GetFont then
-            local font, size, flags = plate.name:GetFont()
-            if size and size > 5 then
-                plate.fctNameOrigFont = font
-                plate.fctNameOrigSize = size
-                plate.fctNameOrigFlags = flags
-            end
-        end
-
-        if plate.level and not plate.fctLevelOrigFont and plate.level.GetFont then
-            local font, size, flags = plate.level:GetFont()
-            if size and size > 5 then
-                plate.fctLevelOrigFont = font
-                plate.fctLevelOrigSize = size
-                plate.fctLevelOrigFlags = flags
-            end
         end
     end
 
@@ -86,64 +66,49 @@ module.enable = function(self)
         local targetGW = math.floor(gW * scale + 0.5)
         local targetGH = math.floor(gH * scale + 0.5)
 
+        if plate.fctLastAppliedScale == scale and plate:GetWidth() == targetPlateW then
+            return
+        end
+        plate.fctLastAppliedScale = scale
+
         plate:SetWidth(targetPlateW)
         plate:SetHeight(targetPlateH)
 
+        -- Do not ClearAllPoints or re-center healthbar/border:
+        -- preserve native C++ anchor offsets to maintain vertical separation from name text.
         if plate.healthbar then
             plate.healthbar:SetWidth(targetHbW)
             plate.healthbar:SetHeight(targetHbH)
-            plate.healthbar:ClearAllPoints()
-            plate.healthbar:SetPoint("CENTER", plate, "CENTER", 0, 0)
         end
 
         if plate.border then
             plate.border:SetWidth(targetBW)
             plate.border:SetHeight(targetBH)
-            plate.border:ClearAllPoints()
-            plate.border:SetPoint("CENTER", plate.healthbar or plate, "CENTER", 0, 0)
         end
 
         if plate.glow then
             plate.glow:SetWidth(targetGW)
             plate.glow:SetHeight(targetGH)
-            plate.glow:ClearAllPoints()
-            plate.glow:SetPoint("CENTER", plate.healthbar or plate, "CENTER", 0, 0)
         end
 
-        if plate.name then
-            local font = plate.fctNameOrigFont or (NAMEPLATE_FONT or DEFAULT_FONT)
-            local origSize = plate.fctNameOrigSize or 11
-            local flags = plate.fctNameOrigFlags
-            local newSize = math.max(6, math.floor(origSize * scale + 0.5))
-            plate.name:SetFont(font, newSize, flags)
-            plate.name:ClearAllPoints()
-            plate.name:SetPoint("BOTTOM", plate.healthbar or plate, "TOP", 0, math.floor(3 * scale + 0.5))
+        if plate.name and plate.name.SetScale then
+            plate.name:SetScale(scale)
         end
 
-        if plate.level then
-            local font = plate.fctLevelOrigFont or (NAMEPLATE_FONT or DEFAULT_FONT)
-            local origSize = plate.fctLevelOrigSize or 10
-            local flags = plate.fctLevelOrigFlags
-            local newSize = math.max(6, math.floor(origSize * scale + 0.5))
-            plate.level:SetFont(font, newSize, flags)
-            plate.level:ClearAllPoints()
-            plate.level:SetPoint("CENTER", plate.healthbar or plate, "RIGHT", -math.floor(2 * scale + 0.5), 0)
+        if plate.level and plate.level.SetScale then
+            plate.level:SetScale(scale)
         end
 
         if plate.levelicon then
             local iconSize = math.max(8, math.floor(11 * scale + 0.5))
             plate.levelicon:SetWidth(iconSize)
             plate.levelicon:SetHeight(iconSize)
-            plate.levelicon:ClearAllPoints()
-            plate.levelicon:SetPoint("CENTER", plate.healthbar or plate, "RIGHT", -math.floor(2 * scale + 0.5), 0)
         end
 
         if plate.raidicon then
             local raidSize = math.max(10, math.floor(14 * scale + 0.5))
             plate.raidicon:SetWidth(raidSize)
             plate.raidicon:SetHeight(raidSize)
-            plate.raidicon:ClearAllPoints()
-            plate.raidicon:SetPoint("CENTER", plate.healthbar or plate, "CENTER", 0, math.floor(18 * scale + 0.5))
         end
 
         if plate.dragon then
@@ -151,8 +116,6 @@ module.enable = function(self)
             local dH = math.floor(64 * scale + 0.5)
             plate.dragon:SetWidth(dW)
             plate.dragon:SetHeight(dH)
-            plate.dragon:ClearAllPoints()
-            plate.dragon:SetPoint("CENTER", plate.healthbar or plate, "CENTER", 0, 0)
         end
     end
 
@@ -165,6 +128,15 @@ module.enable = function(self)
     table.insert(libnameplate.OnShow, function(plate)
         if not plate then return end
         ApplyScale(plate)
+    end)
+
+    table.insert(libnameplate.OnUpdate, function(plate)
+        if not plate then return end
+        local rawScale = UIParent:GetScale() or 1
+        local scale = (rawScale > 0.2 and rawScale <= 2.0) and rawScale or 1
+        if plate.fctLastAppliedScale ~= scale then
+            ApplyScale(plate)
+        end
     end)
 
     local scaleWatcher = CreateFrame("Frame")

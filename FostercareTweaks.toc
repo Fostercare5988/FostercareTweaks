@@ -23,8 +23,6 @@ mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
 mods\health-numbers.lua
-mods\health-color.lua
-mods\unitframes-bighealth.lua
 mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
 mods\move-unitframes.lua
@@ -57,7 +55,6 @@ mods\chat-tweaks.lua
 mods\chat-links.lua
 mods\chat-timestamps.lua
 mods\chat-history.lua
-mods\chat-input-center.lua
 mods\social-colors.lua
 
 # General & Gameplay Modules

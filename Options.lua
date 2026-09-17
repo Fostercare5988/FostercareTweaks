@@ -122,6 +122,8 @@ settings.load = function(self)
     local previous = nil
 
     local sortCategories = function(a, b)
+        if a == T["General"] then return true end
+        if b == T["General"] then return false end
         if a == T["Action Bar"] then return true end
         if b == T["Action Bar"] then return false end
         if a == T["Unit Frames"] then return true end
@@ -134,8 +136,6 @@ settings.load = function(self)
         if b == T["Social & Chat"] then return false end
         if a == T["Tooltip & Items"] then return true end
         if b == T["Tooltip & Items"] then return false end
-        if a == T["General"] then return false end
-        if b == T["General"] then return true end
         return a < b
     end
 

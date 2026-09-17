@@ -35,7 +35,6 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 
 ### 2. Unit Frames
 - **True Health Numbers**: Displays authoritative current/max health numbers and percentages powered directly by `UnitXP("health", unit)` or native SuperWoW APIs without heuristic guessing.
-- **Big Health Proportions**: Enlarged health bar textures for player and target frames with rare/elite dragon border support.
 - **Class Colors & Portraits**: Dynamic class-colored status bars, name backgrounds, and optional circular class badge portraits.
 - **Dynamic Movable Frames**: Hold Shift+Ctrl to unlock and drag player and target frames with an alignment grid.
 - **Event-Driven Target Castbars**: Responsive casting and channeling bars with uninterruptible shield indicators.
@@ -65,7 +64,6 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 - **Hyperlink Handling & URL Copy**: Clickable web URLs with a modal copy dialog, CLINK resolution, and shift-clickable player names.
 - **Chat History Retention**: Non-combat chat buffer persistence across UI reloads and character relogs.
 - **Social List Colors**: Class-colored player names and last-seen dates across Who, Friends, and Guild rosters.
-- **Centered Chat Editbox**: Centered text input box with automatic bottom-bar collision avoidance.
 - **Timestamps & Mousewheel Scrolling**: Configurable chat timestamps and smooth mousewheel message history navigation.
 
 ### 7. General Tweaks

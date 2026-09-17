@@ -20,10 +20,32 @@ module.enable = function(self)
         end
     end
 
+    local leftShiftDown = false
+    local rightShiftDown = false
+    local leftCtrlDown = false
+    local rightCtrlDown = false
+
     unlocker.movable = nil
     unlocker:RegisterEvent("MODIFIER_STATE_CHANGED")
     unlocker:SetScript("OnEvent", function()
-        if IsShiftKeyDown() and IsControlKeyDown() then
+        local key = arg1
+        local state = arg2
+        if key == "LSHIFT" then
+            leftShiftDown = (state == 1)
+        elseif key == "RSHIFT" then
+            rightShiftDown = (state == 1)
+        elseif key == "LCTRL" then
+            leftCtrlDown = (state == 1)
+        elseif key == "RCTRL" then
+            rightCtrlDown = (state == 1)
+        else
+            return
+        end
+
+        local shiftDown = leftShiftDown or rightShiftDown
+        local ctrlDown = leftCtrlDown or rightCtrlDown
+
+        if shiftDown and ctrlDown then
             if not unlocker.movable then
                 for _, frame in ipairs(movables) do
                     local f = _G[frame]

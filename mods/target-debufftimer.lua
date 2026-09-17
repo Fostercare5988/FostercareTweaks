@@ -12,9 +12,9 @@ local module = FostercareTweaks:register({
 local function CreateTextCooldown(cooldown)
     if cooldown.readable then return end
 
-    cooldown.readable = CreateFrame("Frame", "FCTweaksDebuffCooldownText", cooldown:GetParent())
+    cooldown.readable = CreateFrame("Frame", nil, cooldown)
     cooldown.readable:SetAllPoints(cooldown)
-    cooldown.readable:SetFrameLevel(cooldown:GetParent():GetFrameLevel() + 1)
+    cooldown.readable:SetFrameLevel(cooldown:GetFrameLevel() + 5)
     cooldown.readable:EnableMouse(false)
 
     cooldown.readable.text = cooldown.readable:CreateFontString(nil, "OVERLAY")
@@ -23,7 +23,7 @@ local function CreateTextCooldown(cooldown)
 
     cooldown.readable:SetScript("OnUpdate", function()
         local parent = this:GetParent()
-        if not parent then
+        if not parent or not parent:IsShown() then
             this:Hide()
             return
         end
@@ -59,21 +59,13 @@ end
 
 module.enable = function(self)
     local function UpdateTargetDebuffTimers()
-
-        local auraSlots
-        if C_UnitAuras and C_UnitAuras.GetAuraSlots then
-            local ok, slots = pcall(C_UnitAuras.GetAuraSlots, "target", "HARMFUL")
-            if ok and slots then auraSlots = slots end
-        end
-
         for i = 1, MAX_TARGET_DEBUFFS do
             local button = _G["TargetFrameDebuff" .. i]
-            if button then
+            if button and button:IsShown() then
                 if not button.cd then
                     button.cd = CreateFrame("Model", "TargetFrameDebuff" .. i .. "Cooldown", button, "CooldownFrameTemplate")
                     button.cd.noCooldownCount = true
-                    button.cd:SetAllPoints()
-                    button.cd:SetScale(0.6)
+                    button.cd:SetAllPoints(button)
                     button.cd:SetAlpha(0.8)
                     button.cd:EnableMouse(false)
                 end
@@ -81,17 +73,21 @@ module.enable = function(self)
                 local dCount = _G["TargetFrameDebuff" .. i .. "Count"]
                 local dBorder = _G["TargetFrameDebuff" .. i .. "Border"]
 
+                local aura
+                if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
+                    aura = C_UnitAuras.GetDebuffDataByIndex("target", i)
+                elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+                    aura = C_UnitAuras.GetAuraDataByIndex("target", i, "HARMFUL")
+                end
+
                 local name, icon, applications, dispelType, duration, expirationTime
-                if auraSlots and auraSlots[i] and C_UnitAuras.GetAuraDataBySlot then
-                    local ok, aura = pcall(C_UnitAuras.GetAuraDataBySlot, "target", auraSlots[i])
-                    if ok and aura then
-                        name = aura.name
-                        icon = aura.icon
-                        applications = aura.applications
-                        dispelType = aura.dispelType
-                        duration = aura.duration
-                        expirationTime = aura.expirationTime
-                    end
+                if aura then
+                    name = aura.name
+                    icon = aura.icon
+                    applications = aura.applications
+                    dispelType = aura.dispelName or aura.dispelType
+                    duration = aura.duration
+                    expirationTime = aura.expirationTime
                 end
 
                 if not name then
@@ -131,6 +127,9 @@ module.enable = function(self)
                     if button.cd.readable then button.cd.readable:Hide() end
                     CooldownFrame_SetTimer(button.cd, 0, 0, 0)
                 end
+            elseif button and button.cd then
+                button.cd:Hide()
+                if button.cd.readable then button.cd.readable:Hide() end
             end
         end
     end

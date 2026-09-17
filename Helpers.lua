@@ -120,39 +120,6 @@ FostercareTweaks.HookAddonOrVariable = function(addon, func)
 end
 
 -- Math & Color Utilities
-local gradientcolors = {}
-FostercareTweaks.GetColorGradient = function(perc)
-    perc = perc > 1 and 1 or perc
-    perc = perc < 0 and 0 or perc
-    perc = floor(perc * 100) / 100
-
-    local index = perc
-    if not gradientcolors[index] then
-        local r1, g1, b1, r2, g2, b2
-        if perc <= 0.5 then
-            perc = perc * 2
-            r1, g1, b1 = 1, 0, 0
-            r2, g2, b2 = 1, 1, 0
-        else
-            perc = perc * 2 - 1
-            r1, g1, b1 = 1, 1, 0
-            r2, g2, b2 = 0, 1, 0
-        end
-
-        local r = FostercareTweaks.round(r1 + (r2 - r1) * perc, 4)
-        local g = FostercareTweaks.round(g1 + (g2 - g1) * perc, 4)
-        local b = FostercareTweaks.round(b1 + (b2 - b1) * perc, 4)
-        local h = FostercareTweaks.rgbhex(r, g, b)
-
-        gradientcolors[index] = { r = r, g = g, b = b, h = h }
-    end
-
-    return gradientcolors[index].r,
-           gradientcolors[index].g,
-           gradientcolors[index].b,
-           gradientcolors[index].h
-end
-
 FostercareTweaks.rgbhex = function(r, g, b, a)
     local _r, _g, _b, _a
     if type(r) == "table" then
