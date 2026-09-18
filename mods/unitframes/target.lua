@@ -14,22 +14,32 @@ local function UpdateHealth(frame)
     frame.healthBar:SetMinMaxValues(0, max)
     frame.healthBar:SetValue(cur)
 
-    -- Bar Coloring (Class color for players, Reaction color for NPCs)
-    if UnitIsPlayer("target") then
+    -- Bar Coloring (Class color for real players, Reaction color for NPCs)
+    local isPlayer = UF.IsRealPlayer and UF.IsRealPlayer("target")
+    if isPlayer then
         local _, cls = UnitClass("target")
-        local c = UF.ClassColors[cls]
+        local classToken = cls and (FostercareTweaks.NormalizeClass and FostercareTweaks.NormalizeClass(cls) or cls)
+        local c = classToken and UF.ClassColors[classToken]
         if c then
             frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
         else
             frame.healthBar:SetStatusBarColor(0.2, 0.8, 0.2, 1)
         end
     else
-        local reaction = UnitReaction("target", "player") or 4
-        local c = UF.ReactionColors[reaction] or UF.ReactionColors[4]
-        frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        local reaction = UnitReaction("target", "player")
+        if UnitCanAttack("player", "target") or (reaction and reaction <= 3) then
+            local c = UF.ReactionColors[1]
+            frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        elseif reaction and reaction > 4 then
+            local c = UF.ReactionColors[5]
+            frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        else
+            local c = UF.ReactionColors[4]
+            frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        end
     end
 
-    -- Name, Level, and Classification
+    -- Level, Classification, and Name
     local name = UnitName("target") or "Target"
     local level = UnitLevel("target") or 0
     local levelStr = (level > 0) and tostring(level) or "??"
@@ -45,16 +55,37 @@ local function UpdateHealth(frame)
         classTag = "r"
     end
 
-    frame.healthBar.nameText:SetText("[" .. levelStr .. classTag .. "] " .. name)
+    local typeText = ""
+    if isPlayer then
+        local _, cls = UnitClass("target")
+        typeText = cls or ""
+    else
+        typeText = UnitCreatureType("target") or ""
+    end
 
-    -- Health text
+    local subInfo = "[" .. levelStr .. classTag .. "]"
+    if typeText ~= "" then
+        subInfo = subInfo .. " " .. typeText
+    end
+
+    if frame.powerBar and frame.powerBar:IsShown() and frame.powerBar.leftText then
+        frame.powerBar.leftText:SetText(subInfo)
+        frame.healthBar.nameText:SetText(name)
+    else
+        frame.healthBar.nameText:SetText(subInfo .. " " .. name)
+    end
+
+    -- Concise Health text (No bloat, no duplicate max, no overlap)
     if UnitIsDeadOrGhost("target") then
         frame.healthBar.healthText:SetText(UnitIsGhost("target") and "Ghost" or "Dead")
     elseif max > 0 then
-        local percent = math.floor((cur / max) * 100 + 0.5)
         local curStr = FostercareTweaks.Abbreviate(cur)
-        local maxStr = FostercareTweaks.Abbreviate(max)
-        frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr .. " (" .. percent .. "%)")
+        if cur == max then
+            frame.healthBar.healthText:SetText(curStr)
+        else
+            local maxStr = FostercareTweaks.Abbreviate(max)
+            frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr)
+        end
     else
         frame.healthBar.healthText:SetText("")
     end
@@ -108,6 +139,9 @@ local function UpdateAll(frame)
     UpdateHealth(frame)
     UpdatePower(frame)
     UF:LayoutBars(frame)
+    if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+        UF.Auras:UpdateContainer(frame.auraContainer)
+    end
 end
 
 local function TargetFrame_OnEvent()
@@ -125,6 +159,10 @@ local function TargetFrame_OnEvent()
         if a1 == "target" then UpdatePower(targetFrame) end
     elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
         if a1 == "target" then UpdatePortrait(targetFrame) end
+    elseif ev == "UNIT_AURA" then
+        if a1 == "target" and targetFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+            UF.Auras:UpdateContainer(targetFrame.auraContainer)
+        end
     elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_FACTION" or ev == "UNIT_CLASSIFICATION_CHANGED" then
         if a1 == "target" then UpdateHealth(targetFrame) end
     elseif ev == "PLAYER_ENTERING_WORLD" then
@@ -151,8 +189,8 @@ function UF:EnableTargetFrame()
         -- Portrait (Right)
         local portrait = CreateFrame("Frame", nil, targetFrame)
         portrait:SetBackdrop(UF.backdrop)
-        portrait:SetBackdropColor(0, 0, 0, 0.5)
-        portrait:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        portrait:SetBackdropColor(0, 0, 0, 0.9)
+        portrait:SetBackdropBorderColor(0, 0, 0, 1)
 
         portrait.tex = portrait:CreateTexture(nil, "ARTWORK")
         portrait.tex:SetPoint("TOPLEFT", portrait, "TOPLEFT", 1, -1)
@@ -167,18 +205,24 @@ function UF:EnableTargetFrame()
         hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
-        hb.nameText:SetShadowOffset(1, -1)
+        hb.nameText:SetShadowOffset(0.8, -0.8)
 
         hb.healthText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         hb.healthText:SetPoint("RIGHT", hb, "RIGHT", -4, 0)
         hb.healthText:SetJustifyH("RIGHT")
         hb.healthText:SetShadowColor(0, 0, 0, 1)
-        hb.healthText:SetShadowOffset(1, -1)
+        hb.healthText:SetShadowOffset(0.8, -0.8)
 
         targetFrame.healthBar = hb
 
         -- Power Bar
         local pb = UF:CreateBar("FCTweaksTargetPowerBar", targetFrame)
+        pb.leftText = pb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        pb.leftText:SetPoint("LEFT", pb, "LEFT", 4, 0)
+        pb.leftText:SetJustifyH("LEFT")
+        pb.leftText:SetShadowColor(0, 0, 0, 1)
+        pb.leftText:SetShadowOffset(1, -1)
+
         pb.powerText = pb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         pb.powerText:SetPoint("RIGHT", pb, "RIGHT", -4, 0)
         pb.powerText:SetJustifyH("RIGHT")
@@ -187,29 +231,41 @@ function UF:EnableTargetFrame()
 
         targetFrame.powerBar = pb
 
-        -- Event Registration
-        targetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-        targetFrame:RegisterEvent("UNIT_HEALTH")
-        targetFrame:RegisterEvent("UNIT_MAXHEALTH")
-        targetFrame:RegisterEvent("UNIT_MANA")
-        targetFrame:RegisterEvent("UNIT_RAGE")
-        targetFrame:RegisterEvent("UNIT_ENERGY")
-        targetFrame:RegisterEvent("UNIT_FOCUS")
-        targetFrame:RegisterEvent("UNIT_MAXMANA")
-        targetFrame:RegisterEvent("UNIT_MAXRAGE")
-        targetFrame:RegisterEvent("UNIT_MAXENERGY")
-        targetFrame:RegisterEvent("UNIT_DISPLAYPOWER")
-        targetFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-        targetFrame:RegisterEvent("UNIT_MODEL_CHANGED")
-        targetFrame:RegisterEvent("UNIT_LEVEL")
-        targetFrame:RegisterEvent("UNIT_NAME_UPDATE")
-        targetFrame:RegisterEvent("UNIT_FACTION")
-        targetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
-        targetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        targetFrame:SetScript("OnEvent", TargetFrame_OnEvent)
+        -- Aura Container (16 Buffs above, 16 Debuffs below)
+        if UF.Auras and UF.Auras.CreateAuraContainer then
+            targetFrame.auraContainer = UF.Auras:CreateAuraContainer(targetFrame, "target", 16, 16, {
+                size = 20,
+                spacing = 3,
+                perRow = 8,
+                buffAnchor = "TOP",
+                debuffAnchor = "BOTTOM",
+            })
+        end
 
         UF.targetFrame = targetFrame
     end
+
+    -- Event Registration
+    targetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    targetFrame:RegisterEvent("UNIT_HEALTH")
+    targetFrame:RegisterEvent("UNIT_MAXHEALTH")
+    targetFrame:RegisterEvent("UNIT_MANA")
+    targetFrame:RegisterEvent("UNIT_RAGE")
+    targetFrame:RegisterEvent("UNIT_ENERGY")
+    targetFrame:RegisterEvent("UNIT_FOCUS")
+    targetFrame:RegisterEvent("UNIT_MAXMANA")
+    targetFrame:RegisterEvent("UNIT_MAXRAGE")
+    targetFrame:RegisterEvent("UNIT_MAXENERGY")
+    targetFrame:RegisterEvent("UNIT_DISPLAYPOWER")
+    targetFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    targetFrame:RegisterEvent("UNIT_MODEL_CHANGED")
+    targetFrame:RegisterEvent("UNIT_LEVEL")
+    targetFrame:RegisterEvent("UNIT_NAME_UPDATE")
+    targetFrame:RegisterEvent("UNIT_FACTION")
+    targetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
+    targetFrame:RegisterEvent("UNIT_AURA")
+    targetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    targetFrame:SetScript("OnEvent", TargetFrame_OnEvent)
 
     if UnitExists("target") then
         UpdateAll(targetFrame)

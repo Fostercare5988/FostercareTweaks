@@ -8,7 +8,7 @@ local module = FostercareTweaks:register({
     enabled = true,
 })
 
-local movables = { "PlayerFrame", "TargetFrame", "FCTweaksPlayerFrame", "FCTweaksTargetFrame", "FCTweaksRaidFrame" }
+local movables = { "PlayerFrame", "TargetFrame", "TargetofTargetFrame", "FCTweaksPlayerFrame", "FCTweaksTargetFrame", "FCTweaksToTFrame", "FCTweaksRaidFrame" }
 
 module.enable = function(self)
     local unlocker = CreateFrame("Frame", "FCTweaksUnitFrameUnlocker", UIParent)
@@ -57,7 +57,7 @@ module.enable = function(self)
                         f:SetScript("OnDragStart", function() this:StartMoving() end)
                         f:SetScript("OnDragStop", function()
                             this:StopMovingOrSizing()
-                            local saveKey = this.unit or (this.GetName and this:GetName() == "FCTweaksRaidFrame" and "raid")
+                            local saveKey = this.unit or (this.GetName and this:GetName() == "FCTweaksRaidFrame" and "raid") or (this.GetName and this:GetName() == "TargetofTargetFrame" and "targettarget")
                             if saveKey and FostercareTweaks_Config then
                                 if not FostercareTweaks_Config.unitframe_positions then
                                     FostercareTweaks_Config.unitframe_positions = {}
@@ -71,6 +71,21 @@ module.enable = function(self)
                                 }
                             end
                         end)
+
+                        -- Show preview if frame was hidden (e.g. Target or ToT without active unit)
+                        if not f:IsShown() then
+                            f._wasHidden = true
+                            f:Show()
+                            if f.healthBar and f.healthBar.nameText then
+                                if f:GetName() == "FCTweaksTargetFrame" then
+                                    f.healthBar.nameText:SetText("[Target Frame]")
+                                    f.healthBar:SetStatusBarColor(0.90, 0.00, 0.00, 1)
+                                elseif f:GetName() == "FCTweaksToTFrame" then
+                                    f.healthBar.nameText:SetText("[Target of Target]")
+                                    f.healthBar:SetStatusBarColor(0.88, 0.80, 0.20, 1)
+                                end
+                            end
+                        end
                     end
                 end
 
@@ -84,7 +99,7 @@ module.enable = function(self)
                     f:SetScript("OnDragStart", function() end)
                     f:SetScript("OnDragStop", function() end)
                     f:StopMovingOrSizing()
-                    local saveKey = f.unit or (f.GetName and f:GetName() == "FCTweaksRaidFrame" and "raid")
+                    local saveKey = f.unit or (f.GetName and f:GetName() == "FCTweaksRaidFrame" and "raid") or (f.GetName and f:GetName() == "TargetofTargetFrame" and "targettarget")
                     if saveKey and FostercareTweaks_Config then
                         if not FostercareTweaks_Config.unitframe_positions then
                             FostercareTweaks_Config.unitframe_positions = {}
@@ -99,6 +114,10 @@ module.enable = function(self)
                     end
                     if f.GetName and f:GetName() == "FCTweaksRaidFrame" then
                         f:EnableMouse(false)
+                    end
+                    if f._wasHidden then
+                        f._wasHidden = nil
+                        f:Hide()
                     end
                 end
             end

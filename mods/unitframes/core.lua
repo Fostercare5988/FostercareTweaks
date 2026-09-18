@@ -8,16 +8,363 @@ local module = FostercareTweaks:register({
     title = T["Unit Frames (Modern)"],
     description = T["Modern unit frames for Player and Target inspired by Luna Unit Frames, backed by enhanced client APIs."],
     category = T["Unit Frames"],
-    enabled = true,
+    enabled = false,
     config = {
         ["uf_scale"] = 1.0,
     }
+})
+
+-- Positive modern unit frame toggles (disabled by default for new users)
+FostercareTweaks:register({
+    title = T["Modern Player Frame"],
+    description = T["Enable the modern FostercareTweaks player unit frame instead of the default Blizzard frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Modern Target Frame"],
+    description = T["Enable the modern FostercareTweaks target unit frame instead of the default Blizzard frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Modern Target's Target"],
+    description = T["Enable the modern FostercareTweaks Target of Target frame instead of the standard Blizzard frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+-- Backward compatibility aliases
+FostercareTweaks:register({
+    title = T["Use Standard Player Frame"],
+    description = T["Use the default Blizzard player unit frame instead of the modern FostercareTweaks frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Use Standard Target Frame"],
+    description = T["Use the default Blizzard target unit frame instead of the modern FostercareTweaks frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Use Standard Target's Target"],
+    description = T["Use the standard Target of Target frame instead of the modern FostercareTweaks frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Improved Standard Auras"],
+    description = T["Display enhanced buffs and debuffs with timers, spirals and dispel borders on standard Blizzard frames."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+-- Granular toggles for modern aura visibility and configuration
+FostercareTweaks:register({
+    title = T["Show Player Buffs"],
+    description = T["Display buff icons above the modern player unit frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Target Buffs"],
+    description = T["Display buff icons above the modern target unit frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Player Debuffs"],
+    description = T["Display debuff icons on the modern player unit frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Target Debuffs"],
+    description = T["Display debuff icons below the modern target unit frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Buff Cooldown Spiral"],
+    description = T["Display the radial cooldown sweep on unit frame buffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Buff Duration Text"],
+    description = T["Display remaining time numbers on unit frame buffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Debuff Cooldown Spiral"],
+    description = T["Display the radial cooldown sweep on unit frame debuffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Debuff Duration Text"],
+    description = T["Display remaining time numbers on unit frame debuffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Aura Cooldown Spiral"],
+    description = T["Display the radial cooldown sweep on unit frame buffs and debuffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Aura Duration Text"],
+    description = T["Display remaining time numbers on unit frame buffs and debuffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Color Debuffs by Dispel Type"],
+    description = T["Color debuff borders by magic, curse, disease, or poison."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Only Show My Debuffs on Target"],
+    description = T["Only show debuffs cast by you on the target unit frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
+FostercareTweaks:register({
+    title = T["Show Raid Aggro Indicator"],
+    description = T["Show a red indicator box on group/raid frames when a member has aggro."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Raid HoT Indicator"],
+    description = T["Show corner status indicators for active healing over time buffs."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Raid Debuff Badges"],
+    description = T["Show compact debuff icons on group/raid frames."],
+    category = T["Unit Frames"],
+    enabled = true,
 })
 
 FostercareTweaks.UnitFrames = FostercareTweaks.UnitFrames or {}
 local UF = FostercareTweaks.UnitFrames
 UF.module = module
 UF.frames = {}
+
+function UF:IsModernPlayer()
+    if not FostercareTweaks_Config then return false end
+    if FostercareTweaks_Config[T["Modern Player Frame"]] ~= nil then
+        return FostercareTweaks_Config[T["Modern Player Frame"]] == 1
+    end
+    if FostercareTweaks_Config[T["Use Standard Player Frame"]] ~= nil then
+        return FostercareTweaks_Config[T["Use Standard Player Frame"]] == 0
+    end
+    return false
+end
+
+function UF:IsModernTarget()
+    if not FostercareTweaks_Config then return false end
+    if FostercareTweaks_Config[T["Modern Target Frame"]] ~= nil then
+        return FostercareTweaks_Config[T["Modern Target Frame"]] == 1
+    end
+    if FostercareTweaks_Config[T["Use Standard Target Frame"]] ~= nil then
+        return FostercareTweaks_Config[T["Use Standard Target Frame"]] == 0
+    end
+    return false
+end
+
+function UF:IsModernToT()
+    if not FostercareTweaks_Config then return false end
+    if FostercareTweaks_Config[T["Modern Target's Target"]] ~= nil then
+        return FostercareTweaks_Config[T["Modern Target's Target"]] == 1
+    end
+    if FostercareTweaks_Config[T["Use Standard Target's Target"]] ~= nil then
+        return FostercareTweaks_Config[T["Use Standard Target's Target"]] == 0
+    end
+    return false
+end
+
+function UF:IsStandardPlayer()
+    return not UF:IsModernPlayer()
+end
+
+function UF:IsStandardTarget()
+    return not UF:IsModernTarget()
+end
+
+function UF:IsStandardToT()
+    return not UF:IsModernToT()
+end
+
+function UF:IsImprovedStandardAuras()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Improved Standard Auras"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowPlayerBuffs()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Player Buffs"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowTargetBuffs()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Target Buffs"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:GetBuffSize()
+    if not FostercareTweaks_Config then return 20 end
+    local val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_buff_size"])
+    if not val then
+        val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_aura_size"])
+    end
+    if not val then return 20 end
+    if val < 14 then val = 14 end
+    if val > 32 then val = 32 end
+    return val
+end
+
+function UF:IsBuffSpin()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Buff Cooldown Spiral"]]
+    if val == nil then
+        val = FostercareTweaks_Config[T["Show Aura Cooldown Spiral"]]
+    end
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsBuffText()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Buff Duration Text"]]
+    if val == nil then
+        val = FostercareTweaks_Config[T["Show Aura Duration Text"]]
+    end
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowPlayerDebuffs()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Player Debuffs"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowTargetDebuffs()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Target Debuffs"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:GetDebuffSize()
+    if not FostercareTweaks_Config then return 20 end
+    local val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_debuff_size"])
+    if not val then
+        val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_aura_size"])
+    end
+    if not val then return 20 end
+    if val < 14 then val = 14 end
+    if val > 32 then val = 32 end
+    return val
+end
+
+function UF:IsDebuffSpin()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Debuff Cooldown Spiral"]]
+    if val == nil then
+        val = FostercareTweaks_Config[T["Show Aura Cooldown Spiral"]]
+    end
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsDebuffText()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Debuff Duration Text"]]
+    if val == nil then
+        val = FostercareTweaks_Config[T["Show Aura Duration Text"]]
+    end
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsColorDebuffsByDispel()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Color Debuffs by Dispel Type"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsOnlyMyDebuffs()
+    if not FostercareTweaks_Config then return false end
+    local val = FostercareTweaks_Config[T["Only Show My Debuffs on Target"]]
+    if val == nil then return false end
+    return val == 1
+end
+
+-- Backwards-compatible aliases
+UF.GetAuraSize = UF.GetBuffSize
+UF.IsAuraSpin = UF.IsBuffSpin
+UF.IsAuraText = UF.IsBuffText
+
+function UF:GetRaidHealthFormat()
+    if not FostercareTweaks_Config then return "deficit" end
+    local val = FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["raid_health_format"]
+    return val or "deficit"
+end
+
+function UF:IsRaidShowAggro()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Raid Aggro Indicator"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsRaidShowHoT()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Raid HoT Indicator"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsRaidShowDebuffs()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Raid Debuff Badges"]]
+    if val == nil then return true end
+    return val == 1
+end
 
 function UF:GetScale()
     local scale = (FostercareTweaks.overwrites and tonumber(FostercareTweaks.overwrites["uf_scale"])) or 1.0
@@ -30,50 +377,81 @@ function UF:ApplyScale(scale)
     scale = tonumber(scale) or UF:GetScale()
     if UF.playerFrame then UF.playerFrame:SetScale(scale) end
     if UF.targetFrame then UF.targetFrame:SetScale(scale) end
+    if UF.totFrame then UF.totFrame:SetScale(scale) end
     if UF.raidFrame then UF.raidFrame:SetScale(scale) end
 end
 
--- Visual Backdrop Configuration (1px solid border, dark semi-transparent fill)
+-- Visual Backdrop Configuration (Luna-style solid black border and fill)
 UF.backdrop = {
     bgFile = "Interface\\Buttons\\WHITE8X8",
     edgeFile = "Interface\\Buttons\\WHITE8X8",
     tile = false, tileSize = 0, edgeSize = 1,
     insets = { left = 0, right = 0, top = 0, bottom = 0 }
 }
+UF.backdropColor = { 0.00, 0.00, 0.00, 0.90 }
+UF.backdropBorderColor = { 0.00, 0.00, 0.00, 1.00 }
 
--- Color Tables
+-- Exact Luna Unit Frames Class Colors
 UF.ClassColors = {
-    ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["HUNTER"]  = { r = 0.67, g = 0.83, b = 0.45 },
+    ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
+    ["PRIEST"]  = { r = 1.00, g = 1.00, b = 1.00 },
+    ["PALADIN"] = { r = 0.96, g = 0.55, b = 0.73 },
     ["MAGE"]    = { r = 0.41, g = 0.80, b = 0.94 },
     ["ROGUE"]   = { r = 1.00, g = 0.96, b = 0.41 },
     ["DRUID"]   = { r = 1.00, g = 0.49, b = 0.04 },
-    ["HUNTER"]  = { r = 0.67, g = 0.83, b = 0.45 },
-    ["SHAMAN"]  = { r = 0.00, g = 0.55, b = 0.87 },
-    ["PRIEST"]  = { r = 1.00, g = 1.00, b = 1.00 },
-    ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
-    ["PALADIN"] = { r = 0.96, g = 0.55, b = 0.73 },
+    ["SHAMAN"]  = { r = 0.14, g = 0.35, b = 1.00 },
+    ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
+    ["PET"]     = { r = 0.20, g = 0.90, b = 0.20 },
 }
 
+-- Exact Luna Unit Frames Power Colors
 UF.PowerColors = {
-    [0] = { r = 0.30, g = 0.52, b = 0.90 }, -- MANA
-    [1] = { r = 0.90, g = 0.20, b = 0.20 }, -- RAGE
+    [0] = { r = 0.30, g = 0.50, b = 0.85 }, -- MANA
+    [1] = { r = 0.90, g = 0.20, b = 0.30 }, -- RAGE
     [2] = { r = 1.00, g = 0.50, b = 0.25 }, -- FOCUS
     [3] = { r = 1.00, g = 0.85, b = 0.10 }, -- ENERGY
 }
 
+-- Exact Luna Unit Frames Health / Reaction Colors
 UF.ReactionColors = {
-    [1] = { r = 0.90, g = 0.20, b = 0.20 }, -- Hostile
-    [2] = { r = 0.90, g = 0.20, b = 0.20 }, -- Hostile
-    [3] = { r = 0.90, g = 0.20, b = 0.20 }, -- Hostile
-    [4] = { r = 0.90, g = 0.85, b = 0.10 }, -- Neutral
-    [5] = { r = 0.20, g = 0.80, b = 0.20 }, -- Friendly
-    [6] = { r = 0.20, g = 0.80, b = 0.20 }, -- Friendly
-    [7] = { r = 0.20, g = 0.80, b = 0.20 }, -- Friendly
-    [8] = { r = 0.20, g = 0.80, b = 0.20 }, -- Friendly
+    [1] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
+    [2] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
+    [3] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
+    [4] = { r = 0.93, g = 0.93, b = 0.00 }, -- Neutral
+    [5] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
+    [6] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
+    [7] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
+    [8] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
 }
 
--- Default status bar texture
-UF.defaultBarTexture = "Interface\\TargetingFrame\\UI-StatusBar"
+UF.HealthColors = {
+    ["tapped"]   = { r = 0.50, g = 0.50, b = 0.50 },
+    ["hostile"]  = { r = 0.90, g = 0.00, b = 0.00 },
+    ["friendly"] = { r = 0.20, g = 0.90, b = 0.20 },
+    ["neutral"]  = { r = 0.93, g = 0.93, b = 0.00 },
+    ["offline"]  = { r = 0.50, g = 0.50, b = 0.50 },
+}
+
+-- Exact Luna Magic / Dispel Colors
+UF.DispelColors = {
+    ["Magic"]   = { r = 0.20, g = 0.60, b = 1.00 },
+    ["Curse"]   = { r = 0.60, g = 0.00, b = 1.00 },
+    ["Disease"] = { r = 0.60, g = 0.40, b = 0.00 },
+    ["Poison"]  = { r = 0.00, g = 0.60, b = 0.00 },
+    ["None"]    = { r = 0.60, g = 0.15, b = 0.15 },
+}
+
+function UF.IsRealPlayer(unit)
+    if not unit or not UnitExists(unit) then return false end
+    if not UnitIsPlayer(unit) or not UnitPlayerControlled(unit) then
+        return false
+    end
+    return true
+end
+
+-- Default status bar texture (Luna smooth bar)
+UF.defaultBarTexture = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
 
 --------------------------------------------------------------------------------
 -- 1. Custom StatusBar Implementation (CreateBar)
@@ -177,6 +555,9 @@ local function BarSetStatusBarColor(self, r, g, b, alpha)
     if not r or not g or not b then return end
     alpha = alpha or 1
     self.texture:SetVertexColor(r, g, b, alpha)
+    if self.bg and not self.bg.overrideColor then
+        self.bg:SetVertexColor(r * 0.20, g * 0.20, b * 0.20, 1.0)
+    end
 end
 
 local function BarSetStatusBarTexture(self, texture)
@@ -213,11 +594,11 @@ function UF:CreateBar(name, parent)
     bar.value = 1
     bar.orientation = "HORIZONTAL"
 
-    -- Dark translucent background layer
+    -- Background layer (Luna style 20% tinted texture against dark backdrop)
     bar.bg = bar:CreateTexture(nil, "BACKGROUND")
     bar.bg:SetAllPoints(bar)
     bar.bg:SetTexture(UF.defaultBarTexture)
-    bar.bg:SetVertexColor(0, 0, 0, 0.45)
+    bar.bg:SetVertexColor(0.08, 0.08, 0.08, 1.0)
 
     -- Status bar fill layer
     bar.texture = bar:CreateTexture(nil, "ARTWORK")
@@ -420,17 +801,57 @@ end
 
 local nativeBlizzardSuppressed = false
 
-function UF:SuppressBlizzardFrames()
-    if nativeBlizzardSuppressed then return end
-    nativeBlizzardSuppressed = true
-
+function UF:SuppressPlayerFrame()
     if PlayerFrame then
         PlayerFrame:Hide()
         PlayerFrame:UnregisterAllEvents()
         if PlayerFrameHealthBar then PlayerFrameHealthBar:UnregisterAllEvents() end
         if PlayerFrameManaBar then PlayerFrameManaBar:UnregisterAllEvents() end
     end
+end
 
+function UF:RestorePlayerFrame()
+    if not PlayerFrame then return end
+    PlayerFrame:RegisterEvent("UNIT_LEVEL")
+    PlayerFrame:RegisterEvent("UNIT_COMBAT")
+    PlayerFrame:RegisterEvent("UNIT_FACTION")
+    PlayerFrame:RegisterEvent("UNIT_NAME_UPDATE")
+    PlayerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    PlayerFrame:RegisterEvent("PLAYER_ENTER_COMBAT")
+    PlayerFrame:RegisterEvent("PLAYER_LEAVE_COMBAT")
+    PlayerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    PlayerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    PlayerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+    PlayerFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
+    PlayerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
+    PlayerFrame:RegisterEvent("PARTY_LOOT_METHOD_CHANGED")
+    PlayerFrame:RegisterEvent("RAID_ROSTER_UPDATE")
+    PlayerFrame:RegisterEvent("PLAYER_PVP_INFO_CHANGED")
+    PlayerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    PlayerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
+    if PlayerFrameHealthBar then
+        PlayerFrameHealthBar:RegisterEvent("UNIT_HEALTH")
+        PlayerFrameHealthBar:RegisterEvent("UNIT_MAXHEALTH")
+    end
+    if PlayerFrameManaBar then
+        PlayerFrameManaBar:RegisterEvent("UNIT_MANA")
+        PlayerFrameManaBar:RegisterEvent("UNIT_RAGE")
+        PlayerFrameManaBar:RegisterEvent("UNIT_FOCUS")
+        PlayerFrameManaBar:RegisterEvent("UNIT_ENERGY")
+        PlayerFrameManaBar:RegisterEvent("UNIT_MAXMANA")
+        PlayerFrameManaBar:RegisterEvent("UNIT_MAXRAGE")
+        PlayerFrameManaBar:RegisterEvent("UNIT_MAXFOCUS")
+        PlayerFrameManaBar:RegisterEvent("UNIT_MAXENERGY")
+        PlayerFrameManaBar:RegisterEvent("UNIT_DISPLAYPOWER")
+    end
+    PlayerFrame:Show()
+    local oldThis = this
+    this = PlayerFrame
+    if PlayerFrame_Update then PlayerFrame_Update() end
+    this = oldThis
+end
+
+function UF:SuppressTargetFrame()
     if TargetFrame then
         TargetFrame:Hide()
         TargetFrame:UnregisterAllEvents()
@@ -440,68 +861,220 @@ function UF:SuppressBlizzardFrames()
     end
 end
 
-function UF:RestoreBlizzardFrames()
-    if not nativeBlizzardSuppressed then return end
-    nativeBlizzardSuppressed = false
-
-    if PlayerFrame then
-        PlayerFrame:RegisterEvent("UNIT_LEVEL")
-        PlayerFrame:RegisterEvent("UNIT_COMBAT")
-        PlayerFrame:RegisterEvent("UNIT_FACTION")
-        PlayerFrame:RegisterEvent("UNIT_NAME_UPDATE")
-        PlayerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        PlayerFrame:RegisterEvent("PLAYER_ENTER_COMBAT")
-        PlayerFrame:RegisterEvent("PLAYER_LEAVE_COMBAT")
-        PlayerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        PlayerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        PlayerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
-        PlayerFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
-        PlayerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
-        PlayerFrame:RegisterEvent("PARTY_LOOT_METHOD_CHANGED")
-        PlayerFrame:RegisterEvent("RAID_ROSTER_UPDATE")
-        PlayerFrame:RegisterEvent("PLAYER_PVP_INFO_CHANGED")
-        PlayerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-        PlayerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
-        PlayerFrame:Show()
-        if PlayerFrame_Update then PlayerFrame_Update() end
+function UF:RestoreTargetFrame()
+    if not TargetFrame then return end
+    TargetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    TargetFrame:RegisterEvent("UNIT_HEALTH")
+    TargetFrame:RegisterEvent("UNIT_LEVEL")
+    TargetFrame:RegisterEvent("UNIT_FACTION")
+    TargetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
+    TargetFrame:RegisterEvent("UNIT_AURA")
+    TargetFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
+    TargetFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
+    TargetFrame:RegisterEvent("RAID_TARGET_UPDATE")
+    if TargetFrameHealthBar then
+        TargetFrameHealthBar:RegisterEvent("UNIT_HEALTH")
+        TargetFrameHealthBar:RegisterEvent("UNIT_MAXHEALTH")
     end
+    if TargetFrameManaBar then
+        TargetFrameManaBar:RegisterEvent("UNIT_MANA")
+        TargetFrameManaBar:RegisterEvent("UNIT_RAGE")
+        TargetFrameManaBar:RegisterEvent("UNIT_FOCUS")
+        TargetFrameManaBar:RegisterEvent("UNIT_ENERGY")
+        TargetFrameManaBar:RegisterEvent("UNIT_MAXMANA")
+        TargetFrameManaBar:RegisterEvent("UNIT_MAXRAGE")
+        TargetFrameManaBar:RegisterEvent("UNIT_MAXFOCUS")
+        TargetFrameManaBar:RegisterEvent("UNIT_MAXENERGY")
+        TargetFrameManaBar:RegisterEvent("UNIT_DISPLAYPOWER")
+    end
+    if ComboFrame then
+        ComboFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+        ComboFrame:RegisterEvent("PLAYER_COMBO_POINTS")
+    end
+    if UnitExists("target") then
+        local oldThis = this
+        this = TargetFrame
+        TargetFrame:Show()
+        if TargetFrame_Update then TargetFrame_Update() end
+        if TargetFrame_CheckDead then TargetFrame_CheckDead() end
+        if ComboFrame_Update then ComboFrame_Update() end
+        this = oldThis
+    else
+        TargetFrame:Hide()
+    end
+end
 
-    if TargetFrame then
-        TargetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-        TargetFrame:RegisterEvent("UNIT_HEALTH")
-        TargetFrame:RegisterEvent("UNIT_LEVEL")
-        TargetFrame:RegisterEvent("UNIT_FACTION")
-        TargetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
-        TargetFrame:RegisterEvent("UNIT_AURA")
-        TargetFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
-        TargetFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
-        TargetFrame:RegisterEvent("RAID_TARGET_UPDATE")
-        if UnitExists("target") then
-            TargetFrame:Show()
-            if TargetFrame_Update then TargetFrame_Update() end
-        else
-            TargetFrame:Hide()
+function UF:SuppressPartyFrames()
+    for i = 1, 4 do
+        local pf = _G["PartyMemberFrame" .. i]
+        if pf then
+            pf:Hide()
+            pf:UnregisterAllEvents()
         end
     end
 end
 
-module.enable = function(self)
-    UF.enabled = true
-    UF:SuppressBlizzardFrames()
-    if UF.EnablePlayerFrame then UF:EnablePlayerFrame() end
-    if UF.EnableTargetFrame then UF:EnableTargetFrame() end
-    if UF.EnableRaidFrames then UF:EnableRaidFrames() end
+function UF:RestorePartyFrames()
+    for i = 1, 4 do
+        local pf = _G["PartyMemberFrame" .. i]
+        if pf and GetNumPartyMembers() >= i then
+            local oldThis = this
+            this = pf
+            pf:Show()
+            if PartyMemberFrame_UpdateMember then PartyMemberFrame_UpdateMember() end
+            this = oldThis
+        end
+    end
 end
 
--- Hook Blizzard frames so they stay hidden while modern unit frames are enabled
+function UF:ApplyConfiguration()
+    -- Group/Raid Frames lifecycle (independent toggle via groupframe_dimensions.enabled)
+    local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
+    local raidEnabled = groupDims and groupDims.enabled
+    if raidEnabled then
+        UF:SuppressPartyFrames()
+        if UF.EnableRaidFrames then UF:EnableRaidFrames() end
+    else
+        if UF.DisableRaidFrames then UF:DisableRaidFrames() end
+        UF:RestorePartyFrames()
+    end
+
+    -- Player Frame
+    if UF:IsModernPlayer() then
+        UF:SuppressPlayerFrame()
+        if UF.EnablePlayerFrame then UF:EnablePlayerFrame() end
+    else
+        if UF.DisablePlayerFrame then UF:DisablePlayerFrame() end
+        UF:RestorePlayerFrame()
+    end
+
+    -- Target Frame
+    if UF:IsModernTarget() then
+        UF:SuppressTargetFrame()
+        if UF.EnableTargetFrame then UF:EnableTargetFrame() end
+    else
+        if UF.DisableTargetFrame then UF:DisableTargetFrame() end
+        UF:RestoreTargetFrame()
+    end
+
+    -- Target of Target
+    if UF:IsModernToT() then
+        if TargetofTargetFrame then TargetofTargetFrame:Hide() end
+        if UF.EnableToTFrame then UF:EnableToTFrame() end
+    else
+        if UF.DisableToTFrame then UF:DisableToTFrame() end
+        if TargetofTargetFrame then
+            if TargetFrame and TargetFrame:IsShown() and UnitExists("targettarget") then
+                local oldThis = this
+                this = TargetofTargetFrame
+                TargetofTargetFrame:Show()
+                if TargetofTarget_Update then TargetofTarget_Update() end
+                this = oldThis
+            else
+                TargetofTargetFrame:Hide()
+            end
+        end
+    end
+
+    -- Auras Live Refresh
+    if UF.playerFrame and UF.playerFrame.auraContainer then
+        if UF.playerFrame.auraContainer.buffFrame then
+            if UF:IsShowPlayerBuffs() then
+                UF.playerFrame.auraContainer.buffFrame:Show()
+            else
+                UF.playerFrame.auraContainer.buffFrame:Hide()
+            end
+        end
+        if UF.playerFrame.auraContainer.debuffFrame then
+            if UF:IsShowPlayerDebuffs() then
+                UF.playerFrame.auraContainer.debuffFrame:Show()
+            else
+                UF.playerFrame.auraContainer.debuffFrame:Hide()
+            end
+        end
+        if UF.Auras and UF.Auras.UpdateContainer then
+            UF.Auras:UpdateContainer(UF.playerFrame.auraContainer)
+        end
+    end
+
+    if UF.targetFrame and UF.targetFrame.auraContainer then
+        if UF.targetFrame.auraContainer.buffFrame then
+            if UF:IsShowTargetBuffs() then
+                UF.targetFrame.auraContainer.buffFrame:Show()
+            else
+                UF.targetFrame.auraContainer.buffFrame:Hide()
+            end
+        end
+        if UF.targetFrame.auraContainer.debuffFrame then
+            if UF:IsShowTargetDebuffs() then
+                UF.targetFrame.auraContainer.debuffFrame:Show()
+            else
+                UF.targetFrame.auraContainer.debuffFrame:Hide()
+            end
+        end
+        if UF.Auras and UF.Auras.UpdateContainer then
+            UF.Auras:UpdateContainer(UF.targetFrame.auraContainer)
+        end
+    end
+
+    if UF.Auras and UF.Auras.UpdateBlizzTargetAuras then
+        UF.Auras:UpdateBlizzTargetAuras()
+    end
+end
+
+function UF:SuppressBlizzardFrames()
+    nativeBlizzardSuppressed = true
+    UF:ApplyConfiguration()
+end
+
+function UF:RestoreBlizzardFrames()
+    nativeBlizzardSuppressed = false
+    UF:RestorePlayerFrame()
+    UF:RestoreTargetFrame()
+    UF:RestorePartyFrames()
+end
+
+module.enable = function(self)
+    UF.enabled = true
+    UF:ApplyConfiguration()
+end
+
+-- Hook Blizzard frames so they respect user toggles
 if PlayerFrame and FostercareTweaks.HookScript then
     FostercareTweaks.HookScript(PlayerFrame, "OnShow", function()
-        if UF.enabled then PlayerFrame:Hide() end
+        if UF:IsModernPlayer() then PlayerFrame:Hide() end
     end)
 end
 
 if TargetFrame and FostercareTweaks.HookScript then
     FostercareTweaks.HookScript(TargetFrame, "OnShow", function()
-        if UF.enabled then TargetFrame:Hide() end
+        if UF:IsModernTarget() then
+            TargetFrame:Hide()
+        elseif UF.Auras and UF.Auras.UpdateBlizzTargetAuras then
+            UF.Auras:UpdateBlizzTargetAuras()
+        end
     end)
 end
+
+if TargetofTargetFrame and FostercareTweaks.HookScript then
+    FostercareTweaks.HookScript(TargetofTargetFrame, "OnShow", function()
+        if UF:IsModernToT() then TargetofTargetFrame:Hide() end
+    end)
+end
+
+for i = 1, 4 do
+    local pf = _G["PartyMemberFrame" .. i]
+    if pf and FostercareTweaks.HookScript then
+        FostercareTweaks.HookScript(pf, "OnShow", function()
+            local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
+            if groupDims and groupDims.enabled then this:Hide() end
+        end)
+    end
+end
+
+-- Guaranteed configuration initialization on PLAYER_LOGIN
+local loginFrame = CreateFrame("Frame")
+loginFrame:RegisterEvent("PLAYER_LOGIN")
+loginFrame:SetScript("OnEvent", function()
+    UF:ApplyConfiguration()
+end)

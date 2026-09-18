@@ -1,22 +1,32 @@
 -- FostercareTweaks: mods/unitframe-energytick.lua
+-- World of Warcraft 1.12.1 Enhanced Client
+-- Dynamic Energy & Mana Ticks across Modern or Stock Unit Frames
+
 local T = FostercareTweaks.T
 
 local module = FostercareTweaks:register({
     title = T["Show Energy Ticks"],
     description = T["Show energy and mana ticks on the player unit frame."],
     category = T["Unit Frames"],
-    enabled = nil,
+    enabled = true,
 })
 
+local function GetActivePowerBar()
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.playerFrame and UF.playerFrame.powerBar and UF.playerFrame:IsShown() then
+        return UF.playerFrame.powerBar
+    end
+    return PlayerFrameManaBar
+end
+
 module.enable = function(self)
-    local energytick = CreateFrame("Frame", "FCTweaksEnergyTick", PlayerFrameManaBar)
-    energytick:SetAllPoints(PlayerFrameManaBar)
+    local energytick = CreateFrame("Frame", "FCTweaksEnergyTick", UIParent)
     energytick:EnableMouse(false)
 
     energytick.spark = energytick:CreateTexture(nil, "OVERLAY")
     energytick.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
     energytick.spark:SetWidth(16)
-    energytick.spark:SetHeight(PlayerFrameManaBar:GetHeight() + 10)
+    energytick.spark:SetHeight(16)
     energytick.spark:SetBlendMode("ADD")
 
     energytick:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -66,12 +76,24 @@ module.enable = function(self)
     end)
 
     energytick:SetScript("OnUpdate", function()
+        local bar = GetActivePowerBar()
+        if not bar or not bar:IsShown() then
+            if this.spark:IsShown() then this.spark:Hide() end
+            return
+        end
+
+        local width = bar:GetWidth() or 0
+        if width <= 0 then return end
+
         if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then
             if this.spark:IsShown() then this.spark:Hide() end
             return
         elseif not this.spark:IsShown() then
             this.spark:Show()
         end
+
+        local barH = bar:GetHeight() or 10
+        this.spark:SetHeight(barH + 8)
 
         if this.target then
             this.start, this.max = GetTime(), this.target
@@ -80,8 +102,6 @@ module.enable = function(self)
 
         if this.start and this.max then
             local progress = (GetTime() - this.start) / this.max
-            local width = this.barWidth or PlayerFrameManaBar:GetWidth()
-            this.barWidth = width
 
             if progress > 1 then
                 this.start = GetTime()
@@ -90,9 +110,11 @@ module.enable = function(self)
             end
 
             local x = math.floor(width * progress)
-            if this.lastX ~= x then
+            if this.lastX ~= x or this.currentBar ~= bar then
                 this.lastX = x
-                this.spark:SetPoint("CENTER", PlayerFrameManaBar, "LEFT", x, 0)
+                this.currentBar = bar
+                this.spark:ClearAllPoints()
+                this.spark:SetPoint("CENTER", bar, "LEFT", x, 0)
             end
         end
     end)

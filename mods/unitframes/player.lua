@@ -27,10 +27,13 @@ local function UpdateHealth(frame)
     if UnitIsDeadOrGhost("player") then
         frame.healthBar.healthText:SetText(UnitIsGhost("player") and "Ghost" or "Dead")
     elseif max > 0 then
-        local percent = math.floor((cur / max) * 100 + 0.5)
         local curStr = FostercareTweaks.Abbreviate(cur)
-        local maxStr = FostercareTweaks.Abbreviate(max)
-        frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr .. " (" .. percent .. "%)")
+        if cur == max then
+            frame.healthBar.healthText:SetText(curStr)
+        else
+            local maxStr = FostercareTweaks.Abbreviate(max)
+            frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr)
+        end
     else
         frame.healthBar.healthText:SetText("")
     end
@@ -109,6 +112,9 @@ local function UpdateAll(frame)
     UpdatePower(frame)
     UpdateStatusIcons(frame)
     UF:LayoutBars(frame)
+    if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+        UF.Auras:UpdateContainer(frame.auraContainer)
+    end
 end
 
 local function PlayerFrame_OnEvent()
@@ -124,6 +130,10 @@ local function PlayerFrame_OnEvent()
         UpdateStatusIcons(playerFrame)
     elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
         if a1 == "player" then UpdatePortrait(playerFrame) end
+    elseif ev == "PLAYER_AURAS_CHANGED" or (ev == "UNIT_AURA" and a1 == "player") then
+        if playerFrame and playerFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+            UF.Auras:UpdateContainer(playerFrame.auraContainer)
+        end
     elseif ev == "PLAYER_ENTERING_WORLD" then
         UpdateAll(playerFrame)
     end
@@ -148,8 +158,8 @@ function UF:EnablePlayerFrame()
         -- Portrait (Left)
         local portrait = CreateFrame("Frame", nil, playerFrame)
         portrait:SetBackdrop(UF.backdrop)
-        portrait:SetBackdropColor(0, 0, 0, 0.5)
-        portrait:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        portrait:SetBackdropColor(0, 0, 0, 0.9)
+        portrait:SetBackdropBorderColor(0, 0, 0, 1)
 
         portrait.tex = portrait:CreateTexture(nil, "ARTWORK")
         portrait.tex:SetPoint("TOPLEFT", portrait, "TOPLEFT", 1, -1)
@@ -164,13 +174,13 @@ function UF:EnablePlayerFrame()
         hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
-        hb.nameText:SetShadowOffset(1, -1)
+        hb.nameText:SetShadowOffset(0.8, -0.8)
 
         hb.healthText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         hb.healthText:SetPoint("RIGHT", hb, "RIGHT", -4, 0)
         hb.healthText:SetJustifyH("RIGHT")
         hb.healthText:SetShadowColor(0, 0, 0, 1)
-        hb.healthText:SetShadowOffset(1, -1)
+        hb.healthText:SetShadowOffset(0.8, -0.8)
 
         playerFrame.healthBar = hb
 
@@ -208,28 +218,41 @@ function UF:EnablePlayerFrame()
         playerFrame.leaderIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -2, 2)
         playerFrame.leaderIcon:Hide()
 
-        -- Event Registration
-        playerFrame:RegisterEvent("UNIT_HEALTH")
-        playerFrame:RegisterEvent("UNIT_MAXHEALTH")
-        playerFrame:RegisterEvent("UNIT_MANA")
-        playerFrame:RegisterEvent("UNIT_RAGE")
-        playerFrame:RegisterEvent("UNIT_ENERGY")
-        playerFrame:RegisterEvent("UNIT_FOCUS")
-        playerFrame:RegisterEvent("UNIT_MAXMANA")
-        playerFrame:RegisterEvent("UNIT_MAXRAGE")
-        playerFrame:RegisterEvent("UNIT_MAXENERGY")
-        playerFrame:RegisterEvent("UNIT_DISPLAYPOWER")
-        playerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        playerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-        playerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
-        playerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
-        playerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-        playerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
-        playerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        playerFrame:SetScript("OnEvent", PlayerFrame_OnEvent)
+        -- Aura Container (16 Buffs above, 8 Debuffs below)
+        if UF.Auras and UF.Auras.CreateAuraContainer then
+            playerFrame.auraContainer = UF.Auras:CreateAuraContainer(playerFrame, "player", 16, 8, {
+                size = 20,
+                spacing = 3,
+                perRow = 8,
+                buffAnchor = "TOP",
+                debuffAnchor = "BOTTOM",
+            })
+        end
 
         UF.playerFrame = playerFrame
     end
+
+    -- Event Registration
+    playerFrame:RegisterEvent("UNIT_HEALTH")
+    playerFrame:RegisterEvent("UNIT_MAXHEALTH")
+    playerFrame:RegisterEvent("UNIT_MANA")
+    playerFrame:RegisterEvent("UNIT_RAGE")
+    playerFrame:RegisterEvent("UNIT_ENERGY")
+    playerFrame:RegisterEvent("UNIT_FOCUS")
+    playerFrame:RegisterEvent("UNIT_MAXMANA")
+    playerFrame:RegisterEvent("UNIT_MAXRAGE")
+    playerFrame:RegisterEvent("UNIT_MAXENERGY")
+    playerFrame:RegisterEvent("UNIT_DISPLAYPOWER")
+    playerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    playerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    playerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+    playerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
+    playerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    playerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
+    playerFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
+    playerFrame:RegisterEvent("UNIT_AURA")
+    playerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    playerFrame:SetScript("OnEvent", PlayerFrame_OnEvent)
 
     playerFrame:Show()
     UpdateAll(playerFrame)

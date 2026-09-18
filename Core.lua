@@ -147,9 +147,48 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
             FostercareTweaks_Config.unitframe_positions = nil
         end
         ReloadUI()
-    elseif cmd[1] == "testraid" or cmd[1] == "raidtest" then
+    elseif cmd[1] == "testraid" or cmd[1] == "raidtest" or cmd[1] == "testgroup" or cmd[1] == "grouptest" then
         if FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ToggleRaidTest then
             FostercareTweaks.UnitFrames:ToggleRaidTest()
+        end
+    elseif cmd[1] == "uf" or cmd[1] == "unitframes" or cmd[1] == "unitframe" then
+        if FostercareTweaksSettingsGUI then
+            FostercareTweaksSettingsGUI:Show()
+            if FostercareTweaksSettingsGUI.SelectTab then
+                FostercareTweaksSettingsGUI.SelectTab(2)
+            end
+        end
+    elseif cmd[1] == "groupconfig" or cmd[1] == "groupsettings" or cmd[1] == "gfconfig" or cmd[1] == "raid" or cmd[1] == "raidframes" then
+        if FostercareTweaksSettingsGUI then
+            FostercareTweaksSettingsGUI:Show()
+            if FostercareTweaksSettingsGUI.SelectTab then
+                FostercareTweaksSettingsGUI.SelectTab(3)
+            end
+        elseif FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ToggleGroupFrameSettings then
+            FostercareTweaks.UnitFrames:ToggleGroupFrameSettings()
+        end
+    elseif cmd[1] == "groupsize" then
+        local w = tonumber(cmd[2])
+        local h = tonumber(cmd[3])
+        if w and h and FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ApplyGroupDimensions then
+            local dims = FostercareTweaks.UnitFrames:GetGroupDimensions()
+            FostercareTweaks.UnitFrames:ApplyGroupDimensions(w, h, dims.scale)
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[FostercareTweaks]|r Group frame size set to " .. w .. "x" .. h, 1, 1, 1)
+            end
+        elseif DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Usage:|r /ft groupsize <width> <height> (e.g. /ft groupsize 64 34)", 1, 1, 1)
+        end
+    elseif cmd[1] == "groupscale" then
+        local s = tonumber(cmd[2])
+        if s and FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.ApplyGroupDimensions then
+            local dims = FostercareTweaks.UnitFrames:GetGroupDimensions()
+            FostercareTweaks.UnitFrames:ApplyGroupDimensions(dims.width, dims.height, s)
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[FostercareTweaks]|r Group frame scale set to " .. s, 1, 1, 1)
+            end
+        elseif DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Usage:|r /ft groupscale <scale> (e.g. /ft groupscale 1.0)", 1, 1, 1)
         end
     elseif cmd[1] == "options" or cmd[1] == "gui" or cmd[1] == "menu" or cmd[1] == "" then
         if FostercareTweaksSettingsGUI then

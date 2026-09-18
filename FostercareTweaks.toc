@@ -23,8 +23,10 @@ mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
 mods\unitframes\core.lua
+mods\unitframes\auras.lua
 mods\unitframes\player.lua
 mods\unitframes\target.lua
+mods\unitframes\tot.lua
 mods\unitframes\raid.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
