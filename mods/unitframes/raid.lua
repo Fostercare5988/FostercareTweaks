@@ -148,25 +148,13 @@ local function UpdateButtonAuras(btn)
                 ["Blessing of Protection"] = true,
             }
             for b = 1, 16 do
-                local tex, name
-                if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
-                    local data = C_UnitAuras.GetBuffDataByIndex(unit, b)
-                    if data then
-                        tex = data.icon
-                        name = data.name
-                    end
-                elseif UnitBuff then
-                    tex = UnitBuff(unit, b)
-                end
-                if tex then
-                    if (name and HOT_NAMES[name]) or (string.find(tex, "Spell_Holy_Renew") or string.find(tex, "Spell_Nature_Rejuvenation") or string.find(tex, "Spell_Nature_ResistNature") or string.find(tex, "Spell_Holy_PowerWordShield")) then
-                        hotTex = tex
-                        break
-                    elseif b == 1 and not hotTex then
-                        hotTex = tex
-                    end
-                else
+                local name, icon = C_UnitAuras.UnitBuff(unit, b, "HELPFUL")
+                if not name then break end
+                if (name and HOT_NAMES[name]) or (icon and (string.find(icon, "Spell_Holy_Renew") or string.find(icon, "Spell_Nature_Rejuvenation") or string.find(icon, "Spell_Nature_ResistNature") or string.find(icon, "Spell_Holy_PowerWordShield"))) then
+                    hotTex = icon
                     break
+                elseif b == 1 and not hotTex then
+                    hotTex = icon
                 end
             end
         end
@@ -185,20 +173,7 @@ local function UpdateButtonAuras(btn)
         if not showDebuffs then
             badge:Hide()
         else
-            local icon, dispelType
-            if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
-                local data = C_UnitAuras.GetDebuffDataByIndex(unit, b)
-                if data then
-                    icon = data.icon
-                    dispelType = data.dispelName or data.dispelType or data.debuffType
-                end
-            elseif UnitDebuff then
-                local tex, _, dtype = UnitDebuff(unit, b)
-                if tex then
-                    icon = tex
-                    dispelType = dtype
-                end
-            end
+            local name, icon, count, dispelType = C_UnitAuras.UnitDebuff(unit, b, "HARMFUL")
 
             if icon then
                 badge.icon:SetTexture(icon)

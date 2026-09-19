@@ -59,6 +59,13 @@ end
 
 module.enable = function(self)
     local function UpdateTargetDebuffTimers()
+        -- Skip when Modern Target Frame or Improved Standard Auras manages target auras
+        local UF = FostercareTweaks.UnitFrames
+        if (UF and UF.IsModernTarget and UF:IsModernTarget()) or
+           (UF and UF.IsImprovedStandardAuras and UF:IsImprovedStandardAuras()) then
+            return
+        end
+
         for i = 1, MAX_TARGET_DEBUFFS do
             local button = _G["TargetFrameDebuff" .. i]
             if button and button:IsShown() then
@@ -73,29 +80,8 @@ module.enable = function(self)
                 local dCount = _G["TargetFrameDebuff" .. i .. "Count"]
                 local dBorder = _G["TargetFrameDebuff" .. i .. "Border"]
 
-                local aura
-                if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
-                    aura = C_UnitAuras.GetDebuffDataByIndex("target", i)
-                elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-                    aura = C_UnitAuras.GetAuraDataByIndex("target", i, "HARMFUL")
-                end
-
-                local name, icon, applications, dispelType, duration, expirationTime
-                if aura then
-                    name = aura.name
-                    icon = aura.icon
-                    applications = aura.applications
-                    dispelType = aura.dispelName or aura.dispelType
-                    duration = aura.duration
-                    expirationTime = aura.expirationTime
-                end
-
-                if not name then
-                    local tex, count, debuffType = UnitDebuff("target", i)
-                    icon = tex
-                    applications = count
-                    dispelType = debuffType
-                end
+                -- Strict ClassicAPI v1.15.12 positional unpack
+                local name, icon, applications, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = C_UnitAuras.UnitDebuff("target", i, "HARMFUL")
 
                 if dCount then
                     if not dCount.fixup then
@@ -115,21 +101,52 @@ module.enable = function(self)
                     if color then dBorder:SetVertexColor(color.r, color.g, color.b) end
                 end
 
-                if duration and duration > 0 and expirationTime and expirationTime > 0 then
-                    local start = expirationTime - duration
+                local now = GetTime()
+                local effectiveExpiration = expirationTime
+                if (not effectiveExpiration or effectiveExpiration <= now) and duration and duration > 0 then
+                    if button.cd and button.cd.readable and button.cd.readable.spellId == spellId and button.cd.readable.expirationTime and button.cd.readable.expirationTime > now then
+                        effectiveExpiration = button.cd.readable.expirationTime
+                    else
+                        effectiveExpiration = now + duration
+                    end
+                end
+
+                if duration and duration > 0 and effectiveExpiration and effectiveExpiration > now then
+                    local start = effectiveExpiration - duration
                     CreateTextCooldown(button.cd)
+                    if button.cd.readable.spellId ~= spellId or math.abs((button.cd.readable.start or 0) - start) > 0.5 then
+                        CooldownFrame_SetTimer(button.cd, 0, 0, 0)
+                        button.cd:Hide()
+                    end
                     CooldownFrame_SetTimer(button.cd, start, duration, 1)
+                    button.cd.readable.spellId = spellId
+                    button.cd.readable.expirationTime = effectiveExpiration
                     button.cd.readable.start = start
                     button.cd.readable.duration = duration
+                    button.cd.readable.lastText = nil
                     button.cd.readable:Show()
                     button.cd:Show()
                 else
-                    if button.cd.readable then button.cd.readable:Hide() end
-                    CooldownFrame_SetTimer(button.cd, 0, 0, 0)
+                    if button.cd and button.cd.readable then
+                        button.cd.readable.lastText = nil
+                        button.cd.readable.spellId = nil
+                        button.cd.readable.expirationTime = nil
+                        button.cd.readable:Hide()
+                    end
+                    if button.cd then
+                        CooldownFrame_SetTimer(button.cd, 0, 0, 0)
+                        button.cd:Hide()
+                    end
                 end
             elseif button and button.cd then
                 button.cd:Hide()
-                if button.cd.readable then button.cd.readable:Hide() end
+                CooldownFrame_SetTimer(button.cd, 0, 0, 0)
+                if button.cd.readable then
+                    button.cd.readable.lastText = nil
+                    button.cd.readable.spellId = nil
+                    button.cd.readable.expirationTime = nil
+                    button.cd.readable:Hide()
+                end
             end
         end
     end

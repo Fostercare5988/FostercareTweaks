@@ -38,11 +38,24 @@ local function AuraButton_OnEnter()
     local unit = this.unit
     local index = this.auraIndex
     local isDebuff = this.isDebuff
-    if not unit or not index then return end
+    local spellId = this.spellId
+    if not unit then return end
 
     GameTooltip:SetOwner(this, "ANCHOR_BOTTOMRIGHT")
-    if unit == "player" and not isDebuff then
-        if GetPlayerBuff then
+    if spellId and GameTooltip.SetSpellByID then
+        GameTooltip:SetSpellByID(spellId)
+        GameTooltip:Show()
+        return
+    end
+
+    if index and GameTooltip.SetUnitAura then
+        GameTooltip:SetUnitAura(unit, index, isDebuff and "HARMFUL" or "HELPFUL")
+        GameTooltip:Show()
+        return
+    end
+
+    if index then
+        if unit == "player" and not isDebuff and GetPlayerBuff then
             local buffIndex = GetPlayerBuff(index - 1, "HELPFUL")
             if buffIndex and buffIndex >= 0 then
                 GameTooltip:SetPlayerBuff(buffIndex) -- vanillaforge-ignore: AP-01
@@ -50,13 +63,13 @@ local function AuraButton_OnEnter()
                 return
             end
         end
-        GameTooltip:SetPlayerBuff(index) -- vanillaforge-ignore: AP-01
-    elseif isDebuff then
-        GameTooltip:SetUnitDebuff(unit, index) -- vanillaforge-ignore: AP-01
-    else
-        GameTooltip:SetUnitBuff(unit, index)
+        if isDebuff then
+            GameTooltip:SetUnitDebuff(unit, index) -- vanillaforge-ignore: AP-01
+        else
+            GameTooltip:SetUnitBuff(unit, index)
+        end
+        GameTooltip:Show()
     end
-    GameTooltip:Show()
 end
 
 local function AuraButton_OnLeave()
@@ -92,11 +105,58 @@ local function FormatAuraTime(remaining)
     end
 end
 
+local function ResetAuraButton(btn)
+    if not btn then return end
+    btn.unit = nil
+    btn.auraIndex = nil
+    btn.spellId = nil
+    btn.expirationTime = nil
+    btn.duration = nil
+    btn.nextUpdate = nil
+    btn.isOccupied = false
+    btn:SetScript("OnUpdate", nil)
+
+    if btn.durationText then
+        btn.durationText:SetText("")
+        btn.durationText:Hide()
+    end
+
+    if btn.countText then
+        btn.countText:SetText("")
+        btn.countText:Hide()
+    end
+
+    if btn.cooldown then
+        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+        btn.cooldown:Hide()
+    end
+
+    if btn.icon then
+        btn.icon:SetTexture(nil)
+        btn.icon:SetVertexColor(1, 1, 1, 1)
+    end
+
+    if btn.border then
+        btn.border:SetTexture(BORDER_TEXTURE)
+        btn.border:SetTexCoord(0, 1, 0, 1)
+        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+    end
+
+    btn:SetAlpha(1.0)
+    btn:Hide()
+end
+
 local function AuraButton_OnUpdate()
     local exp = this.expirationTime
     if not exp or exp <= 0 then
-        if this.durationText then this.durationText:Hide() end
-        if this.cooldown then this.cooldown:Hide() end
+        if this.durationText then
+            this.durationText:SetText("")
+            this.durationText:Hide()
+        end
+        if this.cooldown then
+            CooldownFrame_SetTimer(this.cooldown, 0, 0, 0)
+            this.cooldown:Hide()
+        end
         this:SetScript("OnUpdate", nil)
         return
     end
@@ -107,9 +167,13 @@ local function AuraButton_OnUpdate()
 
     local remaining = exp - now
     if remaining <= 0 then
-        if this.durationText then this.durationText:Hide() end
-        if this.cooldown then this.cooldown:Hide() end
-        this:SetScript("OnUpdate", nil)
+        local container = this.container
+        ResetAuraButton(this)
+        if container and container == UF.blizzTargetAuras and Auras.UpdateBlizzTargetAuras then
+            Auras:UpdateBlizzTargetAuras()
+        elseif container and Auras.UpdateContainer then
+            Auras:UpdateContainer(container)
+        end
         return
     end
 
@@ -124,7 +188,10 @@ local function AuraButton_OnUpdate()
         this.durationText:SetText(FormatAuraTime(remaining))
         this.durationText:Show()
     else
-        if this.durationText then this.durationText:Hide() end
+        if this.durationText then
+            this.durationText:SetText("")
+            this.durationText:Hide()
+        end
     end
 end
 
@@ -229,6 +296,7 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
             end
             btn.unit = unit
             btn.auraIndex = i
+            btn.container = container
             container.buffButtons[i] = btn
         end
     end
@@ -258,6 +326,7 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
             end
             btn.unit = unit
             btn.auraIndex = i
+            btn.container = container
             container.debuffButtons[i] = btn
         end
     end
@@ -330,28 +399,28 @@ function Auras:ApplyAuraSize(container, newSize)
     Auras:ApplyDebuffSize(container, newSize)
 end
 
+local function FindExistingSpellExpiration(buttons, spellId, now)
+    if not buttons or not spellId or not now then return nil end
+    for _, b in ipairs(buttons) do
+        if b.spellId == spellId and b.expirationTime and b.expirationTime > now then
+            return b.expirationTime
+        end
+    end
+    return nil
+end
+
 function Auras:UpdateContainer(container)
     if not container or not container.unit then return end
     local unit = container.unit
     if not UnitExists(unit) then
         if container.buffButtons then
             for _, btn in ipairs(container.buffButtons) do
-                btn.expirationTime = nil
-                btn.duration = nil
-                if btn.durationText then btn.durationText:Hide() end
-                if btn.cooldown then btn.cooldown:Hide() end
-                btn:SetScript("OnUpdate", nil)
-                btn:Hide()
+                ResetAuraButton(btn)
             end
         end
         if container.debuffButtons then
             for _, btn in ipairs(container.debuffButtons) do
-                btn.expirationTime = nil
-                btn.duration = nil
-                if btn.durationText then btn.durationText:Hide() end
-                if btn.cooldown then btn.cooldown:Hide() end
-                btn:SetScript("OnUpdate", nil)
-                btn:Hide()
+                ResetAuraButton(btn)
             end
         end
         return
@@ -395,238 +464,230 @@ function Auras:UpdateContainer(container)
     local colorDispel = (UF.IsColorDebuffsByDispel and UF:IsColorDebuffsByDispel())
     local onlyMine = (unit == "target" and UF.IsOnlyMyDebuffs and UF:IsOnlyMyDebuffs())
 
+    local now = GetTime()
+
     -- Update Buffs
     if container.buffButtons then
-        for i, btn in ipairs(container.buffButtons) do
-            btn.unit = unit
-            if not showBuffs then
-                btn.expirationTime = nil
-                btn.duration = nil
-                if btn.durationText then btn.durationText:Hide() end
-                if btn.cooldown then
-                    btn.cooldown:Hide()
-                    CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                end
-                btn:SetScript("OnUpdate", nil)
-                btn:Hide()
-            else
-                local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster
-                if C_UnitAuras and C_UnitAuras.UnitAura then
-                    name, rank, icon, count, debuffType, duration, expirationTime, unitCaster = C_UnitAuras.UnitAura(unit, i, "HELPFUL")
-                elseif C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
-                    local aura = C_UnitAuras.GetBuffDataByIndex(unit, i)
-                    if aura then
-                        name = aura.name
-                        icon = aura.icon
-                        count = aura.applications or aura.count
-                        duration = aura.duration
-                        expirationTime = aura.expirationTime
-                    end
-                elseif UnitBuff then
-                    local tex, cnt = UnitBuff(unit, i)
-                    icon = tex
-                    count = cnt
-                end
+        local maxBuffs = table.getn(container.buffButtons)
+        if not showBuffs then
+            for _, btn in ipairs(container.buffButtons) do
+                ResetAuraButton(btn)
+            end
+        else
+            local btnIdx = 1
+            for i = 1, 40 do
+                if btnIdx > maxBuffs then break end
+                local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = C_UnitAuras.UnitBuff(unit, i, "HELPFUL")
+                if not name then break end -- end of buffs
 
-                if icon then
-                    btn.icon:SetTexture(icon)
-                    btn.icon:SetVertexColor(1, 1, 1, 1)
-                    btn:SetAlpha(1.0)
+                local isExpired = (expirationTime and expirationTime > 0 and expirationTime <= now)
+                if not isExpired and icon then
+                    local btn = container.buffButtons[btnIdx]
+                    if btn then
+                        local oldSpellId = btn.spellId
+                        local oldExp = btn.expirationTime
 
-                    if count and count > 1 then
-                        btn.countText:SetText(count)
-                        btn.countText:Show()
-                    else
-                        btn.countText:Hide()
-                    end
+                        btn.unit = unit
+                        btn.auraIndex = i
+                        btn.spellId = spellId
+                        btn.isOccupied = true
 
-                    btn.expirationTime = expirationTime
-                    btn.duration = duration
+                        btn.icon:SetTexture(icon)
+                        btn.icon:SetVertexColor(1, 1, 1, 1)
+                        btn:SetAlpha(1.0)
 
-                    -- Cooldown model sweep
-                    if expirationTime and expirationTime > 0 and (duration or 0) > 0 and showBuffSpin and btn.cooldown then
-                        btn.cooldown.reverse = true
-                        btn.cooldown:Show()
-                        CooldownFrame_SetTimer(btn.cooldown, expirationTime - duration, duration, 1)
-                    elseif btn.cooldown then
-                        btn.cooldown:Hide()
-                        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                    end
-
-                    -- Duration text countdown
-                    if expirationTime and expirationTime > 0 then
-                        local remaining = expirationTime - GetTime()
-                        if remaining > 0 and showBuffText then
-                            btn.durationText:SetText(FormatAuraTime(remaining))
-                            btn.durationText:Show()
+                        if count and count > 1 then
+                            btn.countText:SetText(count)
+                            btn.countText:Show()
                         else
-                            btn.durationText:Hide()
+                            btn.countText:SetText("")
+                            btn.countText:Hide()
                         end
-                        btn.nextUpdate = 0
-                        btn:SetScript("OnUpdate", AuraButton_OnUpdate)
-                    else
-                        btn.durationText:Hide()
-                        btn:SetScript("OnUpdate", nil)
-                    end
 
-                    btn.border:SetTexture(BORDER_TEXTURE)
-                    btn.border:SetTexCoord(0, 1, 0, 1)
-                    btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
-                    btn:Show()
-                else
-                    btn.expirationTime = nil
-                    btn.duration = nil
-                    if btn.durationText then btn.durationText:Hide() end
-                    if btn.cooldown then
-                        btn.cooldown:Hide()
-                        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                        -- Resolve effective expiration time:
+                        -- 1. Authoritative ClassicAPI expirationTime > now
+                        -- 2. If duration > 0 and expirationTime <= 0 (slot shift / cache eviction), preserve existing or synthesize
+                        local effectiveExpiration = expirationTime
+                        if (not effectiveExpiration or effectiveExpiration <= now) and duration and duration > 0 then
+                            local existingExp = (oldSpellId == spellId and oldExp and oldExp > now and oldExp) or
+                                                FindExistingSpellExpiration(container.buffButtons, spellId, now)
+                            if existingExp then
+                                effectiveExpiration = existingExp
+                            else
+                                effectiveExpiration = now + duration
+                            end
+                        end
+
+                        local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
+
+                        -- Cooldown model sweep: reset cleanly on spell change, timer refresh, or reassignment
+                        if hasTimer and showBuffSpin and btn.cooldown then
+                            if oldSpellId ~= spellId or not oldExp or math.abs(oldExp - effectiveExpiration) > 0.5 then
+                                CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                                btn.cooldown:Hide()
+                            end
+                            btn.cooldown.reverse = true
+                            btn.cooldown:Show()
+                            CooldownFrame_SetTimer(btn.cooldown, effectiveExpiration - duration, duration, 1)
+                        elseif btn.cooldown then
+                            CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                            btn.cooldown:Hide()
+                        end
+
+                        -- Duration text countdown
+                        if hasTimer then
+                            local remaining = effectiveExpiration - now
+                            if remaining > 0 and showBuffText then
+                                btn.durationText:SetText(FormatAuraTime(remaining))
+                                btn.durationText:Show()
+                            else
+                                btn.durationText:SetText("")
+                                btn.durationText:Hide()
+                            end
+                            btn.nextUpdate = 0
+                            btn:SetScript("OnUpdate", AuraButton_OnUpdate)
+                        else
+                            btn.durationText:SetText("")
+                            btn.durationText:Hide()
+                            btn:SetScript("OnUpdate", nil)
+                        end
+
+                        btn.expirationTime = hasTimer and effectiveExpiration or 0
+                        btn.duration = hasTimer and duration or 0
+
+                        btn.border:SetTexture(BORDER_TEXTURE)
+                        btn.border:SetTexCoord(0, 1, 0, 1)
+                        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+                        btn:Show()
+
+                        btnIdx = btnIdx + 1
                     end
-                    btn:SetScript("OnUpdate", nil)
-                    btn:Hide()
                 end
+            end
+
+            for j = btnIdx, maxBuffs do
+                ResetAuraButton(container.buffButtons[j])
             end
         end
     end
 
     -- Update Debuffs
     if container.debuffButtons then
-        local targetDebuffSlot = 1
-        for i, btn in ipairs(container.debuffButtons) do
-            btn.unit = unit
-            if not showDebuffs then
-                btn.expirationTime = nil
-                btn.duration = nil
-                if btn.durationText then btn.durationText:Hide() end
-                if btn.cooldown then
-                    btn.cooldown:Hide()
-                    CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                end
-                btn:SetScript("OnUpdate", nil)
-                btn:Hide()
-            else
-                local name, rank, icon, count, dispelType, duration, expirationTime, unitCaster
-                local found = false
+        local maxDebuffs = table.getn(container.debuffButtons)
+        if not showDebuffs then
+            for _, btn in ipairs(container.debuffButtons) do
+                ResetAuraButton(btn)
+            end
+        else
+            local btnIdx = 1
+            local filter = onlyMine and "HARMFUL|PLAYER" or "HARMFUL"
 
-                if C_UnitAuras and C_UnitAuras.UnitAura then
-                    local filter = onlyMine and "HARMFUL|PLAYER" or "HARMFUL"
-                    name, rank, icon, count, dispelType, duration, expirationTime, unitCaster = C_UnitAuras.UnitAura(unit, i, filter)
-                    if icon then
+            for i = 1, 40 do
+                if btnIdx > maxDebuffs then break end
+                local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, castByPlayer = C_UnitAuras.UnitDebuff(unit, i, filter)
+                if not name then break end -- end of debuffs
+
+                local isExpired = (expirationTime and expirationTime > 0 and expirationTime <= now)
+
+                if not isExpired and icon then
+                    local btn = container.debuffButtons[btnIdx]
+                    if btn then
+                        local oldSpellId = btn.spellId
+                        local oldExp = btn.expirationTime
+
+                        btn.unit = unit
                         btn.auraIndex = i
-                        found = true
-                    end
-                else
-                    -- Fallback scanner
-                    while targetDebuffSlot <= 40 do
-                        local aura = nil
-                        if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
-                            aura = C_UnitAuras.GetDebuffDataByIndex(unit, targetDebuffSlot)
-                        elseif C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-                            aura = C_UnitAuras.GetAuraDataByIndex(unit, targetDebuffSlot, "HARMFUL")
+                        btn.spellId = spellId
+                        btn.isOccupied = true
+
+                        btn.icon:SetTexture(icon)
+                        btn.icon:SetVertexColor(1, 1, 1, 1)
+                        btn:SetAlpha(1.0)
+
+                        if count and count > 1 then
+                            btn.countText:SetText(count)
+                            btn.countText:Show()
+                        else
+                            btn.countText:SetText("")
+                            btn.countText:Hide()
                         end
 
-                        if aura then
-                            local isMine = not onlyMine or aura.isCastByPlayer or (aura.sourceUnit == "player") or (aura.caster == "player")
-                            if isMine then
-                                icon = aura.icon
-                                count = aura.applications or aura.count
-                                dispelType = aura.dispelName or aura.dispelType or aura.debuffType
-                                duration = aura.duration
-                                expirationTime = aura.expirationTime
-                                btn.auraIndex = targetDebuffSlot
-                                found = true
-                                targetDebuffSlot = targetDebuffSlot + 1
-                                break
-                            end
-                        elseif UnitDebuff then
-                            local tex, cnt, dtype = UnitDebuff(unit, targetDebuffSlot)
-                            if tex then
-                                icon = tex
-                                count = cnt
-                                dispelType = dtype
-                                btn.auraIndex = targetDebuffSlot
-                                found = true
-                                targetDebuffSlot = targetDebuffSlot + 1
-                                break
+                        -- Dispel border coloring
+                        if colorDispel and dispelType and UF.DispelColors and UF.DispelColors[dispelType] then
+                            local dc = UF.DispelColors[dispelType]
+                            btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
+                            btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+                            btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                        elseif colorDispel then
+                            local dc = UF.DispelColors and UF.DispelColors["None"] or { r = 0.8, g = 0.2, b = 0.2 }
+                            btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
+                            btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+                            btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                        else
+                            btn.border:SetTexture(BORDER_TEXTURE)
+                            btn.border:SetTexCoord(0, 1, 0, 1)
+                            btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+                        end
+
+                        -- Resolve effective expiration time:
+                        -- 1. Authoritative ClassicAPI expirationTime > now
+                        -- 2. If duration > 0 and expirationTime <= 0 (slot shift / cache eviction), preserve existing or synthesize
+                        local effectiveExpiration = expirationTime
+                        if (not effectiveExpiration or effectiveExpiration <= now) and duration and duration > 0 then
+                            local existingExp = (oldSpellId == spellId and oldExp and oldExp > now and oldExp) or
+                                                FindExistingSpellExpiration(container.debuffButtons, spellId, now)
+                            if existingExp then
+                                effectiveExpiration = existingExp
                             else
-                                break
+                                effectiveExpiration = now + duration
                             end
-                        else
-                            break
                         end
-                        targetDebuffSlot = targetDebuffSlot + 1
-                    end
-                end
 
-                if found and icon then
-                    btn.icon:SetTexture(icon)
-                    btn.icon:SetVertexColor(1, 1, 1, 1)
-                    btn:SetAlpha(1.0)
+                        local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
 
-                    if count and count > 1 then
-                        btn.countText:SetText(count)
-                        btn.countText:Show()
-                    else
-                        btn.countText:Hide()
-                    end
+                        -- Cooldown model sweep: reset cleanly on spell change, timer refresh, or reassignment
+                        if hasTimer and showDebuffSpin and btn.cooldown then
+                            if oldSpellId ~= spellId or not oldExp or math.abs(oldExp - effectiveExpiration) > 0.5 then
+                                CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                                btn.cooldown:Hide()
+                            end
+                            btn.cooldown.reverse = true
+                            btn.cooldown:Show()
+                            CooldownFrame_SetTimer(btn.cooldown, effectiveExpiration - duration, duration, 1)
+                        elseif btn.cooldown then
+                            CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                            btn.cooldown:Hide()
+                        end
 
-                    -- Dispel border coloring
-                    if colorDispel and dispelType and UF.DispelColors and UF.DispelColors[dispelType] then
-                        local dc = UF.DispelColors[dispelType]
-                        btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
-                        btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
-                        btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
-                    elseif colorDispel then
-                        local dc = UF.DispelColors and UF.DispelColors["None"] or { r = 0.8, g = 0.2, b = 0.2 }
-                        btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
-                        btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
-                        btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
-                    else
-                        btn.border:SetTexture(BORDER_TEXTURE)
-                        btn.border:SetTexCoord(0, 1, 0, 1)
-                        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
-                    end
-
-                    btn.expirationTime = expirationTime
-                    btn.duration = duration
-
-                    -- Cooldown model sweep
-                    if expirationTime and expirationTime > 0 and (duration or 0) > 0 and showDebuffSpin and btn.cooldown then
-                        btn.cooldown.reverse = true
-                        btn.cooldown:Show()
-                        CooldownFrame_SetTimer(btn.cooldown, expirationTime - duration, duration, 1)
-                    elseif btn.cooldown then
-                        btn.cooldown:Hide()
-                        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                    end
-
-                    -- Duration text countdown
-                    if expirationTime and expirationTime > 0 then
-                        local remaining = expirationTime - GetTime()
-                        if remaining > 0 and showDebuffText then
-                            btn.durationText:SetText(FormatAuraTime(remaining))
-                            btn.durationText:Show()
+                        -- Duration text countdown
+                        if hasTimer then
+                            local remaining = effectiveExpiration - now
+                            if remaining > 0 and showDebuffText then
+                                btn.durationText:SetText(FormatAuraTime(remaining))
+                                btn.durationText:Show()
+                            else
+                                btn.durationText:SetText("")
+                                btn.durationText:Hide()
+                            end
+                            btn.nextUpdate = 0
+                            btn:SetScript("OnUpdate", AuraButton_OnUpdate)
                         else
+                            btn.durationText:SetText("")
                             btn.durationText:Hide()
+                            btn:SetScript("OnUpdate", nil)
                         end
-                        btn.nextUpdate = 0
-                        btn:SetScript("OnUpdate", AuraButton_OnUpdate)
-                    else
-                        btn.durationText:Hide()
-                        btn:SetScript("OnUpdate", nil)
-                    end
 
-                    btn:Show()
-                else
-                    btn.expirationTime = nil
-                    btn.duration = nil
-                    if btn.durationText then btn.durationText:Hide() end
-                    if btn.cooldown then
-                        btn.cooldown:Hide()
-                        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
+                        btn.expirationTime = hasTimer and effectiveExpiration or 0
+                        btn.duration = hasTimer and duration or 0
+
+                        btn:Show()
+                        btnIdx = btnIdx + 1
                     end
-                    btn:SetScript("OnUpdate", nil)
-                    btn:Hide()
                 end
+            end
+
+            for j = btnIdx, maxDebuffs do
+                ResetAuraButton(container.debuffButtons[j])
             end
         end
     end
@@ -736,3 +797,21 @@ if TargetFrame and FostercareTweaks.hooksecurefunc then
         end
     end)
 end
+
+-- Independent event dispatcher for standard target aura updating
+local auraEventFrame = CreateFrame("Frame", "FCTweaksAuraEventFrame", UIParent)
+auraEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+auraEventFrame:RegisterEvent("UNIT_AURA")
+auraEventFrame:SetScript("OnEvent", function()
+    local ev = event
+    local a1 = arg1
+    if ev == "PLAYER_TARGET_CHANGED" then
+        if Auras.UpdateBlizzTargetAuras then
+            Auras:UpdateBlizzTargetAuras()
+        end
+    elseif ev == "UNIT_AURA" then
+        if a1 == "target" and Auras.UpdateBlizzTargetAuras then
+            Auras:UpdateBlizzTargetAuras()
+        end
+    end
+end)

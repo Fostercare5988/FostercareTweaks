@@ -5,7 +5,7 @@
 [![Engine](https://img.shields.io/badge/Engine-ClassicAPI%20%7C%20SuperWoW%20%7C%20UnitXP%20SP3-orange.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A high-performance, modular UI modernization and quality-of-life suite engineered natively for the **World of Warcraft 1.12.1 Enhanced Client Stack** (`ClassicAPI v1.15.10+`, `SuperWoW v2.2+`, and optional `UnitXP SP3`).
+A high-performance, modular UI modernization and quality-of-life suite engineered natively for the **World of Warcraft 1.12.1 Enhanced Client Stack** (`ClassicAPI v1.15.12+`, `SuperWoW v2.2+`, and optional `UnitXP SP3`).
 
 FostercareTweaks consolidates, streamlines, and modernizes features formerly split across separate tweak packs into a cohesive, standalone package. All legacy 2006 workarounds—such as active target-swapping loops, 330 KB static price tables, hidden tooltip text scraping, and destructive global API overwrites—have been replaced with native engine capabilities, structured APIs, and non-intrusive event pipelines.
 
@@ -96,7 +96,7 @@ Access settings at any time:
 
 | Component | Status | Purpose |
 | :--- | :--- | :--- |
-| **ClassicAPI** | `v1.15.10+` (Mandatory) | Modern C++ namespaces (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_Timer`), `hooksecurefunc`, `UnitInRange`, `table.wipe`, and hardware timers. |
+| **ClassicAPI** | `v1.15.12+` (Mandatory) | Modern C++ namespaces (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_Timer`), `hooksecurefunc`, `UnitInRange`, `table.wipe`, and hardware timers. |
 | **SuperWoW** | `v2.2+` (Mandatory) | Extended combat events (`UNIT_CASTEVENT`), GUID queries, `SetMouseoverUnit`, and combat inspection. |
 | **UnitXP SP3** | `v90+` (Optional) | Authoritative unit health values via `UnitXP("health", unit)`. |
 
