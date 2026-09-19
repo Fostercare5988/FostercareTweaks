@@ -11,22 +11,28 @@ local Auras = UF.Auras
 
 local BORDER_TEXTURE = "Interface\\AddOns\\FostercareTweaks\\img\\border-dark.tga"
 
--- Reverse cooldown animation support (Luna style for auras)
+-- Reverse cooldown animation support (Luna mechanism for auras)
 if not CooldownFrame_OnUpdateModel_FCT_Orig then
     local orig_CooldownFrame_OnUpdateModel = CooldownFrame_OnUpdateModel
     CooldownFrame_OnUpdateModel_FCT_Orig = orig_CooldownFrame_OnUpdateModel
     function CooldownFrame_OnUpdateModel()
-        if this and this.reverse and this.stopping == 0 and this.start and this.duration and this.duration > 0 then
-            local finished = (GetTime() - this.start) / this.duration
-            if finished < 1.0 then
-                finished = 1.0 - finished
-                this:SetSequenceTime(0, finished * 1000)
+        if this and this.reverse then
+            if this.stopping == 0 and this.start and this.duration and this.duration > 0 then
+                local finished = (GetTime() - this.start) / this.duration
+                if finished < 1.0 then
+                    finished = 1 - finished
+                    local time = finished * 1000
+                    this:SetSequenceTime(0, time)
+                    return
+                end
+                this.stopping = 1
+                this:SetSequence(1)
+                this:SetSequenceTime(1, 0)
+                return
+            else
+                this:AdvanceTime()
                 return
             end
-            this.stopping = 1
-            this:SetSequence(1)
-            this:SetSequenceTime(1, 0)
-            return
         end
         if orig_CooldownFrame_OnUpdateModel then
             orig_CooldownFrame_OnUpdateModel()
@@ -221,9 +227,9 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.cooldown = CreateFrame("Model", name .. "CD", btn, "CooldownFrameTemplate")
     btn.cooldown:ClearAllPoints()
     btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-    btn.cooldown:SetWidth(size)
-    btn.cooldown:SetHeight(size)
-    btn.cooldown:SetScale(size / 36)
+    btn.cooldown:SetWidth(36)
+    btn.cooldown:SetHeight(36)
+    btn.cooldown:SetScale((size + 0.7) / 36)
     btn.cooldown.reverse = true
     btn.cooldown.noCooldownCount = true
     btn.cooldown:Hide()
@@ -349,9 +355,11 @@ function Auras:ApplyBuffSize(container, newSize)
         btn.border:SetWidth(newSize + 2)
         btn.border:SetHeight(newSize + 2)
         if btn.cooldown then
-            btn.cooldown:SetWidth(newSize)
-            btn.cooldown:SetHeight(newSize)
-            btn.cooldown:SetScale(newSize / 36)
+            btn.cooldown:ClearAllPoints()
+            btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+            btn.cooldown:SetWidth(36)
+            btn.cooldown:SetHeight(36)
+            btn.cooldown:SetScale((newSize + 0.7) / 36)
         end
         local row = math.floor((i - 1) / perRow)
         local col = (i - 1) % perRow
@@ -379,9 +387,11 @@ function Auras:ApplyDebuffSize(container, newSize)
         btn.border:SetWidth(newSize + 2)
         btn.border:SetHeight(newSize + 2)
         if btn.cooldown then
-            btn.cooldown:SetWidth(newSize)
-            btn.cooldown:SetHeight(newSize)
-            btn.cooldown:SetScale(newSize / 36)
+            btn.cooldown:ClearAllPoints()
+            btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+            btn.cooldown:SetWidth(36)
+            btn.cooldown:SetHeight(36)
+            btn.cooldown:SetScale((newSize + 0.7) / 36)
         end
         local row = math.floor((i - 1) / perRow)
         local col = (i - 1) % perRow
@@ -520,15 +530,12 @@ function Auras:UpdateContainer(container)
 
                         local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
 
-                        -- Cooldown model sweep: reset cleanly on spell change, timer refresh, or reassignment
+                        -- Cooldown model sweep: synchronize timing directly on every timed update (Luna behavior)
                         if hasTimer and showBuffSpin and btn.cooldown then
-                            if oldSpellId ~= spellId or not oldExp or math.abs(oldExp - effectiveExpiration) > 0.5 then
-                                CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                                btn.cooldown:Hide()
-                            end
+                            local start = effectiveExpiration - duration
+                            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
                             btn.cooldown.reverse = true
                             btn.cooldown:Show()
-                            CooldownFrame_SetTimer(btn.cooldown, effectiveExpiration - duration, duration, 1)
                         elseif btn.cooldown then
                             CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
                             btn.cooldown:Hide()
@@ -645,15 +652,12 @@ function Auras:UpdateContainer(container)
 
                         local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
 
-                        -- Cooldown model sweep: reset cleanly on spell change, timer refresh, or reassignment
+                        -- Cooldown model sweep: synchronize timing directly on every timed update (Luna behavior)
                         if hasTimer and showDebuffSpin and btn.cooldown then
-                            if oldSpellId ~= spellId or not oldExp or math.abs(oldExp - effectiveExpiration) > 0.5 then
-                                CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                                btn.cooldown:Hide()
-                            end
+                            local start = effectiveExpiration - duration
+                            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
                             btn.cooldown.reverse = true
                             btn.cooldown:Show()
-                            CooldownFrame_SetTimer(btn.cooldown, effectiveExpiration - duration, duration, 1)
                         elseif btn.cooldown then
                             CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
                             btn.cooldown:Hide()
