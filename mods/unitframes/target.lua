@@ -7,6 +7,12 @@ if not UF then return end
 
 local targetFrame = nil
 
+-- Public, read-only anchor contract for optional target-frame integrations.
+function FostercareTweaks.GetActiveTargetFrame()
+    if UF.enabled and UF:IsModernTarget() then return targetFrame end
+    return TargetFrame
+end
+
 local function UpdateHealth(frame)
     if not frame or not frame:IsShown() or not UnitExists("target") then return end
 

@@ -32,6 +32,7 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 
 ### 2. Unit Frames
 - **Modern Player & Target Frames**: Luna-inspired unit frames with 1px dark borders, class coloring, 2D portraits, and UnitXP SP3 authoritative health numbers.
+- **Optional Target Anchor API**: `FostercareTweaks.GetActiveTargetFrame()` returns the current target presentation for addons such as TWThreat.
 - **Modern 40-Player Raid Grid**: 8-subgroup compact grid with class colors, power bars, health deficits, dispel highlights, range fading, and raid icons.
 - **Interactive Raid Test Mode**: Toggle a full 40-player mock grid with `/ft testraid` to inspect and reposition raid frames anywhere on your screen.
 - **Dynamic Movable Frames**: Hold Shift+Ctrl to unlock and drag player, target, and raid frames with an alignment grid and coordinate persistence.
@@ -57,6 +58,7 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 - **Item Quality Borders**: Color-coded rarity borders across inventory bags, bank, character sheet, inspect window, and temporary weapon enchants.
 - **Equipment Comparison**: Side-by-side gear comparison tooltips when holding Shift.
 - **Native Vendor Values**: Displays item sell prices directly on tooltips via `C_Item.GetItemSellPrice` without external databases.
+- **Tooltip Coexistence**: Vendor values are added after Blizzard item tooltip methods; Bagnon can add holdings lines in either addon load order.
 
 ### 6. Chat & Social
 - **Hyperlink Handling & URL Copy**: Clickable web URLs with a modal copy dialog, CLINK resolution, and shift-clickable player names.
