@@ -67,9 +67,13 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 - **Timestamps & Mousewheel Scrolling**: Configurable chat timestamps and smooth mousewheel message history navigation.
 
 ### 7. General Tweaks
+- **Hide Default Cast Bar**: Suppresses only Blizzard's player cast bar while keeping its cast events active; custom cast bars are unaffected.
+- **Hide Stealth / Stance Bar**: Hides Blizzard's stance and shapeshift bar and restores it through the normal FrameXML update when disabled.
 - **Auto Dismount**: Instantly dismounts or cancels shapeshift forms when attempting to cast spells or interact with flight masters.
 - **Auto Stance**: Automatically switches to the required warrior or druid stance on ability activation.
 - **Error Suppression**: Optional silent Lua error suppression for clean gameplay sessions.
+
+Both bar options are in the **General** tab, default off, and apply without a UI reload. Former AutoBG preferences are not copied automatically because AutoBG saved one account-wide value while FostercareTweaks saves settings per character; set the desired value for each character here.
 
 ---
 

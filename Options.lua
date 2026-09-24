@@ -91,6 +91,14 @@ settings.okay:SetScript("OnClick", function()
                 FostercareTweaks_Config[title] = current_config[title]
                 if mod.category == T["Unit Frames"] then
                     unitFramesChanged = true
+                elseif mod.apply then
+                    local ok, err = pcall(mod.apply, mod, current_config[title] == 1)
+                    if not ok then
+                        reload = true
+                        if DEFAULT_CHAT_FRAME then
+                            DEFAULT_CHAT_FRAME:AddMessage("|cffff2020[FostercareTweaks Error]|r Failed to apply '" .. tostring(title) .. "': " .. tostring(err), 1, 0.3, 0.3)
+                        end
+                    end
                 else
                     reload = true
                 end
@@ -207,7 +215,7 @@ local function CreateTabButton(id, titleText)
     return tab
 end
 
-local tab1 = CreateTabButton(1, T["Tweaks"])
+local tab1 = CreateTabButton(1, T["General"])
 tab1:SetPoint("TOPLEFT", settings, "TOPLEFT", 18, -36)
 
 local tab2 = CreateTabButton(2, T["Unit Frames"])

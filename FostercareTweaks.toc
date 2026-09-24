@@ -64,6 +64,8 @@ mods\chat-history.lua
 mods\social-colors.lua
 
 # General & Gameplay Modules
+mods\hide-default-castbar.lua
+mods\hide-stancebar.lua
 mods\auto-dismount.lua
 mods\auto-stance.lua
 mods\blue-shaman.lua
