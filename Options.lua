@@ -164,7 +164,7 @@ local function SelectTab(tabId)
         if settings.raidPage then settings.raidPage:Hide() end
         if settings.scrollframe then settings.scrollframe:Show() end
         if settings.container then settings.container:Show() end
-        if settings.cancel then settings.cancel:Show() end
+        if settings.cancel then settings.cancel:Show(); settings.cancel:SetText(CANCEL) end
         if settings.okay then settings.okay:Show() end
         if settings.defaultsBtn then settings.defaultsBtn:Show() end
         settings:load()
@@ -172,8 +172,8 @@ local function SelectTab(tabId)
         if settings.scrollframe then settings.scrollframe:Hide() end
         if settings.container then settings.container:Hide() end
         if settings.raidPage then settings.raidPage:Hide() end
-        if settings.cancel then settings.cancel:Show() end
-        if settings.okay then settings.okay:Show() end
+        if settings.cancel then settings.cancel:Show(); settings.cancel:SetText(CLOSE) end
+        if settings.okay then settings.okay:Hide() end
         if settings.defaultsBtn then settings.defaultsBtn:Hide() end
         if settings.unitPage then
             settings.unitPage:Show()
@@ -185,8 +185,8 @@ local function SelectTab(tabId)
         if settings.scrollframe then settings.scrollframe:Hide() end
         if settings.container then settings.container:Hide() end
         if settings.unitPage then settings.unitPage:Hide() end
-        if settings.cancel then settings.cancel:Show() end
-        if settings.okay then settings.okay:Show() end
+        if settings.cancel then settings.cancel:Show(); settings.cancel:SetText(CLOSE) end
+        if settings.okay then settings.okay:Hide() end
         if settings.defaultsBtn then settings.defaultsBtn:Hide() end
         if settings.raidPage then
             settings.raidPage:Show()
@@ -320,40 +320,54 @@ settings.unitPage = unitPage
 local unitContainer = CreateFrame("Frame", "FCTweaksUnitSettingsContainer", unitPage)
 unitContainer:SetPoint("TOPLEFT", unitPage, "TOPLEFT", 0, 0)
 unitContainer:SetWidth(max_width - 48)
-unitContainer:SetHeight(580)
+unitContainer:SetHeight(840)
 unitPage:SetScrollChild(unitContainer)
 
--- Box 1: Modern Unit Frames
-local ufBox = CreateSectionBox(unitContainer, T["Modern Unit Frames"], 230)
-ufBox:SetPoint("TOPLEFT", unitContainer, "TOPLEFT", 22, -10)
-ufBox:SetPoint("TOPRIGHT", unitContainer, "TOPRIGHT", -22, -10)
+-- Choose each presentation explicitly; classic Blizzard art is the default.
+local stdBox = CreateSectionBox(unitContainer, T["Standard Blizzard Frames"], 112)
+stdBox:SetPoint("TOPLEFT", unitContainer, "TOPLEFT", 22, -10)
+stdBox:SetPoint("TOPRIGHT", unitContainer, "TOPRIGHT", -22, -10)
+local stdPlayerCB = CreateCheckButton("FCTweaksStdPlayerCB", "Standard Player Frame", "Use the original Blizzard player frame.", stdBox, 16, -24)
+local stdTargetCB = CreateCheckButton("FCTweaksStdTargetCB", "Standard Target Frame", "Use the original Blizzard target frame.", stdBox, 16, -48)
+local stdToTCB = CreateCheckButton("FCTweaksStdToTCB", "Standard Target's Target", "Use the original Blizzard target-of-target frame.", stdBox, 16, -72)
+local improvedStandardAurasCB = CreateCheckButton("FCTweaksImpStdAurasCB", T["Improved Standard Auras"], "Add enhanced player and target buffs/debuffs while retaining Blizzard frame artwork. Hold Ctrl+Shift to move each aura area.", stdBox, 230, -24)
+local stdHint = stdBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+stdHint:SetPoint("TOPLEFT", stdBox, "TOPLEFT", 240, -56)
+stdHint:SetWidth(185); stdHint:SetJustifyH("LEFT")
+stdHint:SetText("Classic appearance, enhanced auras. Settings apply immediately.")
 
--- Column 1
-local modernPlayerCB  = CreateCheckButton("FCTweaksModPlayerCB",  T["Modern Player Frame"],       T["Enable the modern FostercareTweaks player unit frame instead of the default Blizzard frame."], ufBox, 16, -24)
-local modernTargetCB  = CreateCheckButton("FCTweaksModTargetCB",  T["Modern Target Frame"],       T["Enable the modern FostercareTweaks target unit frame instead of the default Blizzard frame."], ufBox, 16, -48)
-local modernToTCB     = CreateCheckButton("FCTweaksModToTCB",     T["Modern Target's Target"],   T["Enable the modern FostercareTweaks Target of Target frame instead of the standard frame."], ufBox, 16, -72)
-local moveUFCB        = CreateCheckButton("FCTweaksMoveUFCB",     T["Movable Unit Frames"],       T["Player and Target unit frames can be moved while <Shift> and <Ctrl> are pressed together."], ufBox, 16, -96)
-local classColorCB    = CreateCheckButton("FCTweaksClassColorCB", T["Unit Frame Class Colors"],   T["Adds class colors to the player, target and party unit frames."], ufBox, 16, -120)
-local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB",  T["Unit Frame Class Portraits"],T["Replace unitframe portraits with class icons."], ufBox, 16, -144)
+local ufBox = CreateSectionBox(unitContainer, T["Modern Unit Frames"], 154)
+ufBox:SetPoint("TOPLEFT", stdBox, "BOTTOMLEFT", 0, -14)
+ufBox:SetPoint("TOPRIGHT", stdBox, "BOTTOMRIGHT", 0, -14)
+local modernPlayerCB = CreateCheckButton("FCTweaksModPlayerCB", T["Modern Player Frame"], "Replace the Blizzard player frame with a modern frame.", ufBox, 16, -24)
+local modernTargetCB = CreateCheckButton("FCTweaksModTargetCB", T["Modern Target Frame"], "Replace the Blizzard target frame with a modern frame.", ufBox, 16, -48)
+local modernToTCB = CreateCheckButton("FCTweaksModToTCB", T["Modern Target's Target"], "Replace the Blizzard target-of-target frame with a modern frame.", ufBox, 16, -72)
+local ufScaleSlider = CreateSlider("FCTweaksUFScaleSlider", T["Modern Frame Scale"], 0.5, 2.0, 0.05, "x", ufBox, 16, -122, 416)
 
--- Column 2
-local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB",  T["Real Health Numbers"],       T["Shows real health numbers on player, pet, and target unit frames."], ufBox, 230, -24)
-local energyTickCB    = CreateCheckButton("FCTweaksEnergyTickCB", T["Show Energy Ticks"],         T["Show energy and mana ticks on the player unit frame."], ufBox, 230, -48)
-local enemyCastbarCB  = CreateCheckButton("FCTweaksEnemyCastCB",  T["Enemy Castbars"],            T["Shows an enemy castbar on target unit frame."], ufBox, 230, -72)
-local uninterruptCB   = CreateCheckButton("FCTweaksUninterruptCB",T["Uninterruptible Castbars"],  T["Changes castbar color to silver for spells that cannot be interrupted (target and nameplates)."], ufBox, 230, -96)
-local debuffTimerCB   = CreateCheckButton("FCTweaksDebuffTimerCB",T["Debuff Timer"],              T["Show debuff durations on the target unit frame."], ufBox, 230, -120)
-local improvedStandardAurasCB = CreateCheckButton("FCTweaksImpStdAurasCB", T["Improved Standard Auras"], T["Display enhanced buffs and debuffs with timers, spirals and dispel borders on standard Blizzard frames."], ufBox, 230, -144)
-
--- Slider
-local ufScaleSlider   = CreateSlider("FCTweaksUFScaleSlider",     T["Modern Frame Scale"], 0.5, 2.0, 0.05, "x", ufBox, 16, -194, 416)
+local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 184)
+sharedBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
+sharedBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
+local moveUFCB = CreateCheckButton("FCTweaksMoveUFCB", T["Movable Unit Frames"], "Hold Ctrl+Shift to move frames and separate buff/debuff areas.", sharedBox, 16, -24)
+local classColorCB = CreateCheckButton("FCTweaksClassColorCB", T["Unit Frame Class Colors"], "Class colors on standard player, target and party frames.", sharedBox, 16, -48)
+local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", T["Unit Frame Class Portraits"], "Class portraits on standard Blizzard frames.", sharedBox, 16, -72)
+local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB", T["Real Health Numbers"], "Real health values on standard unit frames.", sharedBox, 230, -24)
+local energyTickCB = CreateCheckButton("FCTweaksEnergyTickCB", T["Show Energy Ticks"], "Resource tick indicators on the active player frame.", sharedBox, 230, -48)
+local enemyCastbarCB = CreateCheckButton("FCTweaksEnemyCastCB", T["Enemy Castbars"], "Castbar on the active target frame.", sharedBox, 230, -72)
+local uninterruptCB = CreateCheckButton("FCTweaksUninterruptCB", T["Uninterruptible Castbars"], "Highlight uninterruptible target/nameplate casts.", sharedBox, 16, -96)
+local debuffTimerCB = CreateCheckButton("FCTweaksDebuffTimerCB", T["Debuff Timer"], "Timers on original target debuff icons when Improved Standard Auras is disabled.", sharedBox, 230, -96)
+local reloadFrameFeaturesBtn = CreateFrame("Button", "FCTweaksReloadFrameFeaturesBtn", sharedBox, "UIPanelButtonTemplate")
+reloadFrameFeaturesBtn:SetPoint("TOPLEFT", sharedBox, "TOPLEFT", 16, -138)
+reloadFrameFeaturesBtn:SetWidth(200); reloadFrameFeaturesBtn:SetHeight(22)
+reloadFrameFeaturesBtn:SetText("Apply Features / Reload UI")
+reloadFrameFeaturesBtn:SetScript("OnClick", function() ReloadUI() end)
 
 -- Box 2: Buff Settings
 local buffBox = CreateSectionBox(unitContainer, T["Buff Settings"], 130)
-buffBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
-buffBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
+buffBox:SetPoint("TOPLEFT", sharedBox, "BOTTOMLEFT", 0, -14)
+buffBox:SetPoint("TOPRIGHT", sharedBox, "BOTTOMRIGHT", 0, -14)
 
-local showBuffsPlayerCB = CreateCheckButton("FCTweaksShowBuffsPlayerCB", T["Show Player Buffs"],         T["Display buff icons above the modern player unit frame."], buffBox, 16, -24)
-local showBuffsTargetCB = CreateCheckButton("FCTweaksShowBuffsTargetCB", T["Show Target Buffs"],         T["Display buff icons above the modern target unit frame."], buffBox, 16, -48)
+local showBuffsPlayerCB = CreateCheckButton("FCTweaksShowBuffsPlayerCB", T["Show Player Buffs"],         T["Display buff icons on the active player unit frame."], buffBox, 16, -24)
+local showBuffsTargetCB = CreateCheckButton("FCTweaksShowBuffsTargetCB", T["Show Target Buffs"],         T["Display buff icons on the active target unit frame."], buffBox, 16, -48)
 local buffSpinCB        = CreateCheckButton("FCTweaksBuffSpinCB",        T["Show Buff Cooldown Spiral"], T["Display Luna radial clock animation on active buffs."], buffBox, 230, -24)
 local buffTextCB        = CreateCheckButton("FCTweaksBuffTextCB",        T["Show Buff Duration Text"],   T["Display remaining cooldown countdown numbers on buffs."], buffBox, 230, -48)
 
@@ -364,8 +378,8 @@ local debuffBox = CreateSectionBox(unitContainer, T["Debuff Settings"], 154)
 debuffBox:SetPoint("TOPLEFT", buffBox, "BOTTOMLEFT", 0, -14)
 debuffBox:SetPoint("TOPRIGHT", buffBox, "BOTTOMRIGHT", 0, -14)
 
-local showDebuffsPlayerCB = CreateCheckButton("FCTweaksShowDebuffsPlayerCB", T["Show Player Debuffs"],            T["Display debuff icons on the modern player unit frame."], debuffBox, 16, -24)
-local showDebuffsTargetCB = CreateCheckButton("FCTweaksShowDebuffsTargetCB", T["Show Target Debuffs"],            T["Display debuff icons below the modern target unit frame."], debuffBox, 16, -48)
+local showDebuffsPlayerCB = CreateCheckButton("FCTweaksShowDebuffsPlayerCB", T["Show Player Debuffs"],            T["Display debuff icons on the active player unit frame."], debuffBox, 16, -24)
+local showDebuffsTargetCB = CreateCheckButton("FCTweaksShowDebuffsTargetCB", T["Show Target Debuffs"],            T["Display debuff icons on the active target unit frame."], debuffBox, 16, -48)
 local colorDispelCB       = CreateCheckButton("FCTweaksColorDispelCB",       T["Color Debuffs by Dispel Type"],    T["Color debuff borders according to dispel type (Magic, Curse, Disease, Poison) like Luna."], debuffBox, 16, -72)
 
 local debuffSpinCB        = CreateCheckButton("FCTweaksDebuffSpinCB",        T["Show Debuff Cooldown Spiral"],    T["Display Luna radial clock animation on active debuffs."], debuffBox, 230, -24)
@@ -403,6 +417,9 @@ local function OnUnitCheckboxClicked()
     local modPlayerVal = modernPlayerCB:GetChecked() and 1 or 0
     local modTargetVal = modernTargetCB:GetChecked() and 1 or 0
     local modToTVal    = modernToTCB:GetChecked() and 1 or 0
+    stdPlayerCB:SetChecked(modPlayerVal == 0)
+    stdTargetCB:SetChecked(modTargetVal == 0)
+    stdToTCB:SetChecked(modToTVal == 0)
 
     local stdPlayerVal = (modPlayerVal == 1) and 0 or 1
     local stdTargetVal = (modTargetVal == 1) and 0 or 1
@@ -491,6 +508,15 @@ local function OnUnitCheckboxClicked()
     end
 end
 
+local function OnStandardStyleClicked()
+    if this == stdPlayerCB then modernPlayerCB:SetChecked(not stdPlayerCB:GetChecked()) end
+    if this == stdTargetCB then modernTargetCB:SetChecked(not stdTargetCB:GetChecked()) end
+    if this == stdToTCB then modernToTCB:SetChecked(not stdToTCB:GetChecked()) end
+    OnUnitCheckboxClicked()
+end
+stdPlayerCB:SetScript("OnClick", OnStandardStyleClicked)
+stdTargetCB:SetScript("OnClick", OnStandardStyleClicked)
+stdToTCB:SetScript("OnClick", OnStandardStyleClicked)
 modernPlayerCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernTargetCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernToTCB:SetScript("OnClick", OnUnitCheckboxClicked)
@@ -532,6 +558,9 @@ buffSizeSlider:SetScript("OnValueChanged", function()
         if UF.targetFrame and UF.targetFrame.auraContainer then
             UF.Auras:ApplyBuffSize(UF.targetFrame.auraContainer, val)
         end
+        if UF.blizzPlayerAuras then
+            UF.Auras:ApplyBuffSize(UF.blizzPlayerAuras, val)
+        end
         if UF.blizzTargetAuras then
             UF.Auras:ApplyBuffSize(UF.blizzTargetAuras, val)
         end
@@ -557,6 +586,9 @@ debuffSizeSlider:SetScript("OnValueChanged", function()
         end
         if UF.targetFrame and UF.targetFrame.auraContainer then
             UF.Auras:ApplyDebuffSize(UF.targetFrame.auraContainer, val)
+        end
+        if UF.blizzPlayerAuras then
+            UF.Auras:ApplyDebuffSize(UF.blizzPlayerAuras, val)
         end
         if UF.blizzTargetAuras then
             UF.Auras:ApplyDebuffSize(UF.blizzTargetAuras, val)
@@ -584,9 +616,9 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     FostercareTweaks_Config[T["Modern Player Frame"]] = 0
     FostercareTweaks_Config[T["Modern Target Frame"]] = 0
     FostercareTweaks_Config[T["Modern Target's Target"]] = 0
-    FostercareTweaks_Config[T["Use Standard Player Frame"]] = 0
-    FostercareTweaks_Config[T["Use Standard Target Frame"]] = 0
-    FostercareTweaks_Config[T["Use Standard Target's Target"]] = 0
+    FostercareTweaks_Config[T["Use Standard Player Frame"]] = 1
+    FostercareTweaks_Config[T["Use Standard Target Frame"]] = 1
+    FostercareTweaks_Config[T["Use Standard Target's Target"]] = 1
     FostercareTweaks_Config[T["Improved Standard Auras"]] = 1
 
     FostercareTweaks_Config[T["Movable Unit Frames"]] = 1
@@ -612,9 +644,9 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Modern Player Frame"]] = 0
     current_config[T["Modern Target Frame"]] = 0
     current_config[T["Modern Target's Target"]] = 0
-    current_config[T["Use Standard Player Frame"]] = 0
-    current_config[T["Use Standard Target Frame"]] = 0
-    current_config[T["Use Standard Target's Target"]] = 0
+    current_config[T["Use Standard Player Frame"]] = 1
+    current_config[T["Use Standard Target Frame"]] = 1
+    current_config[T["Use Standard Target's Target"]] = 1
     current_config[T["Improved Standard Auras"]] = 1
 
     current_config[T["Movable Unit Frames"]] = 1
@@ -662,6 +694,10 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
                 UF.Auras:ApplyBuffSize(UF.targetFrame.auraContainer, 20)
                 UF.Auras:ApplyDebuffSize(UF.targetFrame.auraContainer, 20)
             end
+            if UF.blizzPlayerAuras then
+                UF.Auras:ApplyBuffSize(UF.blizzPlayerAuras, 20)
+                UF.Auras:ApplyDebuffSize(UF.blizzPlayerAuras, 20)
+            end
             if UF.blizzTargetAuras then
                 UF.Auras:ApplyBuffSize(UF.blizzTargetAuras, 20)
                 UF.Auras:ApplyDebuffSize(UF.blizzTargetAuras, 20)
@@ -680,6 +716,9 @@ function unitPage:RefreshValues()
     modernPlayerCB:SetChecked(UF:IsModernPlayer() and true or nil)
     modernTargetCB:SetChecked(UF:IsModernTarget() and true or nil)
     modernToTCB:SetChecked(UF:IsModernToT() and true or nil)
+    stdPlayerCB:SetChecked(not UF:IsModernPlayer())
+    stdTargetCB:SetChecked(not UF:IsModernTarget())
+    stdToTCB:SetChecked(not UF:IsModernToT())
     improvedStandardAurasCB:SetChecked(UF:IsImprovedStandardAuras() and true or nil)
 
     local cfg = FostercareTweaks_Config or {}
@@ -737,7 +776,7 @@ settings.raidPage = raidPage
 local raidContainer = CreateFrame("Frame", "FCTweaksRaidSettingsContainer", raidPage)
 raidContainer:SetPoint("TOPLEFT", raidPage, "TOPLEFT", 0, 0)
 raidContainer:SetWidth(max_width - 48)
-raidContainer:SetHeight(400)
+raidContainer:SetHeight(540)
 raidPage:SetScrollChild(raidContainer)
 
 -- Box 1: Raid & Group Frames
@@ -782,10 +821,20 @@ local aggroCB  = CreateCheckButton("FCTweaksRaidAggroCB",  T["Show Aggro Indicat
 local hotCB    = CreateCheckButton("FCTweaksRaidHoTCB",    T["Show HoT Indicator"],   T["Display a HoT tracking square on the top-left of friendly frames (Renew, Rejuvenation, Regrowth, PW:S, BoP)."], rBox2, 230, -24)
 local debuffCB = CreateCheckButton("FCTweaksRaidDebuffCB", T["Show Debuff Badges"],   T["Display debuff icon badges on the bottom-right of group frames with dispel-colored borders."], rBox2, 16, -48)
 
+local raidBuffBox = CreateSectionBox(raidContainer, "Raid Buffs", 128)
+raidBuffBox:SetPoint("TOPLEFT", rBox2, "BOTTOMLEFT", 0, -14)
+raidBuffBox:SetPoint("TOPRIGHT", rBox2, "BOTTOMRIGHT", 0, -14)
+local raidBuffCB = CreateCheckButton("FCTweaksRaidBuffCB", "Show Raid Buffs", "Show several buffs in a separate row below each group member; the row does not cover health text.", raidBuffBox, 16, -24)
+local raidBuffHint = raidBuffBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+raidBuffHint:SetPoint("TOPLEFT", raidBuffBox, "TOPLEFT", 24, -52)
+raidBuffHint:SetText("The number shown also depends on frame width and icon size.")
+local raidBuffCountSlider = CreateSlider("FCTweaksRaidBuffCountSlider", "Buffs Per Player", 1, 8, 1, "", raidBuffBox, 16, -82, 196)
+local raidBuffSizeSlider = CreateSlider("FCTweaksRaidBuffSizeSlider", "Raid Buff Size", 8, 18, 1, " px", raidBuffBox, 236, -82, 196)
+
 -- Box 3: Dimensions & Spacing
 local rBox3 = CreateSectionBox(raidContainer, T["Dimensions & Spacing"], 166)
-rBox3:SetPoint("TOPLEFT", rBox2, "BOTTOMLEFT", 0, -14)
-rBox3:SetPoint("TOPRIGHT", rBox2, "BOTTOMRIGHT", 0, -14)
+rBox3:SetPoint("TOPLEFT", raidBuffBox, "BOTTOMLEFT", 0, -14)
+rBox3:SetPoint("TOPRIGHT", raidBuffBox, "BOTTOMRIGHT", 0, -14)
 
 local widthSlider    = CreateSlider("FCTweaksRaidWidthSlider",    T["Width"],              40,  120, 1,    " px", rBox3, 16, -34,  196)
 local heightSlider   = CreateSlider("FCTweaksRaidHeightSlider",   T["Height"],             20,  60,  1,    " px", rBox3, 236, -34, 196)
@@ -809,6 +858,23 @@ testBtn:SetText(T["Toggle Test Grid (40)"])
 if testBtn:GetFontString() then testBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
 
 local isRaidUpdating = false
+local function ApplyRaidBuffSettings()
+    if isRaidUpdating then return end
+    local UF = FostercareTweaks.UnitFrames
+    if not UF then return end
+    local cfg = FostercareTweaks_Config
+    cfg.overwrites = cfg.overwrites or {}
+    cfg["Show Raid Buffs"] = raidBuffCB:GetChecked() and 1 or 0
+    cfg.overwrites.raid_buff_count = math.floor(raidBuffCountSlider:GetValue() + 0.5)
+    cfg.overwrites.raid_buff_size = math.floor(raidBuffSizeSlider:GetValue() + 0.5)
+    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. cfg.overwrites.raid_buff_count)
+    raidBuffSizeSlider.label:SetText("Raid Buff Size: " .. cfg.overwrites.raid_buff_size .. " px")
+    UF:ApplyGroupDimensions()
+    UF:UpdateAllRaidFrames()
+end
+raidBuffCB:SetScript("OnClick", ApplyRaidBuffSettings)
+raidBuffCountSlider:SetScript("OnValueChanged", ApplyRaidBuffSettings)
+raidBuffSizeSlider:SetScript("OnValueChanged", ApplyRaidBuffSettings)
 
 local function UpdateRaidHealthFormatButtons(fmt)
     if fmt == "percent" then
@@ -907,6 +973,12 @@ end)
 resetBtn:SetScript("OnClick", function()
     isRaidUpdating = true
     enableCB:SetChecked(true)
+    raidBuffCB:SetChecked(true)
+    raidBuffCountSlider:SetValue(4)
+    raidBuffSizeSlider:SetValue(10)
+    FostercareTweaks_Config["Show Raid Buffs"] = 1
+    FostercareTweaks_Config.overwrites.raid_buff_count = 4
+    FostercareTweaks_Config.overwrites.raid_buff_size = 10
     aggroCB:SetChecked(true)
     hotCB:SetChecked(true)
     debuffCB:SetChecked(true)
@@ -956,6 +1028,12 @@ function raidPage:RefreshValues()
 
     isRaidUpdating = true
     enableCB:SetChecked(dims.enabled)
+    local buffsEnabled, buffCount, buffSize = UF:GetRaidBuffSettings()
+    raidBuffCB:SetChecked(buffsEnabled)
+    raidBuffCountSlider:SetValue(buffCount)
+    raidBuffSizeSlider:SetValue(buffSize)
+    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. buffCount)
+    raidBuffSizeSlider.label:SetText("Raid Buff Size: " .. buffSize .. " px")
     widthSlider:SetValue(dims.width)
     heightSlider:SetValue(dims.height)
     scaleSlider:SetValue(dims.scale)

@@ -1,15 +1,15 @@
 # FostercareTweaks
 
-Recommended ClassicAPI version: **v1.15.15+**. The existing enforced addon minimum remains unchanged because this update introduces no required new API calls. Native equipment-set action buttons require v1.15.15; after updating the DLL, fully restart the game client.
+Required ClassicAPI version: **v1.15.15+**. This is the maintainer's published support baseline for this addon suite; it is not a claim that every API used here was introduced in v1.15.15. After replacing ClassicAPI.dll, fully restart WoW; `/reload` cannot reload a DLL.
 
 [![Interface](https://img.shields.io/badge/Interface-1.12.1%20%28Build%205875%29-blue.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![Version](https://img.shields.io/badge/Version-3.1.0-brightgreen.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![Engine](https://img.shields.io/badge/Engine-ClassicAPI%20%7C%20SuperWoW%20%7C%20UnitXP%20SP3-orange.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A high-performance, modular UI modernization and quality-of-life suite engineered natively for the **World of Warcraft 1.12.1 Enhanced Client Stack** (`ClassicAPI v1.15.14+`, `SuperWoW v2.2+`, and optional `UnitXP SP3`).
+A modular UI and quality-of-life addon for the **World of Warcraft 1.12.1 Enhanced Client Stack** (`ClassicAPI v1.15.15+`, `SuperWoW v2.2+`, and optional `UnitXP SP3`).
 
-FostercareTweaks consolidates, streamlines, and modernizes features formerly split across separate tweak packs into a cohesive, standalone package. All legacy 2006 workarounds—such as active target-swapping loops, 330 KB static price tables, hidden tooltip text scraping, and destructive global API overwrites—have been replaced with native engine capabilities, structured APIs, and non-intrusive event pipelines.
+FostercareTweaks combines optional unit frames, enhancements to the original Blizzard frames, action bars, maps, tooltips and automation. It uses the enhanced client APIs where they provide the relevant state.
 
 ---
 
@@ -18,8 +18,8 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 - **Modern Unit Frames (Player, Target & Raid)**: Native implementation inspired by Luna Unit Frames, styled with a clean 1px dark border, custom texture-clipped status bars (preventing stretching or shearing), class coloring, and UnitXP SP3 authoritative health telemetry.
 - **40-Player Compact Raid Grid**: Full 8-group column layout (Groups 1–8) with compact Luna geometry (64×34px buttons), class-colored health, power bars, dead/ghost/offline indicators, health deficit formatting (`-1.2k`), dispel border coloring (Magic blue, Curse purple, Disease orange, Poison green via structured `C_UnitAuras`), range fading via native `UnitInRange`, leader/assistant/target icons, and interactive `/ft testraid` preview.
 - **Floating Action Bar Polish**: Eliminated Blizzard's max-level 7px grey stone bar (`MainMenuBarMaxLevelBar`) at level 60, ensuring seamless floating action bars without interfering with reputation tracking.
-- **Movable Frames with Session Persistence**: Drag-and-drop repositioning with an alignment grid for Player, Target, and Raid frames (unlocked by holding `Ctrl+Shift`), with coordinates persisted in SavedVariables across sessions.
-- **Zero-GC Table Cycling**: Replaced legacy 2006 table nil-wipes with ClassicAPI `table.wipe(t)` across all hot paths for zero runtime memory allocations.
+- **Movable Frames with Saved Positions**: Drag-and-drop repositioning with an alignment grid for Player, Target, and Raid frames (unlocked by holding `Ctrl+Shift`), with coordinates persisted in SavedVariables across sessions.
+- **Shared Aura Updates**: Unit frame aura duration text uses a shared native timer; range checks use a separate native timer. No measured performance guarantee is implied.
 
 ---
 
@@ -33,6 +33,10 @@ FostercareTweaks consolidates, streamlines, and modernizes features formerly spl
 - **Keybind Centering**: Horizontally centered right-side vertical action bars for streamlined ergonomics.
 
 ### 2. Unit Frames
+- **Standard Blizzard Frames**: Separate player, target and target-of-target choices retain the original artwork. Standard frames are the default for new users; existing choices are preserved.
+- **Improved Standard Auras**: Enhanced player/target buffs and debuffs with stack counts, accurate aura tooltips, optional duration text/sweeps and dispel borders. Missing remote expiration remains unknown. The global Blizzard buff strip is retained.
+- **Independent Aura Movers**: Hold Ctrl+Shift to move a frame or its separate buff/debuff areas. Saved aura positions follow their owning frame and are not reset by aura updates.
+- **Multiple Raid Buffs**: Four buffs by default in a reserved row below each unit. Set 1–8 buffs and 8–18 px icons under Raid Frames; frame width limits how many fit. Buff rows add vertical space without covering health/name text.
 - **Modern Player & Target Frames**: Luna-inspired unit frames with 1px dark borders, class coloring, 2D portraits, and UnitXP SP3 authoritative health numbers.
 - **Optional Target Anchor API**: `FostercareTweaks.GetActiveTargetFrame()` returns the current target presentation for addons such as TWThreat.
 - **Modern 40-Player Raid Grid**: 8-subgroup compact grid with class colors, power bars, health deficits, dispel highlights, range fading, and raid icons.
@@ -90,7 +94,7 @@ Access settings at any time:
 
 | Key Combination | Context | Action |
 | :--- | :--- | :--- |
-| `Shift` + `Ctrl` + Drag | Player / Target / Raid Frames | Unlock and drag unit frames (shows alignment grid, saves position). |
+| `Shift` + `Ctrl` + Drag | Player / Target / Raid Frames and aura areas | Unlock drag handles and save positions. |
 | `Shift` + `Ctrl` + Drag | Bag Bar / Micro Menu | Reposition reduced action bar panels. |
 | `Shift` + Hover Item | Bag / Inventory | Open side-by-side equipment comparison tooltip. |
 | `Ctrl` + Mousewheel | World Map Window | Adjust world map scale. |
@@ -104,7 +108,7 @@ Access settings at any time:
 
 | Component | Status | Purpose |
 | :--- | :--- | :--- |
-| **ClassicAPI** | `v1.15.12+` (Mandatory) | Modern C++ namespaces (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_Timer`), `hooksecurefunc`, `UnitInRange`, `table.wipe`, and hardware timers. |
+| **ClassicAPI** | `v1.15.15+` (Mandatory) | Modern C++ namespaces (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_Timer`), `hooksecurefunc`, `UnitInRange`, `table.wipe`, and hardware timers. |
 | **SuperWoW** | `v2.2+` (Mandatory) | Extended combat events (`UNIT_CASTEVENT`), GUID queries, `SetMouseoverUnit`, and combat inspection. |
 | **UnitXP SP3** | `v90+` (Optional) | Authoritative unit health values via `UnitXP("health", unit)`. |
 
@@ -120,4 +124,22 @@ Access settings at any time:
 3. Ensure both `ClassicAPI.dll` and `SuperWoW.dll` are enabled in your client loader.
 4. Launch the game and type `/ft` to configure your preferred modules.
 
-ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from equipped-item/reagent-use tracking. Existing addon dependency minimums remain unchanged; no native-set import or duplicate WEAR_EQUIPMENT_SET handler is added. Verify normal spell/item actions and a ClassicAPI equipment-set action in-game after updating the DLL and restarting WoW.
+ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from equipped-item/reagent-use tracking. The published support minimum is v1.15.15+; no native-set import or duplicate WEAR_EQUIPMENT_SET handler is added. Verify normal spell/item actions and a ClassicAPI equipment-set action in-game after updating the DLL and restarting WoW.
+
+## Frame settings and testing
+
+Open `/ft uf`. Standard Blizzard Frames and Modern Unit Frames have separate
+sections; each unit can use only one presentation. Buff/debuff controls apply to
+the active player/target presentation. Presentation and aura settings save live;
+Close does not undo them. The Shared Frame Features reload button applies modules
+that are enabled at login, such as health numbers, class portraits and energy ticks.
+
+Open `/ft raid` for raid buff count/size, row dimensions, spacing and scale.
+Use `/ft testraid` to preview the full grid. The old HoT corner is a separate
+indicator, not a replacement for the multiple-buff row. Modern player/target
+scale does not change raid scale.
+
+After `/reload`, test dragging, buff removal, own-debuff filtering and changing
+raid dimensions at your actual UI scale. Headless tests do not verify rendering.
+Run `python -B tests/test_frames.py <directory-containing-lupa>` for Lua 5.1
+mock regressions. See [frame review](docs/FRAME_REVIEW_2026-09-27.md).

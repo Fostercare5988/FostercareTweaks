@@ -1,4 +1,5 @@
 ## Interface: 11200
+## X-ClassicAPI-Min-Version: 1.15.15
 ## Title: FostercareTweaks
 ## Notes: A unified, modernized collection of tweaks and enhancements for the Enhanced 1.12.1 Client Stack (ClassicAPI, SuperWoW, UnitXP).
 ## Author: Fostercare
@@ -22,6 +23,7 @@ mods\reduced-actionbar-bags.lua
 mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
+mods\move-unitframes.lua
 mods\unitframes\core.lua
 mods\unitframes\auras.lua
 mods\unitframes\player.lua
@@ -31,7 +33,6 @@ mods\unitframes\raid.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
-mods\move-unitframes.lua
 mods\target-castbar.lua
 mods\castbar-uninterruptible.lua
 mods\target-debufftimer.lua

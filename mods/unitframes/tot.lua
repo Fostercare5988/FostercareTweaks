@@ -295,6 +295,7 @@ function UF:EnableToTFrame()
         -- Auras: 4 compact debuffs below ToT frame
         if UF.Auras and UF.Auras.CreateAuraContainer then
             totFrame.auraContainer = UF.Auras:CreateAuraContainer(totFrame, "targettarget", 0, 4, {
+                moveKey = "modern_targettarget",
                 size = 14,
                 spacing = 2,
                 perRow = 4,

@@ -2,14 +2,14 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.15.14+ & SuperWoW v2.2+)
-local MIN_CLASSIC_API = 11514
+-- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.15.15+ & SuperWoW v2.2+)
+local MIN_CLASSIC_API = 11515
 
-if not (CLASSIC_API_VERSION and SUPERWOW_VERSION) or
-   (type(CLASSIC_API_VERSION) == "number" and CLASSIC_API_VERSION < MIN_CLASSIC_API) then
+if type(CLASSIC_API_VERSION) ~= "number" or not SUPERWOW_VERSION or
+   CLASSIC_API_VERSION < MIN_CLASSIC_API then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.15.14+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.15.15+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -28,7 +28,7 @@ end
 
 FostercareTweaks.mods = FostercareTweaks.mods or {}
 FostercareTweaks.overwrites = FostercareTweaks.overwrites or {}
-FostercareTweaks.version = "3.0.0"
+FostercareTweaks.version = "3.1.0"
 
 -- Canonical English string pass-through and class token dictionary
 FostercareTweaks.T = setmetatable({}, {

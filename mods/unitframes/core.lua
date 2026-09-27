@@ -378,7 +378,6 @@ function UF:ApplyScale(scale)
     if UF.playerFrame then UF.playerFrame:SetScale(scale) end
     if UF.targetFrame then UF.targetFrame:SetScale(scale) end
     if UF.totFrame then UF.totFrame:SetScale(scale) end
-    if UF.raidFrame then UF.raidFrame:SetScale(scale) end
 end
 
 -- Visual Backdrop Configuration (Luna-style solid black border and fill)
@@ -791,6 +790,9 @@ function UF:CreateUnitFrame(unit, name, parent)
     -- Draggable support: dynamically enabled by mods/move-unitframes.lua when Ctrl+Shift are held
     frame:SetMovable(true)
 
+    if FostercareTweaks.RegisterFrameMover then
+        FostercareTweaks.RegisterFrameMover(frame, unit, unit == "player" and "Player" or (unit == "targettarget" and "Target of Target" or "Target"))
+    end
     table.insert(UF.frames, frame)
     return frame
 end
@@ -909,7 +911,6 @@ function UF:SuppressPartyFrames()
         local pf = _G["PartyMemberFrame" .. i]
         if pf then
             pf:Hide()
-            pf:UnregisterAllEvents()
         end
     end
 end
@@ -1019,7 +1020,9 @@ function UF:ApplyConfiguration()
 
     if UF.Auras and UF.Auras.UpdateBlizzTargetAuras then
         UF.Auras:UpdateBlizzTargetAuras()
+        UF.Auras:UpdateBlizzPlayerAuras()
     end
+    if FostercareTweaks.UpdateFrameMovers then FostercareTweaks.UpdateFrameMovers() end
 end
 
 function UF:SuppressBlizzardFrames()

@@ -237,9 +237,10 @@ function UF:EnableTargetFrame()
 
         targetFrame.powerBar = pb
 
-        -- Aura Container (16 Buffs above, 16 Debuffs below)
+        -- Aura Container (up to 32 buffs and 48 harmful auras)
         if UF.Auras and UF.Auras.CreateAuraContainer then
-            targetFrame.auraContainer = UF.Auras:CreateAuraContainer(targetFrame, "target", 16, 16, {
+            targetFrame.auraContainer = UF.Auras:CreateAuraContainer(targetFrame, "target", 32, 48, {
+                moveKey = "modern_target",
                 size = 20,
                 spacing = 3,
                 perRow = 8,

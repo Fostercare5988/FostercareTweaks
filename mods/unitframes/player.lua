@@ -218,9 +218,10 @@ function UF:EnablePlayerFrame()
         playerFrame.leaderIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -2, 2)
         playerFrame.leaderIcon:Hide()
 
-        -- Aura Container (16 Buffs above, 8 Debuffs below)
+        -- Aura Container (up to 32 buffs and 48 harmful auras)
         if UF.Auras and UF.Auras.CreateAuraContainer then
-            playerFrame.auraContainer = UF.Auras:CreateAuraContainer(playerFrame, "player", 16, 8, {
+            playerFrame.auraContainer = UF.Auras:CreateAuraContainer(playerFrame, "player", 32, 48, {
+                moveKey = "modern_player",
                 size = 20,
                 spacing = 3,
                 perRow = 8,

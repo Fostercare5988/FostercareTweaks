@@ -126,6 +126,64 @@ local function UpdateButtonPower(btn)
     btn.powerBar:SetStatusBarColor(pc.r, pc.g, pc.b, 1)
 end
 
+local HOT_NAMES = {
+    ["Renew"] = true, ["Rejuvenation"] = true, ["Regrowth"] = true,
+    ["Power Word: Shield"] = true, ["Flash Heal"] = true, ["Healing Way"] = true,
+    ["Blessing of Protection"] = true,
+}
+
+function UF:GetRaidBuffSettings()
+    local cfg = FostercareTweaks_Config or {}
+    local values = cfg.overwrites or {}
+    local count = math.max(1, math.min(8, math.floor(tonumber(values.raid_buff_count) or 4)))
+    local size = math.max(8, math.min(18, math.floor(tonumber(values.raid_buff_size) or 10)))
+    return cfg["Show Raid Buffs"] ~= 0, count, size
+end
+
+local function RaidBuffSpace()
+    local enabled, _, size = UF:GetRaidBuffSettings()
+    return enabled and size + 3 or 0
+end
+
+local MOCK_BUFF_ICONS = {
+    "Interface\\Icons\\Spell_Holy_Renew", "Interface\\Icons\\Spell_Nature_Rejuvenation",
+    "Interface\\Icons\\Spell_Holy_PowerWordShield", "Interface\\Icons\\Spell_Holy_WordFortitude",
+}
+
+local function UpdateButtonBuffs(btn)
+    local enabled, count, size = UF:GetRaidBuffSettings()
+    local capacity = math.max(1, math.floor((btn:GetWidth() - 2) / (size + 1)))
+    count = math.min(count, capacity)
+    for i, badge in ipairs(btn.buffBadges) do
+        UF.Auras.ResetAuraButton(badge)
+        if enabled and i <= count then
+            local name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID
+            if testMode then
+                icon = MOCK_BUFF_ICONS[((i - 1) % 4) + 1]
+                name, stacks = "Preview", i == 2 and 3 or 1
+            else
+                name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID = C_UnitAuras.UnitBuff(btn.unit, i, "HELPFUL")
+            end
+            if name and icon then
+                badge:SetWidth(size); badge:SetHeight(size)
+                badge.border:SetWidth(size + 2); badge.border:SetHeight(size + 2)
+                badge:ClearAllPoints()
+                badge:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 1 + (i - 1) * (size + 1), -1)
+                badge.unit, badge.auraIndex, badge.spellId = btn.unit, i, spellID
+                badge.icon:SetTexture(icon)
+                if stacks and stacks > 1 then badge.countText:SetText(stacks); badge.countText:Show() end
+                -- Unknown remote expiration is not an estimated fresh timer.
+                if duration and duration > 0 and expiration and expiration > GetTime() then
+                    badge.cooldown:SetScale((size + 0.7) / 36)
+                    CooldownFrame_SetTimer(badge.cooldown, expiration - duration, duration, 1)
+                    badge.cooldown:Show()
+                end
+                badge:Show()
+            end
+        end
+    end
+end
+
 local function UpdateButtonAuras(btn)
     local unit = btn.unit
     if not unit or not btn:IsShown() then return end
@@ -138,23 +196,12 @@ local function UpdateButtonAuras(btn)
         local showHoT = (UF.IsRaidShowHoT and UF:IsRaidShowHoT())
         local hotTex = nil
         if showHoT then
-            local HOT_NAMES = {
-                ["Renew"] = true,
-                ["Rejuvenation"] = true,
-                ["Regrowth"] = true,
-                ["Power Word: Shield"] = true,
-                ["Flash Heal"] = true,
-                ["Healing Way"] = true,
-                ["Blessing of Protection"] = true,
-            }
-            for b = 1, 16 do
+            for b = 1, 32 do
                 local name, icon = C_UnitAuras.UnitBuff(unit, b, "HELPFUL")
                 if not name then break end
-                if (name and HOT_NAMES[name]) or (icon and (string.find(icon, "Spell_Holy_Renew") or string.find(icon, "Spell_Nature_Rejuvenation") or string.find(icon, "Spell_Nature_ResistNature") or string.find(icon, "Spell_Holy_PowerWordShield"))) then
+                if HOT_NAMES[name] then
                     hotTex = icon
                     break
-                elseif b == 1 and not hotTex then
-                    hotTex = icon
                 end
             end
         end
@@ -166,6 +213,8 @@ local function UpdateButtonAuras(btn)
         end
     end
 
+    UpdateButtonBuffs(btn)
+
     -- Compact Debuff Indicator Icon Badges (Up to 3, bottom-right)
     local showDebuffs = (UF.IsRaidShowDebuffs and UF:IsRaidShowDebuffs())
     for b = 1, 3 do
@@ -173,12 +222,15 @@ local function UpdateButtonAuras(btn)
         if not showDebuffs then
             badge:Hide()
         else
-            local name, icon, count, dispelType = C_UnitAuras.UnitDebuff(unit, b, "HARMFUL")
+            local name, icon, count, dispelType, duration, expiration, source, steal, personal, spellID = C_UnitAuras.UnitDebuff(unit, b, "HARMFUL")
+            UF.Auras.ResetAuraButton(badge)
 
             if icon then
+                badge.unit, badge.auraIndex, badge.spellId = unit, b, spellID
+                if count and count > 1 then badge.countText:SetText(count); badge.countText:Show() end
                 badge.icon:SetTexture(icon)
                 local dc = (dispelType and UF.DispelColors and UF.DispelColors[dispelType]) or { r = 0.8, g = 0.2, b = 0.2 }
-                badge:SetBackdropBorderColor(dc.r, dc.g, dc.b, 1)
+                badge.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
                 badge:Show()
             else
                 badge:Hide()
@@ -346,6 +398,20 @@ local function RaidButton_OnLeave()
     GameTooltip:Hide()
 end
 
+local function BindRaidAuraInteraction(badge)
+    badge:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    badge:SetScript("OnClick", RaidButton_OnClick)
+    local enter, leave = badge:GetScript("OnEnter"), badge:GetScript("OnLeave")
+    badge:SetScript("OnEnter", function()
+        if this.unit then SetMouseoverUnit(this.unit) end
+        enter()
+    end)
+    badge:SetScript("OnLeave", function()
+        SetMouseoverUnit()
+        leave()
+    end)
+end
+
 local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     local btnName = "FCTweaksRaidUnitG" .. groupNum .. "M" .. memberIdx
     local btn = CreateFrame("Button", btnName, groupFrame)
@@ -364,30 +430,7 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     btn:SetScript("OnEnter", RaidButton_OnEnter)
     btn:SetScript("OnLeave", RaidButton_OnLeave)
 
-    -- Draggable support when Ctrl+Shift held
-    btn:RegisterForDrag("LeftButton")
-    btn:SetScript("OnDragStart", function()
-        if raidFrame and FCTweaksUnitFrameUnlocker and FCTweaksUnitFrameUnlocker.movable then
-            raidFrame:StartMoving()
-        end
-    end)
-    btn:SetScript("OnDragStop", function()
-        if raidFrame then
-            raidFrame:StopMovingOrSizing()
-            if FostercareTweaks_Config then
-                if not FostercareTweaks_Config.unitframe_positions then
-                    FostercareTweaks_Config.unitframe_positions = {}
-                end
-                local point, _, relPoint, x, y = raidFrame:GetPoint()
-                FostercareTweaks_Config.unitframe_positions["raid"] = {
-                    point = point or "CENTER",
-                    relPoint = relPoint or "CENTER",
-                    x = x or 0,
-                    y = y or 0
-                }
-            end
-        end
-    end)
+    -- The container mover owns all Ctrl+Shift dragging and persistence.
 
     local powerH = math.max(3, math.floor(btnH * 0.12))
     local healthH = btnH - powerH - 3
@@ -469,24 +512,19 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     -- Compact Debuff Indicator Icon Badges (11x11px, bottom-right)
     btn.debuffBadges = {}
     for b = 1, 3 do
-        local badge = CreateFrame("Frame", btnName .. "Debuff" .. b, btn)
-        badge:SetWidth(11)
-        badge:SetHeight(11)
-        badge:SetFrameStrata("LOW")
-        badge:SetBackdrop(UF.backdrop)
-        badge:SetBackdropColor(0, 0, 0, 0.9)
-        badge:SetBackdropBorderColor(0, 0, 0, 1)
-
-        badge.icon = badge:CreateTexture(nil, "ARTWORK")
-        badge.icon:SetPoint("TOPLEFT", badge, "TOPLEFT", 1, -1)
-        badge.icon:SetPoint("BOTTOMRIGHT", badge, "BOTTOMRIGHT", -1, 1)
-        badge.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-
+        local badge = UF.Auras.CreateAuraButton(btn, btnName .. "Debuff" .. b, 11, true)
+        BindRaidAuraInteraction(badge)
         badge:SetPoint("BOTTOMRIGHT", hb, "BOTTOMRIGHT", -1 - (b - 1) * 12, 1)
         badge:Hide()
         btn.debuffBadges[b] = badge
     end
 
+    btn.buffBadges = {}
+    for b = 1, 8 do
+        local badge = UF.Auras.CreateAuraButton(btn, btnName .. "Buff" .. b, 10, false)
+        BindRaidAuraInteraction(badge)
+        btn.buffBadges[b] = badge
+    end
     btn.groupNum = groupNum
     btn.memberIdx = memberIdx
     btn:Hide()
@@ -504,15 +542,16 @@ local function ConstructRaidGrid()
     local dims = UF:GetGroupDimensions()
     local btnW = dims.width
     local btnH = dims.height
-    local btnSpacingY = dims.spacingY
+    local btnSpacingY = dims.spacingY + RaidBuffSpace()
     local colSpacingX = dims.spacingX
 
     raidFrame = CreateFrame("Frame", "FCTweaksRaidFrame", UIParent)
     raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-    raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + 16)
+    raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
     raidFrame:SetFrameStrata("LOW")
     raidFrame:SetClampedToScreen(true)
     raidFrame:SetMovable(true)
+    FostercareTweaks.RegisterFrameMover(raidFrame, "raid", "Raid Frames")
     raidFrame:EnableMouse(false)
     raidFrame:SetScale(dims.scale)
 
@@ -528,7 +567,7 @@ local function ConstructRaidGrid()
     for g = 1, 8 do
         local grp = CreateFrame("Frame", "FCTweaksRaidGroup" .. g, raidFrame)
         grp:SetWidth(btnW)
-        grp:SetHeight(btnH * 5 + btnSpacingY * 4 + 16)
+        grp:SetHeight(btnH * 5 + btnSpacingY * 4 + RaidBuffSpace() + 16)
         grp:SetPoint("TOPLEFT", raidFrame, "TOPLEFT", (g - 1) * (btnW + colSpacingX), 0)
 
         -- Group Title (Party or G1 - G8)
@@ -595,14 +634,17 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
     end
 
     if not enabled then
-        if raidFrame then raidFrame:Hide() end
+        UF:DisableRaidFrames()
+        UF:RestorePartyFrames()
         return
     end
 
-    local btnSpacingY = spacingY
+    UF:SuppressPartyFrames()
+    UF:EnableRaidFrames()
+    local btnSpacingY = spacingY + RaidBuffSpace()
     local colSpacingX = spacingX
     raidFrame:SetWidth(8 * (width + colSpacingX) - colSpacingX)
-    raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + 16)
+    raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
     raidFrame:SetScale(scale)
     local powerH = math.max(3, math.floor(height * 0.12))
     local healthH = height - powerH - 3
@@ -611,7 +653,7 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
         local grp = groups[g]
         if grp then
             grp:SetWidth(width)
-            grp:SetHeight(height * 5 + btnSpacingY * 4 + 16)
+            grp:SetHeight(height * 5 + btnSpacingY * 4 + RaidBuffSpace() + 16)
             grp:ClearAllPoints()
             grp:SetPoint("TOPLEFT", raidFrame, "TOPLEFT", (g - 1) * (width + colSpacingX), 0)
 
@@ -661,7 +703,7 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
 
     if testMode then
         raidFrame:SetWidth(8 * (width + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + 16)
+        raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
         raidFrame:Show()
     else
         UF:UpdateGroupRoster()
@@ -693,7 +735,7 @@ function UF:UpdateGroupRoster()
 
     local btnW = dims.width
     local btnH = dims.height
-    local btnSpacingY = dims.spacingY
+    local btnSpacingY = dims.spacingY + RaidBuffSpace()
     local colSpacingX = dims.spacingX
 
     if isRaid then
@@ -723,7 +765,7 @@ function UF:UpdateGroupRoster()
         end
 
         raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + 16)
+        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
     elseif isParty then
         -- Unified Party layout: Group 1 displays party members vertically
         groups[1].title:SetText("Party")
@@ -814,18 +856,9 @@ end
 -- 7. Range Check Ticker
 --------------------------------------------------------------------------------
 
-local rangeTicker = CreateFrame("Frame")
-local lastRangeCheck = 0
-
-rangeTicker:SetScript("OnUpdate", function()
-    local now = GetTime()
-    if now - lastRangeCheck < 0.25 then return end
-    lastRangeCheck = now
-
+C_Timer.NewTicker(0.25, function()
     if testMode or not raidFrame or not raidFrame:IsShown() then return end
-    for _, btn in pairs(unitToButton) do
-        UpdateButtonRange(btn)
-    end
+    for _, btn in pairs(unitToButton) do UpdateButtonRange(btn) end
 end)
 
 --------------------------------------------------------------------------------
@@ -847,13 +880,13 @@ function UF:ToggleRaidTest()
     local dims = UF:GetGroupDimensions()
     local btnW = dims.width
     local btnH = dims.height
-    local btnSpacingY = 3
-    local colSpacingX = 4
+    local btnSpacingY = dims.spacingY + RaidBuffSpace()
+    local colSpacingX = dims.spacingX
 
     if testMode then
         if wipe then wipe(unitToButton) end
         raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + 16)
+        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
         raidFrame:Show()
 
         for g = 1, 8 do
@@ -906,7 +939,7 @@ function UF:ToggleRaidTest()
                     local d = MOCK_DEBUFF_ICONS[1]
                     btn.debuffBadges[1].icon:SetTexture(d.icon)
                     local dc = DISPEL_COLORS[d.dtype]
-                    btn.debuffBadges[1]:SetBackdropBorderColor(dc.r, dc.g, dc.b, 1)
+                    btn.debuffBadges[1].border:SetVertexColor(dc.r, dc.g, dc.b, 1)
                     btn.debuffBadges[1]:Show()
                     btn.debuffBadges[2]:Hide()
                     btn.debuffBadges[3]:Hide()
@@ -915,13 +948,15 @@ function UF:ToggleRaidTest()
                         local d = MOCK_DEBUFF_ICONS[b + 1]
                         btn.debuffBadges[b].icon:SetTexture(d.icon)
                         local dc = DISPEL_COLORS[d.dtype]
-                        btn.debuffBadges[b]:SetBackdropBorderColor(dc.r, dc.g, dc.b, 1)
+                        btn.debuffBadges[b].border:SetVertexColor(dc.r, dc.g, dc.b, 1)
                         btn.debuffBadges[b]:Show()
                     end
                     btn.debuffBadges[3]:Hide()
                 else
                     for b = 1, 3 do btn.debuffBadges[b]:Hide() end
                 end
+
+                UpdateButtonBuffs(btn)
 
                 -- Mock indicators
                 if m == 1 and g == 1 then
@@ -992,6 +1027,7 @@ function UF:UpdateAllRaidFrames()
                             end
                         end
                         UpdateButtonIndicators(btn)
+                        UpdateButtonBuffs(btn)
                         if not (UF.IsRaidShowDebuffs and UF:IsRaidShowDebuffs()) then
                             for b = 1, 3 do btn.debuffBadges[b]:Hide() end
                         end

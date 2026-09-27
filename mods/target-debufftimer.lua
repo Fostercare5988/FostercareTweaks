@@ -103,13 +103,6 @@ module.enable = function(self)
 
                 local now = GetTime()
                 local effectiveExpiration = expirationTime
-                if (not effectiveExpiration or effectiveExpiration <= now) and duration and duration > 0 then
-                    if button.cd and button.cd.readable and button.cd.readable.spellId == spellId and button.cd.readable.expirationTime and button.cd.readable.expirationTime > now then
-                        effectiveExpiration = button.cd.readable.expirationTime
-                    else
-                        effectiveExpiration = now + duration
-                    end
-                end
 
                 if duration and duration > 0 and effectiveExpiration and effectiveExpiration > now then
                     local start = effectiveExpiration - duration
