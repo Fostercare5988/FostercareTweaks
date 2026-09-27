@@ -137,13 +137,39 @@ function UF:GetRaidBuffSettings()
     local values = cfg.overwrites or {}
     local count = math.max(1, math.min(8, math.floor(tonumber(values.raid_buff_count) or 4)))
     local size = math.max(8, math.min(18, math.floor(tonumber(values.raid_buff_size) or 10)))
-    return cfg["Show Raid Buffs"] ~= 0, count, size
+    return cfg["Show Raid Buffs"] ~= 0, count, size, cfg["Show All Raid Buffs"] == 1
 end
 
-local function RaidBuffSpace()
-    local enabled, _, size = UF:GetRaidBuffSettings()
-    return enabled and size + 3 or 0
+-- Buff rows live outside the health button. Pack each group's members using
+-- their actual occupied rows, so narrow frames never hide selected buffs and
+-- "all" does not reserve empty rows for buffs that are not present.
+local function LayoutRaidGroups()
+    if not raidFrame then return end
+    local dims = UF:GetGroupDimensions()
+    local maxHeight = 16
+    for g = 1, 8 do
+        local grp = groups[g]
+        if grp then
+            local y, active = 16, 0
+            for _, btn in ipairs(grp.buttons) do
+                if btn.unit and btn:IsShown() then
+                    if active > 0 then y = y + dims.spacingY end
+                    btn:ClearAllPoints()
+                    btn:SetPoint("TOPLEFT", grp, "TOPLEFT", 0, -y)
+                    y = y + btn:GetHeight() + (btn.buffSpace or 0)
+                    active = active + 1
+                end
+            end
+            grp:SetHeight(y)
+            if active > 0 then maxHeight = math.max(maxHeight, y) end
+        end
+    end
+    local raidLayout = testMode or (GetNumRaidMembers() or 0) > 0
+    raidFrame:SetWidth(raidLayout and (8 * (dims.width + dims.spacingX) - dims.spacingX) or dims.width)
+    raidFrame:SetHeight(maxHeight)
 end
+
+local CreateRaidBuffBadge
 
 local MOCK_BUFF_ICONS = {
     "Interface\\Icons\\Spell_Holy_Renew", "Interface\\Icons\\Spell_Nature_Rejuvenation",
@@ -151,37 +177,50 @@ local MOCK_BUFF_ICONS = {
 }
 
 local function UpdateButtonBuffs(btn)
-    local enabled, count, size = UF:GetRaidBuffSettings()
-    local capacity = math.max(1, math.floor((btn:GetWidth() - 2) / (size + 1)))
-    count = math.min(count, capacity)
-    for i, badge in ipairs(btn.buffBadges) do
-        UF.Auras.ResetAuraButton(badge)
-        if enabled and i <= count then
-            local name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID
-            if testMode then
-                icon = MOCK_BUFF_ICONS[((i - 1) % 4) + 1]
-                name, stacks = "Preview", i == 2 and 3 or 1
-            else
-                name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID = C_UnitAuras.UnitBuff(btn.unit, i, "HELPFUL")
+    local enabled, count, size, all = UF:GetRaidBuffSettings()
+    local stride = size + 2 -- include each icon's border in the column width
+    local columns = math.max(1, math.floor(btn:GetWidth() / stride))
+    for _, badge in ipairs(btn.buffBadges) do UF.Auras.ResetAuraButton(badge) end
+    btn.buffSpace = 0
+    if not enabled then return end
+
+    -- Scratch slots are refilled for this update; never use an old slot ID.
+    local total = all and 32 or count -- preview shows the usual full buff capacity
+    if not testMode then
+        local continuation
+        continuation, total = C_UnitAuras.GetAuraSlots(btn.unit, "HELPFUL", all and 0 or count, nil, btn.buffSlots)
+    end
+    local shown = 0
+    for i = 1, total do
+        local name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID
+        if testMode then
+            icon = MOCK_BUFF_ICONS[((i - 1) % 4) + 1]
+            name, stacks = "Preview", i == 2 and 3 or 1
+        else
+            name, icon, stacks, dtype, duration, expiration, source, steal, personal, spellID = C_UnitAuras.UnitAuraBySlot(btn.unit, btn.buffSlots[i])
+        end
+        if name and icon then
+            local badge = btn.buffBadges[i] or CreateRaidBuffBadge(btn, i)
+            local row, column = math.floor(shown / columns), shown % columns
+            badge:SetWidth(size); badge:SetHeight(size)
+            badge.border:SetWidth(size + 2); badge.border:SetHeight(size + 2)
+            badge:ClearAllPoints()
+            badge:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 1 + column * stride, -2 - row * stride)
+            -- Slot enumeration follows the plain HELPFUL index order used by
+            -- SetUnitAura tooltips, including after an earlier buff disappears.
+            badge.unit, badge.auraIndex, badge.spellId = btn.unit, i, spellID
+            badge.icon:SetTexture(icon)
+            if stacks and stacks > 1 then badge.countText:SetText(stacks); badge.countText:Show() end
+            if duration and duration > 0 and expiration and expiration > GetTime() then
+                badge.cooldown:SetScale((size + 0.7) / 36)
+                CooldownFrame_SetTimer(badge.cooldown, expiration - duration, duration, 1)
+                badge.cooldown:Show()
             end
-            if name and icon then
-                badge:SetWidth(size); badge:SetHeight(size)
-                badge.border:SetWidth(size + 2); badge.border:SetHeight(size + 2)
-                badge:ClearAllPoints()
-                badge:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 1 + (i - 1) * (size + 1), -1)
-                badge.unit, badge.auraIndex, badge.spellId = btn.unit, i, spellID
-                badge.icon:SetTexture(icon)
-                if stacks and stacks > 1 then badge.countText:SetText(stacks); badge.countText:Show() end
-                -- Unknown remote expiration is not an estimated fresh timer.
-                if duration and duration > 0 and expiration and expiration > GetTime() then
-                    badge.cooldown:SetScale((size + 0.7) / 36)
-                    CooldownFrame_SetTimer(badge.cooldown, expiration - duration, duration, 1)
-                    badge.cooldown:Show()
-                end
-                badge:Show()
-            end
+            badge:Show()
+            shown = shown + 1
         end
     end
+    if shown > 0 then btn.buffSpace = math.ceil(shown / columns) * stride + 1 end
 end
 
 local function UpdateButtonAuras(btn)
@@ -412,6 +451,16 @@ local function BindRaidAuraInteraction(badge)
     end)
 end
 
+CreateRaidBuffBadge = function(btn, index)
+    -- Keep the cache contiguous even if an intervening aura has no icon yet.
+    for b = table.getn(btn.buffBadges) + 1, index do
+        local badge = UF.Auras.CreateAuraButton(btn, btn:GetName() .. "Buff" .. b, 10, false)
+        BindRaidAuraInteraction(badge)
+        btn.buffBadges[b] = badge
+    end
+    return btn.buffBadges[index]
+end
+
 local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     local btnName = "FCTweaksRaidUnitG" .. groupNum .. "M" .. memberIdx
     local btn = CreateFrame("Button", btnName, groupFrame)
@@ -520,11 +569,8 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     end
 
     btn.buffBadges = {}
-    for b = 1, 8 do
-        local badge = UF.Auras.CreateAuraButton(btn, btnName .. "Buff" .. b, 10, false)
-        BindRaidAuraInteraction(badge)
-        btn.buffBadges[b] = badge
-    end
+    btn.buffSlots = {}
+    for b = 1, 8 do CreateRaidBuffBadge(btn, b) end
     btn.groupNum = groupNum
     btn.memberIdx = memberIdx
     btn:Hide()
@@ -542,12 +588,12 @@ local function ConstructRaidGrid()
     local dims = UF:GetGroupDimensions()
     local btnW = dims.width
     local btnH = dims.height
-    local btnSpacingY = dims.spacingY + RaidBuffSpace()
+    local btnSpacingY = dims.spacingY
     local colSpacingX = dims.spacingX
 
     raidFrame = CreateFrame("Frame", "FCTweaksRaidFrame", UIParent)
     raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-    raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
+    raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + 16)
     raidFrame:SetFrameStrata("LOW")
     raidFrame:SetClampedToScreen(true)
     raidFrame:SetMovable(true)
@@ -567,7 +613,7 @@ local function ConstructRaidGrid()
     for g = 1, 8 do
         local grp = CreateFrame("Frame", "FCTweaksRaidGroup" .. g, raidFrame)
         grp:SetWidth(btnW)
-        grp:SetHeight(btnH * 5 + btnSpacingY * 4 + RaidBuffSpace() + 16)
+        grp:SetHeight(btnH * 5 + btnSpacingY * 4 + 16)
         grp:SetPoint("TOPLEFT", raidFrame, "TOPLEFT", (g - 1) * (btnW + colSpacingX), 0)
 
         -- Group Title (Party or G1 - G8)
@@ -641,10 +687,7 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
 
     UF:SuppressPartyFrames()
     UF:EnableRaidFrames()
-    local btnSpacingY = spacingY + RaidBuffSpace()
     local colSpacingX = spacingX
-    raidFrame:SetWidth(8 * (width + colSpacingX) - colSpacingX)
-    raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
     raidFrame:SetScale(scale)
     local powerH = math.max(3, math.floor(height * 0.12))
     local healthH = height - powerH - 3
@@ -653,7 +696,6 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
         local grp = groups[g]
         if grp then
             grp:SetWidth(width)
-            grp:SetHeight(height * 5 + btnSpacingY * 4 + RaidBuffSpace() + 16)
             grp:ClearAllPoints()
             grp:SetPoint("TOPLEFT", raidFrame, "TOPLEFT", (g - 1) * (width + colSpacingX), 0)
 
@@ -662,8 +704,6 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
                 if btn then
                     btn:SetWidth(width)
                     btn:SetHeight(height)
-                    btn:ClearAllPoints()
-                    btn:SetPoint("TOPLEFT", grp, "TOPLEFT", 0, -16 - ((m - 1) * (height + btnSpacingY)))
 
                     -- Health Bar
                     btn.healthBar:ClearAllPoints()
@@ -702,9 +742,8 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
     end
 
     if testMode then
-        raidFrame:SetWidth(8 * (width + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (height + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
         raidFrame:Show()
+        UF:UpdateAllRaidFrames()
     else
         UF:UpdateGroupRoster()
     end
@@ -733,11 +772,6 @@ function UF:UpdateGroupRoster()
         return
     end
 
-    local btnW = dims.width
-    local btnH = dims.height
-    local btnSpacingY = dims.spacingY + RaidBuffSpace()
-    local colSpacingX = dims.spacingX
-
     if isRaid then
         for g = 1, 8 do
             groups[g].title:SetText("G" .. g)
@@ -764,8 +798,6 @@ function UF:UpdateGroupRoster()
             end
         end
 
-        raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
     elseif isParty then
         -- Unified Party layout: Group 1 displays party members vertically
         groups[1].title:SetText("Party")
@@ -795,9 +827,6 @@ function UF:UpdateGroupRoster()
             end
         end
 
-        -- In party mode, container width is 1 column
-        raidFrame:SetWidth(btnW)
-        raidFrame:SetHeight((groupCounters[1] * (btnH + btnSpacingY)) + 16)
     end
 
     -- Update group headers & unused button visibility
@@ -819,6 +848,7 @@ function UF:UpdateGroupRoster()
         end
     end
 
+    LayoutRaidGroups()
     if totalActive > 0 then
         raidFrame:Show()
     else
@@ -845,7 +875,9 @@ local function RaidFrame_OnEvent()
                ev == "UNIT_MAXMANA" or ev == "UNIT_DISPLAYPOWER" then
             UpdateButtonPower(btn)
         elseif ev == "UNIT_AURA" then
+            local previousSpace = btn.buffSpace
             UpdateButtonAuras(btn)
+            if previousSpace ~= btn.buffSpace then LayoutRaidGroups() end
         elseif ev == "UNIT_NAME_UPDATE" or ev == "UNIT_LEVEL" then
             UpdateButtonHealth(btn)
         end
@@ -877,16 +909,9 @@ function UF:ToggleRaidTest()
     testMode = not testMode
 
     local bc = UF.backdropBorderColor or { 0.15, 0.15, 0.15, 0.9 }
-    local dims = UF:GetGroupDimensions()
-    local btnW = dims.width
-    local btnH = dims.height
-    local btnSpacingY = dims.spacingY + RaidBuffSpace()
-    local colSpacingX = dims.spacingX
 
     if testMode then
         if wipe then wipe(unitToButton) end
-        raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
-        raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + RaidBuffSpace() + 16)
         raidFrame:Show()
 
         for g = 1, 8 do
@@ -979,6 +1004,7 @@ function UF:ToggleRaidTest()
             end
         end
 
+        LayoutRaidGroups()
         if DEFAULT_CHAT_FRAME then
             DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[FostercareTweaks]|r Group Frames test mode ENABLED (40 players shown). Hold Ctrl+Shift to move.", 1, 1, 1)
         end
@@ -1035,6 +1061,7 @@ function UF:UpdateAllRaidFrames()
                 end
             end
         end
+        LayoutRaidGroups()
         return
     end
     for _, btn in pairs(unitToButton) do
@@ -1042,6 +1069,7 @@ function UF:UpdateAllRaidFrames()
             UpdateButtonAll(btn)
         end
     end
+    LayoutRaidGroups()
 end
 
 function UF:ToggleGroupFrameSettings()

@@ -11,6 +11,9 @@
   position keys; ClassicAPI 1.15.15 support floor; optional UnitXP.
 - Engineering contract, workflow and task/review/retrospective templates used.
 
+Follow-up: the original width-limited raid buff row documented below is
+superseded by [wrapping rows and Show All Buffs](RAID_BUFF_LAYOUT_2026-09-27.md).
+
 ## Findings and changes
 
 | Finding | Result |

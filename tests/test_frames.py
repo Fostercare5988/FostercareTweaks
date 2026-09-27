@@ -16,6 +16,7 @@ table.wipe=wipe
 local methods={}
 function methods:GetName() return self.name end
 function methods:GetParent() return self.parent end
+function methods:SetParent(p) self.parent=p end
 function methods:SetScript(k,f) self.scripts[k]=f end
 function methods:GetScript(k) return self.scripts[k] end
 function methods:RegisterEvent(k) self.events[k]=true end
@@ -41,6 +42,8 @@ function methods:SetTexture(...) self.texture={...} end
 function methods:SetVertexColor(...) self.color={...} end
 function methods:SetText(v) self.textValue=v end
 function methods:GetText() return self.textValue end
+function methods:Enable() self.disabled=false end
+function methods:Disable() self.disabled=true end
 function methods:SetChecked(v) self.checked=v end
 function methods:GetChecked() return self.checked end
 function methods:SetValue(v) self.value=v; if self.scripts.OnValueChanged then fire(self,"OnValueChanged") end end
@@ -117,6 +120,22 @@ function C_UnitAuras.UnitBuff(unit,i,filter) local t=auras[unit] and auras[unit]
 function C_UnitAuras.UnitDebuff(unit,i,filter) local t=auras[unit] and auras[unit].debuffs; if t and t[i] then return unpack(t[i]) end end
 FostercareTweaks_Config={overwrites={}}
 FostercareTweaks={mods={},overwrites={},T=setmetatable({},{__index=function(t,k) return k end})}
+slotReads={}; slotQueries={}
+function C_UnitAuras.GetAuraSlots(unit,filter,maxSlots,token,slots)
+ assert(filter=="HELPFUL" and token==nil and type(slots)=="table")
+ local buffs=auras[unit] and auras[unit].buffs or {}
+ local n=math.min(#buffs,(maxSlots and maxSlots>0) and maxSlots or #buffs)
+ for i=1,slots.n or 0 do slots[i]=nil end
+ for i=1,n do slots[i]=100+i end
+ slots.n=n
+ table.insert(slotQueries,{unit,filter,maxSlots})
+ return n<#buffs and "more" or nil,n
+end
+function C_UnitAuras.UnitAuraBySlot(unit,slot)
+ table.insert(slotReads,{unit,slot})
+ local buffs=auras[unit] and auras[unit].buffs
+ if buffs and buffs[slot-100] then return unpack(buffs[slot-100]) end
+end
 function FostercareTweaks:register(m) self.mods[m.title]=m; return m end
 function FostercareTweaks.Abbreviate(v) return tostring(v) end
 function FostercareTweaks.HasUnitXP() return false end
@@ -133,6 +152,43 @@ def runtime():
     lua.execute(STUBS)
     for name in ('move-unitframes','unitframes/core','unitframes/auras','unitframes/raid'):
         lua.execute((ROOT/'mods'/f'{name}.lua').read_text(encoding='utf-8'))
+    return lua
+
+
+def native_runtime():
+    lua=runtime()
+    lua.execute(r"""
+        BuffFrame=CreateFrame("Frame","BuffFrame",UIParent)
+        TemporaryEnchantFrame=CreateFrame("Frame","TemporaryEnchantFrame",UIParent)
+        for i=0,23 do
+            local b=CreateFrame("Button","BuffButton"..i,BuffFrame)
+            b.buffFilter=i<16 and "HELPFUL" or "HARMFUL"
+            b:SetScript("OnClick",function() nativeClicks=(nativeClicks or 0)+1 end)
+            CreateFrame("FontString",b:GetName().."Duration",BuffFrame)
+        end
+        for i=1,2 do
+            CreateFrame("Button","TempEnchant"..i,TemporaryEnchantFrame)
+            CreateFrame("FontString","TempEnchant"..i.."Duration",TemporaryEnchantFrame)
+        end
+        function BuffButton_Update()
+            this:Show(); _G[this:GetName().."Duration"]:Show()
+            buffUpdates=(buffUpdates or 0)+1
+        end
+        function BuffFrame_Enchant_OnUpdate()
+            TempEnchant1:Show(); TempEnchant2:Hide()
+            TempEnchant1Duration:Show(); TempEnchant2Duration:Hide()
+            BuffFrame:SetPoint("TOPRIGHT",TemporaryEnchantFrame,"TOPLEFT",-5,0)
+        end
+        function BuffButtons_UpdatePositions()
+            BuffButton8:SetPoint("TOP",TempEnchant1,"BOTTOM",0,-15)
+            BuffButton16:SetPoint("TOPRIGHT",TemporaryEnchantFrame,"TOPRIGHT",0,-90)
+        end
+        function FostercareTweaks.hooksecurefunc(name,callback)
+            local previous=_G[name]
+            _G[name]=function() previous(); callback() end
+        end
+    """)
+    lua.execute((ROOT/'mods/standard-player-auras.lua').read_text(encoding='utf-8'))
     return lua
 
 class FrameTests(unittest.TestCase):
@@ -212,7 +268,7 @@ class FrameTests(unittest.TestCase):
         local UF=FostercareTweaks.UnitFrames; UF:EnableRaidFrames()
         local b=FCTweaksRaidUnitG1M1
         assert(visible(b.buffBadges)==4)
-        assert(FCTweaksRaidFrame:GetHeight()==5*34+4*16+13+16)
+        assert(FCTweaksRaidFrame:GetHeight()==5*34+4*3+13+16)
         FostercareTweaks_Config.overwrites.raid_buff_count=8
         UF:ApplyGroupDimensions(120); UF:UpdateAllRaidFrames()
         assert(visible(b.buffBadges)==8)
@@ -273,6 +329,7 @@ class FrameTests(unittest.TestCase):
                if line.strip() and not line.startswith('#')]
         for path in paths: self.assertTrue((ROOT/path.replace('\\','/')).is_file(),path)
         self.assertLess(paths.index('mods\\move-unitframes.lua'),paths.index('mods\\unitframes\\auras.lua'))
+        self.assertLess(paths.index('mods\\move-unitframes.lua'),paths.index('mods\\standard-player-auras.lua'))
 
     def test_empty_buff_area_does_not_push_debuffs_down(self):
         lua=runtime(); lua.execute('''auras.target={debuffs={aura("D",1)}}
@@ -291,5 +348,233 @@ class FrameTests(unittest.TestCase):
         FCTweaksStdPlayerCB:SetChecked(true); fire(FCTweaksStdPlayerCB,"OnClick")
         assert(not FCTweaksModPlayerCB:GetChecked() and FostercareTweaks_Config["Modern Player Frame"]==0)
         assert(FostercareTweaksCancel:GetText()=="Close" and not FostercareTweaksOkay:IsShown())''')
+
+
+    def test_eight_buffs_wrap_at_smallest_frame_with_largest_icons(self):
+        lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}
+        for i=1,12 do auras.raid1.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config.overwrites.raid_buff_count=8
+        FostercareTweaks_Config.overwrites.raid_buff_size=18
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40,20,1,0,0,true)
+        local b=FCTweaksRaidUnitG1M1
+        assert(visible(b.buffBadges)==8 and b.buffSpace==81)
+        for i=1,8 do
+            local badge=b.buffBadges[i]
+            assert(badge.point[4]-1>=0 and badge.point[4]+badge:GetWidth()+1<=b:GetWidth())
+            assert(-badge.point[5]+badge:GetHeight()+1<=b.buffSpace)
+        end
+        assert(b.buffBadges[3].point[4]==1 and b.buffBadges[3].point[5]==-22)
+        assert(FCTweaksRaidUnitG1M2.point[5]==-117)
+        assert(FCTweaksRaidFrame:GetHeight()==16+5*20+81)''')
+
+    def test_resizing_reflows_buffs_without_losing_selection(self):
+        lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}
+        for i=1,8 do auras.raid1.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config.overwrites.raid_buff_count=8
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(120)
+        local b=FCTweaksRaidUnitG1M1
+        assert(visible(b.buffBadges)==8 and b.buffSpace==13)
+        UF:ApplyGroupDimensions(40)
+        assert(visible(b.buffBadges)==8 and b.buffSpace==37)
+        assert(b.buffBadges[4].point[4]==1 and b.buffBadges[4].point[5]==-14)
+        UF:ApplyGroupDimensions(120)
+        assert(visible(b.buffBadges)==8 and b.buffSpace==13)
+        assert(FostercareTweaks_Config.overwrites.raid_buff_count==8)''')
+
+    def test_all_buffs_enumerates_client_slots_without_the_eight_icon_limit(self):
+        lua=runtime(); lua.execute('''raidCount=1; auras.raid1={buffs={}}
+        for i=1,32 do auras.raid1.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40)
+        local b=FCTweaksRaidUnitG1M1
+        assert(visible(b.buffBadges)==32 and b.buffSpace==133)
+        assert(b.buffBadges[32].spellId==32 and b.buffBadges[32].auraIndex==32)
+        assert(b.buffBadges[32].countText:GetText()==2)
+        assert(not b.buffBadges[32].cooldown:IsShown())
+        assert(slotQueries[#slotQueries][3]==0 and slotReads[#slotReads][2]==132)
+        fire(b.buffBadges[32],"OnEnter"); assert(GameTooltip.lastAura[2]==32)
+        assert(mouseover=="raid1")
+        fire(b.buffBadges[32],"OnClick",nil,"LeftButton"); assert(clickedUnit=="raid1")''')
+
+    def test_aura_events_grow_and_shrink_occupied_rows(self):
+        lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={aura("B",1)}}
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40)
+        local b=FCTweaksRaidUnitG1M1; local small=FCTweaksRaidFrame:GetHeight()
+        for i=2,16 do auras.raid1.buffs[i]=aura("B",i) end
+        fire(FCTweaksRaidFrame,"OnEvent","UNIT_AURA","raid1")
+        assert(visible(b.buffBadges)==16 and b.buffSpace==73)
+        assert(FCTweaksRaidFrame:GetHeight()==small+60)
+        auras.raid1.buffs={aura("B",17)}
+        fire(FCTweaksRaidFrame,"OnEvent","UNIT_AURA","raid1")
+        assert(visible(b.buffBadges)==1 and b.buffSpace==13 and b.buffSlots.n==1)
+        assert(b.buffSlots[2]==nil and b.buffBadges[16].unit==nil)
+        assert(b.buffBadges[1].spellId==17 and FCTweaksRaidFrame:GetHeight()==small)
+        auras.raid1.buffs={}; fire(FCTweaksRaidFrame,"OnEvent","UNIT_AURA","raid1")
+        assert(b.buffSpace==0 and FCTweaksRaidFrame:GetHeight()==small-13)''')
+
+    def test_all_mode_reserves_only_present_buffs_in_party_layout(self):
+        lua=runtime(); lua.execute('''partyCount=2
+        auras.player={buffs={aura("B",1)}}; auras.party1={buffs={}}
+        for i=1,8 do auras.party1.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40)
+        assert(FCTweaksRaidUnitG1M1.buffSpace==13 and FCTweaksRaidUnitG1M2.buffSpace==37)
+        assert(FCTweaksRaidFrame:GetWidth()==40)
+        assert(FCTweaksRaidFrame:GetHeight()==16+3*34+2*3+13+37)
+        assert(not FCTweaksRaidGroup2:IsShown())''')
+
+    def test_each_group_uses_its_own_buff_rows_and_container_contains_the_tallest(self):
+        lua=runtime(); lua.execute('''raidCount=10; auras.raid1={buffs={}}; auras.raid6={buffs={}}
+        for i=1,16 do auras.raid1.buffs[i]=aura("B",i) end
+        for i=1,4 do auras.raid6.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40)
+        assert(FCTweaksRaidGroup1:GetHeight()==16+5*34+4*3+73)
+        assert(FCTweaksRaidGroup2:GetHeight()==16+5*34+4*3+25)
+        assert(FCTweaksRaidFrame:GetHeight()==FCTweaksRaidGroup1:GetHeight())
+        assert(FCTweaksRaidUnitG2M2.point[5]==-16-34-25-3)''')
+
+    def test_all_buffs_checkbox_applies_live_and_remembers_limited_count(self):
+        lua=runtime(); lua.execute('FostercareTweaks.UnitFrames.ApplyConfiguration=function() end')
+        lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''raidCount=1; auras.raid1={buffs={}}
+        for i=1,12 do auras.raid1.buffs[i]=aura("B",i) end
+        FostercareTweaks.UnitFrames:EnableRaidFrames()
+        FostercareTweaksSettingsGUI.SelectTab(3)
+        FCTweaksRaidBuffCountSlider:SetValue(8)
+        FCTweaksRaidAllBuffsCB:SetChecked(true); fire(FCTweaksRaidAllBuffsCB,"OnClick")
+        assert(FostercareTweaks_Config["Show All Raid Buffs"]==1)
+        assert(FCTweaksRaidBuffCountSlider.disabled and visible(FCTweaksRaidUnitG1M1.buffBadges)==12)
+        assert(FCTweaksRaidBuffCountSlider.label:GetText()=="Buffs Per Player: All")
+        FostercareTweaksSettingsGUI.raidPage:RefreshValues()
+        assert(FCTweaksRaidAllBuffsCB:GetChecked() and FCTweaksRaidBuffCountSlider.disabled)
+        FCTweaksRaidAllBuffsCB:SetChecked(false); fire(FCTweaksRaidAllBuffsCB,"OnClick")
+        assert(not FCTweaksRaidBuffCountSlider.disabled)
+        assert(FostercareTweaks_Config.overwrites.raid_buff_count==8 and visible(FCTweaksRaidUnitG1M1.buffBadges)==8)
+        FCTweaksRaidPageResetBtn.scripts.OnClick()
+        assert(FostercareTweaks_Config["Show All Raid Buffs"]==0 and FostercareTweaks_Config.overwrites.raid_buff_count==4)
+        assert(FCTweaksRaidBuffCountSlider.label:GetText()=="Buffs Per Player: 4")''')
+
+    def test_disabling_buffs_hides_all_created_icons_and_removes_row_space(self):
+        lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}
+        for i=1,20 do auras.raid1.buffs[i]=aura("B",i) end
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ApplyGroupDimensions(40)
+        local b=FCTweaksRaidUnitG1M1
+        assert(visible(b.buffBadges)==20)
+        FostercareTweaks_Config["Show Raid Buffs"]=0; UF:UpdateAllRaidFrames()
+        assert(visible(b.buffBadges)==0 and b.buffSpace==0)
+        assert(FCTweaksRaidFrame:GetHeight()==16+5*34+4*3)
+        FostercareTweaks_Config["Show Raid Buffs"]=1; UF:UpdateAllRaidFrames()
+        assert(visible(b.buffBadges)==20 and b.buffSpace==85)''')
+
+    def test_buff_icon_gaps_do_not_leave_stale_high_index_badges(self):
+        lua=runtime(); lua.execute('''raidCount=1; auras.raid1={buffs={}}
+        for i=1,12 do auras.raid1.buffs[i]=aura("B",i) end
+        auras.raid1.buffs[9][2]=nil
+        FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:EnableRaidFrames()
+        local b=FCTweaksRaidUnitG1M1
+        assert(visible(b.buffBadges)==11 and b.buffBadges[12]:IsShown())
+        fire(b.buffBadges[10],"OnEnter"); assert(GameTooltip.lastAura[2]==10)
+        auras.raid1.buffs={}; fire(FCTweaksRaidFrame,"OnEvent","UNIT_AURA","raid1")
+        assert(visible(b.buffBadges)==0 and b.buffBadges[12].unit==nil)''')
+
+    def test_all_buff_preview_matches_wrapping_and_live_dimension_changes(self):
+        lua=runtime(); lua.execute('''FostercareTweaks_Config["Show All Raid Buffs"]=1
+        local UF=FostercareTweaks.UnitFrames; UF:ToggleRaidTest()
+        assert(visible(FCTweaksRaidUnitG1M1.buffBadges)==32)
+        UF:ApplyGroupDimensions(40,20,1,0,0,true)
+        assert(FCTweaksRaidFrame:GetHeight()==16+5*(20+133))
+        assert(FCTweaksRaidUnitG1M2.point[5]==-16-20-133)
+        UF:ApplyGroupDimensions(120,20,1,0,0,true)
+        assert(visible(FCTweaksRaidUnitG1M1.buffBadges)==32)
+        assert(FCTweaksRaidFrame:GetHeight()==16+5*(20+49))''')
+
+
+    def test_native_areas_default_on_and_keep_original_scripts(self):
+        lua=native_runtime(); lua.execute('''
+        local oldClick=BuffButton0:GetScript("OnClick")
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        local a=FostercareTweaks.standardAuraAreas
+        assert(#a[1].buttons==16 and #a[2].buttons==8 and #a[3].buttons==2)
+        for _,area in ipairs(a) do assert(area.frame:IsShown()) end
+        assert(BuffFrame:IsShown() and TemporaryEnchantFrame:IsShown())
+        assert(BuffButton0:GetScript("OnClick")==oldClick)
+        fire(BuffButton0,"OnClick"); assert(nativeClicks==1)
+        assert(BuffButton16:GetParent()==a[2].frame and BuffButton0:GetParent()==a[1].frame)
+        assert(TempEnchant1:GetParent()==a[3].frame and TempEnchant2:IsShown()==false)''')
+
+    def test_native_areas_hide_independently_despite_native_refresh(self):
+        lua=native_runtime(); lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        local a=FostercareTweaks.standardAuraAreas
+        FostercareTweaks_Config["Show Standard Buffs"]=0
+        FostercareTweaks_Config["Show Weapon Enchants"]=0
+        FostercareTweaks.ApplyStandardAuraSettings()
+        assert(not BuffButton0:IsVisible() and BuffButton16:IsVisible() and not TempEnchant1:IsVisible())
+        assert(BuffButton0Duration:GetAlpha()==0 and BuffButton16Duration:GetAlpha()==1 and TempEnchant1Duration:GetAlpha()==0)
+        this=BuffButton0; BuffButton_Update(); this=nil; BuffFrame_Enchant_OnUpdate()
+        assert(not BuffButton0:IsVisible() and BuffButton0Duration:GetAlpha()==0)
+        FostercareTweaks_Config["Show Standard Buffs"]=1
+        FostercareTweaks_Config["Show Standard Debuffs"]=0
+        FostercareTweaks.ApplyStandardAuraSettings()
+        assert(BuffButton0:IsVisible() and not BuffButton16:IsVisible())
+        assert(BuffButton0Duration:GetAlpha()==1 and BuffButton16Duration:GetAlpha()==0)
+        assert(FostercareTweaks_Config["Show Player Buffs"]==nil)
+        assert(BuffFrame:IsVisible() and TemporaryEnchantFrame:IsVisible())''')
+
+    def test_native_positions_survive_enchant_and_duration_anchor_updates(self):
+        lua=native_runtime(); lua.execute('''
+        FostercareTweaks_Config.unitframe_positions={standard_global_buffs={point="TOPLEFT",relPoint="TOPLEFT",x=120,y=-180}}
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        local a=FostercareTweaks.standardAuraAreas
+        local point=a[1].frame.point
+        SHOW_BUFF_DURATIONS="1"; BuffButtons_UpdatePositions(); BuffFrame_Enchant_OnUpdate()
+        assert(a[1].frame.point==point and point[4]==120 and point[5]==-180)
+        assert(BuffButton8.point[2]==a[1].frame and BuffButton8.point[5]==-45)
+        assert(BuffButton16.point[2]==a[2].frame)
+        SHOW_BUFF_DURATIONS="0"; BuffButtons_UpdatePositions()
+        assert(BuffButton8.point[5]==-35 and a[1].frame.point==point)''')
+
+    def test_native_movers_save_each_area_separately_and_respect_visibility(self):
+        lua=native_runtime(); lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        local a=FostercareTweaks.standardAuraAreas
+        ctrl=true; shift=true; FostercareTweaks.UpdateFrameMovers()
+        fire(a[2].frame.fctMover,"OnDragStart")
+        assert(a[2].frame.moving and not a[1].frame.moving)
+        a[2].frame:SetPoint("TOPLEFT",UIParent,"TOPLEFT",100,-200)
+        ctrl=false; FostercareTweaks.UpdateFrameMovers()
+        assert(not a[2].frame.moving)
+        local p=FostercareTweaks_Config.unitframe_positions
+        assert(p.standard_global_debuffs.x==100 and p.standard_global_buffs==nil and p.standard_weapon_enchants==nil)
+        FostercareTweaks_Config["Show Standard Debuffs"]=0; FostercareTweaks.ApplyStandardAuraSettings()
+        ctrl=true; FostercareTweaks.UpdateFrameMovers()
+        assert(not a[2].frame.fctMover:IsVisible() and a[1].frame.fctMover:IsVisible())''')
+
+    def test_native_settings_apply_live_and_defaults_restore_all_three(self):
+        lua=native_runtime(); lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        FCTweaksUnitSettingsPage:RefreshValues()
+        assert(FCTweaksNativeBuffsCB:GetChecked() and FCTweaksNativeDebuffsCB:GetChecked() and FCTweaksNativeEnchantsCB:GetChecked())
+        FCTweaksNativeEnchantsCB:SetChecked(false); fire(FCTweaksNativeEnchantsCB,"OnClick")
+        assert(FostercareTweaks_Config["Show Weapon Enchants"]==0 and not TempEnchant1:IsVisible())
+        assert(FCTweaksNativeBuffsCB:GetChecked() and FCTweaksNativeDebuffsCB:GetChecked())
+        fire(FCTweaksResetUFDefaultsBtn,"OnClick")
+        assert(FostercareTweaks_Config["Show Weapon Enchants"]==1 and TempEnchant1:IsVisible())
+        assert(FCTweaksNativeEnchantsCB:GetChecked())''')
+
+
+    def test_native_module_enable_is_idempotent_and_preserves_script_context(self):
+        lua=native_runtime(); lua.execute('''
+        local previous=PlayerFrame; this=previous
+        local m=FostercareTweaks.mods["Blizzard Aura Controls"]
+        m:enable(); local a=FostercareTweaks.standardAuraAreas; m:enable()
+        assert(FostercareTweaks.standardAuraAreas==a and #a==3 and this==previous)
+        FostercareTweaks.ApplyStandardAuraSettings(); assert(this==previous)
+        assert(a[1].frame.point[2]==BuffFrame and a[3].frame.point[2]==TemporaryEnchantFrame)''')
 
 if __name__=='__main__': unittest.main(verbosity=2)

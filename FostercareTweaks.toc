@@ -24,6 +24,7 @@ mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
 mods\move-unitframes.lua
+mods\standard-player-auras.lua
 mods\unitframes\core.lua
 mods\unitframes\auras.lua
 mods\unitframes\player.lua

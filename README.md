@@ -36,7 +36,7 @@ FostercareTweaks combines optional unit frames, enhancements to the original Bli
 - **Standard Blizzard Frames**: Separate player, target and target-of-target choices retain the original artwork. Standard frames are the default for new users; existing choices are preserved.
 - **Improved Standard Auras**: Enhanced player/target buffs and debuffs with stack counts, accurate aura tooltips, optional duration text/sweeps and dispel borders. Missing remote expiration remains unknown. The global Blizzard buff strip is retained.
 - **Independent Aura Movers**: Hold Ctrl+Shift to move a frame or its separate buff/debuff areas. Saved aura positions follow their owning frame and are not reset by aura updates.
-- **Multiple Raid Buffs**: Four buffs by default in a reserved row below each unit. Set 1–8 buffs and 8–18 px icons under Raid Frames; frame width limits how many fit. Buff rows add vertical space without covering health/name text.
+- **Multiple Raid Buffs**: Four buffs by default. Under Raid Frames, choose 1–8 buffs or **Show All Buffs**, with 8–18 px icons. Narrow frames wrap the chosen buffs into extra rows below the player; each group expands only for occupied rows, without covering health/name text or the next player. All mode displays every helpful aura reported by the client and overrides the count slider.
 - **Modern Player & Target Frames**: Luna-inspired unit frames with 1px dark borders, class coloring, 2D portraits, and UnitXP SP3 authoritative health numbers.
 - **Optional Target Anchor API**: `FostercareTweaks.GetActiveTargetFrame()` returns the current target presentation for addons such as TWThreat.
 - **Modern 40-Player Raid Grid**: 8-subgroup compact grid with class colors, power bars, health deficits, dispel highlights, range fading, and raid icons.
@@ -127,6 +127,10 @@ Access settings at any time:
 ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from equipped-item/reagent-use tracking. The published support minimum is v1.15.15+; no native-set import or duplicate WEAR_EQUIPMENT_SET handler is added. Verify normal spell/item actions and a ClassicAPI equipment-set action in-game after updating the DLL and restarting WoW.
 
 ## Frame settings and testing
+
+Under `/ft` > **Unit Frames** > **Top-right Blizzard Auras**, toggle **Show Standard Buffs**, **Show Standard Debuffs** and **Show Weapon Enchants** independently. They default to visible and apply immediately. These controls do not hide the enhanced auras beside the player frame.
+
+With **Movable Unit Frames** enabled, hold **Ctrl+Shift** and drag each visible Blizzard aura area. Positions are saved independently per character. **Reset Frame Positions** (or `/ft resetuf`) also resets these areas. To move a hidden area, enable it first. Native icons, tooltips, buff cancellation and enchant countdowns are retained. See [implementation and runtime checklist](docs/STANDARD_AURA_CONTROLS_2026-09-27.md).
 
 Open `/ft uf`. Standard Blizzard Frames and Modern Unit Frames have separate
 sections; each unit can use only one presentation. Buff/debuff controls apply to

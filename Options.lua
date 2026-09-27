@@ -320,7 +320,7 @@ settings.unitPage = unitPage
 local unitContainer = CreateFrame("Frame", "FCTweaksUnitSettingsContainer", unitPage)
 unitContainer:SetPoint("TOPLEFT", unitPage, "TOPLEFT", 0, 0)
 unitContainer:SetWidth(max_width - 48)
-unitContainer:SetHeight(840)
+unitContainer:SetHeight(990)
 unitPage:SetScrollChild(unitContainer)
 
 -- Choose each presentation explicitly; classic Blizzard art is the default.
@@ -388,9 +388,34 @@ local onlyMyDebuffsCB     = CreateCheckButton("FCTweaksOnlyMyDebuffsCB",     T["
 
 local debuffSizeSlider    = CreateSlider("FCTweaksDebuffSizeSlider", T["Debuff Size"], 14, 32, 1, " px", debuffBox, 16, -122, 416)
 
+-- Independent of the enhanced player-frame aura controls above.
+local nativeAuraBox = CreateSectionBox(unitContainer, "Top-right Blizzard Auras", 120)
+nativeAuraBox:SetPoint("TOPLEFT", debuffBox, "BOTTOMLEFT", 0, -14)
+nativeAuraBox:SetPoint("TOPRIGHT", debuffBox, "BOTTOMRIGHT", 0, -14)
+local nativeAuraChecks = {}
+for i, spec in ipairs({
+    { "FCTweaksNativeBuffsCB", "Show Standard Buffs" },
+    { "FCTweaksNativeDebuffsCB", "Show Standard Debuffs" },
+    { "FCTweaksNativeEnchantsCB", "Show Weapon Enchants" },
+}) do
+    local cb = CreateCheckButton(spec[1], spec[2], "Show this original Blizzard aura area. Player-frame auras are unaffected.", nativeAuraBox, 16, -24 * i)
+    cb.setting = spec[2]
+    cb:SetScript("OnClick", function()
+        local value = this:GetChecked() and 1 or 0
+        FostercareTweaks_Config[this.setting] = value
+        current_config[this.setting] = value
+        if FostercareTweaks.ApplyStandardAuraSettings then FostercareTweaks.ApplyStandardAuraSettings() end
+    end)
+    table.insert(nativeAuraChecks, cb)
+end
+local nativeAuraHint = nativeAuraBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+nativeAuraHint:SetPoint("TOPLEFT", nativeAuraBox, "TOPLEFT", 240, -30)
+nativeAuraHint:SetWidth(185); nativeAuraHint:SetJustifyH("LEFT")
+nativeAuraHint:SetText("Hold Ctrl+Shift to move each visible area. Enable Movable Unit Frames above. Reset Frame Positions also resets these areas.")
+
 -- Action Buttons
 local resetPosBtn = CreateFrame("Button", "FCTweaksResetUFPosBtn", unitContainer, "UIPanelButtonTemplate")
-resetPosBtn:SetPoint("TOPLEFT", debuffBox, "BOTTOMLEFT", 0, -12)
+resetPosBtn:SetPoint("TOPLEFT", nativeAuraBox, "BOTTOMLEFT", 0, -12)
 resetPosBtn:SetWidth(218)
 resetPosBtn:SetHeight(24)
 resetPosBtn:SetText(T["Reset Frame Positions"])
@@ -403,7 +428,7 @@ resetPosBtn:SetScript("OnClick", function()
 end)
 
 local resetUFDefaultsBtn = CreateFrame("Button", "FCTweaksResetUFDefaultsBtn", unitContainer, "UIPanelButtonTemplate")
-resetUFDefaultsBtn:SetPoint("TOPRIGHT", debuffBox, "BOTTOMRIGHT", 0, -12)
+resetUFDefaultsBtn:SetPoint("TOPRIGHT", nativeAuraBox, "BOTTOMRIGHT", 0, -12)
 resetUFDefaultsBtn:SetWidth(218)
 resetUFDefaultsBtn:SetHeight(24)
 resetUFDefaultsBtn:SetText(T["Reset to Defaults"])
@@ -705,6 +730,11 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
         end
         if UF.ApplyConfiguration then UF:ApplyConfiguration() end
     end
+    for _, cb in ipairs(nativeAuraChecks) do
+        FostercareTweaks_Config[cb.setting] = 1
+        current_config[cb.setting] = 1
+    end
+    if FostercareTweaks.ApplyStandardAuraSettings then FostercareTweaks.ApplyStandardAuraSettings() end
     if unitPage.RefreshValues then unitPage:RefreshValues() end
 end)
 
@@ -722,6 +752,7 @@ function unitPage:RefreshValues()
     improvedStandardAurasCB:SetChecked(UF:IsImprovedStandardAuras() and true or nil)
 
     local cfg = FostercareTweaks_Config or {}
+    for _, cb in ipairs(nativeAuraChecks) do cb:SetChecked(cfg[cb.setting] ~= 0) end
     moveUFCB:SetChecked((cfg[T["Movable Unit Frames"]] == nil or cfg[T["Movable Unit Frames"]] == 1) and true or nil)
     classColorCB:SetChecked(cfg[T["Unit Frame Class Colors"]] == 1 and true or nil)
     classPortraitCB:SetChecked(cfg[T["Unit Frame Class Portraits"]] == 1 and true or nil)
@@ -824,10 +855,11 @@ local debuffCB = CreateCheckButton("FCTweaksRaidDebuffCB", T["Show Debuff Badges
 local raidBuffBox = CreateSectionBox(raidContainer, "Raid Buffs", 128)
 raidBuffBox:SetPoint("TOPLEFT", rBox2, "BOTTOMLEFT", 0, -14)
 raidBuffBox:SetPoint("TOPRIGHT", rBox2, "BOTTOMRIGHT", 0, -14)
-local raidBuffCB = CreateCheckButton("FCTweaksRaidBuffCB", "Show Raid Buffs", "Show several buffs in a separate row below each group member; the row does not cover health text.", raidBuffBox, 16, -24)
+local raidBuffCB = CreateCheckButton("FCTweaksRaidBuffCB", "Show Raid Buffs", "Show buffs in wrapping rows below each group member, without covering health text.", raidBuffBox, 16, -24)
+local raidAllBuffsCB = CreateCheckButton("FCTweaksRaidAllBuffsCB", "Show All Buffs", "Show every buff reported by the client. Additional rows expand the group layout as needed.", raidBuffBox, 230, -24)
 local raidBuffHint = raidBuffBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 raidBuffHint:SetPoint("TOPLEFT", raidBuffBox, "TOPLEFT", 24, -52)
-raidBuffHint:SetText("The number shown also depends on frame width and icon size.")
+raidBuffHint:SetText("Chosen buffs wrap below each player; rows expand as needed.")
 local raidBuffCountSlider = CreateSlider("FCTweaksRaidBuffCountSlider", "Buffs Per Player", 1, 8, 1, "", raidBuffBox, 16, -82, 196)
 local raidBuffSizeSlider = CreateSlider("FCTweaksRaidBuffSizeSlider", "Raid Buff Size", 8, 18, 1, " px", raidBuffBox, 236, -82, 196)
 
@@ -865,14 +897,17 @@ local function ApplyRaidBuffSettings()
     local cfg = FostercareTweaks_Config
     cfg.overwrites = cfg.overwrites or {}
     cfg["Show Raid Buffs"] = raidBuffCB:GetChecked() and 1 or 0
+    cfg["Show All Raid Buffs"] = raidAllBuffsCB:GetChecked() and 1 or 0
+    if raidAllBuffsCB:GetChecked() then raidBuffCountSlider:Disable() else raidBuffCountSlider:Enable() end
     cfg.overwrites.raid_buff_count = math.floor(raidBuffCountSlider:GetValue() + 0.5)
     cfg.overwrites.raid_buff_size = math.floor(raidBuffSizeSlider:GetValue() + 0.5)
-    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. cfg.overwrites.raid_buff_count)
+    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. (raidAllBuffsCB:GetChecked() and "All" or cfg.overwrites.raid_buff_count))
     raidBuffSizeSlider.label:SetText("Raid Buff Size: " .. cfg.overwrites.raid_buff_size .. " px")
     UF:ApplyGroupDimensions()
     UF:UpdateAllRaidFrames()
 end
 raidBuffCB:SetScript("OnClick", ApplyRaidBuffSettings)
+raidAllBuffsCB:SetScript("OnClick", ApplyRaidBuffSettings)
 raidBuffCountSlider:SetScript("OnValueChanged", ApplyRaidBuffSettings)
 raidBuffSizeSlider:SetScript("OnValueChanged", ApplyRaidBuffSettings)
 
@@ -974,11 +1009,16 @@ resetBtn:SetScript("OnClick", function()
     isRaidUpdating = true
     enableCB:SetChecked(true)
     raidBuffCB:SetChecked(true)
+    raidAllBuffsCB:SetChecked(false)
+    raidBuffCountSlider:Enable()
+    FostercareTweaks_Config["Show All Raid Buffs"] = 0
     raidBuffCountSlider:SetValue(4)
     raidBuffSizeSlider:SetValue(10)
     FostercareTweaks_Config["Show Raid Buffs"] = 1
     FostercareTweaks_Config.overwrites.raid_buff_count = 4
     FostercareTweaks_Config.overwrites.raid_buff_size = 10
+    raidBuffCountSlider.label:SetText("Buffs Per Player: 4")
+    raidBuffSizeSlider.label:SetText("Raid Buff Size: 10 px")
     aggroCB:SetChecked(true)
     hotCB:SetChecked(true)
     debuffCB:SetChecked(true)
@@ -1028,11 +1068,13 @@ function raidPage:RefreshValues()
 
     isRaidUpdating = true
     enableCB:SetChecked(dims.enabled)
-    local buffsEnabled, buffCount, buffSize = UF:GetRaidBuffSettings()
+    local buffsEnabled, buffCount, buffSize, allBuffs = UF:GetRaidBuffSettings()
     raidBuffCB:SetChecked(buffsEnabled)
+    raidAllBuffsCB:SetChecked(allBuffs)
+    if allBuffs then raidBuffCountSlider:Disable() else raidBuffCountSlider:Enable() end
     raidBuffCountSlider:SetValue(buffCount)
     raidBuffSizeSlider:SetValue(buffSize)
-    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. buffCount)
+    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. (allBuffs and "All" or buffCount))
     raidBuffSizeSlider.label:SetText("Raid Buff Size: " .. buffSize .. " px")
     widthSlider:SetValue(dims.width)
     heightSlider:SetValue(dims.height)
