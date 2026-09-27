@@ -890,6 +890,13 @@ testBtn:SetText(T["Toggle Test Grid (40)"])
 if testBtn:GetFontString() then testBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
 
 local isRaidUpdating = false
+local function UpdateRaidBuffCountControl()
+    -- Native 1.12 Slider widgets do not have Button:Enable/Disable methods.
+    local allBuffs = raidAllBuffsCB:GetChecked()
+    raidBuffCountSlider:EnableMouse(not allBuffs)
+    raidBuffCountSlider:SetAlpha(allBuffs and 0.45 or 1)
+end
+
 local function ApplyRaidBuffSettings()
     if isRaidUpdating then return end
     local UF = FostercareTweaks.UnitFrames
@@ -898,7 +905,7 @@ local function ApplyRaidBuffSettings()
     cfg.overwrites = cfg.overwrites or {}
     cfg["Show Raid Buffs"] = raidBuffCB:GetChecked() and 1 or 0
     cfg["Show All Raid Buffs"] = raidAllBuffsCB:GetChecked() and 1 or 0
-    if raidAllBuffsCB:GetChecked() then raidBuffCountSlider:Disable() else raidBuffCountSlider:Enable() end
+    UpdateRaidBuffCountControl()
     cfg.overwrites.raid_buff_count = math.floor(raidBuffCountSlider:GetValue() + 0.5)
     cfg.overwrites.raid_buff_size = math.floor(raidBuffSizeSlider:GetValue() + 0.5)
     raidBuffCountSlider.label:SetText("Buffs Per Player: " .. (raidAllBuffsCB:GetChecked() and "All" or cfg.overwrites.raid_buff_count))
@@ -1010,7 +1017,7 @@ resetBtn:SetScript("OnClick", function()
     enableCB:SetChecked(true)
     raidBuffCB:SetChecked(true)
     raidAllBuffsCB:SetChecked(false)
-    raidBuffCountSlider:Enable()
+    UpdateRaidBuffCountControl()
     FostercareTweaks_Config["Show All Raid Buffs"] = 0
     raidBuffCountSlider:SetValue(4)
     raidBuffSizeSlider:SetValue(10)
@@ -1071,7 +1078,7 @@ function raidPage:RefreshValues()
     local buffsEnabled, buffCount, buffSize, allBuffs = UF:GetRaidBuffSettings()
     raidBuffCB:SetChecked(buffsEnabled)
     raidAllBuffsCB:SetChecked(allBuffs)
-    if allBuffs then raidBuffCountSlider:Disable() else raidBuffCountSlider:Enable() end
+    UpdateRaidBuffCountControl()
     raidBuffCountSlider:SetValue(buffCount)
     raidBuffSizeSlider:SetValue(buffSize)
     raidBuffCountSlider.label:SetText("Buffs Per Player: " .. (allBuffs and "All" or buffCount))

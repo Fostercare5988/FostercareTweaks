@@ -72,3 +72,31 @@ selected count at minimum width and maximum icon size. Integration review also
 caught sparse badge caches when an intervening icon was unavailable and stale
 count labels during All/reset. These are project-specific regressions; existing
 canonical API/identity guidance is sufficient, with no Known Pattern promotion.
+
+## Settings slider correction — 2026-09-27
+
+The maintainer's live-client screenshot reported Options.lua:1074 calling a
+missing Slider:Enable method when opening the raid settings. The previous mock
+incorrectly supplied Button-only Enable/Disable methods to every frame type.
+Both All-mode states and the reset path used those invalid calls.
+
+[SOURCE-VERIFIED] The archived 1.12.1
+[OptionsFrame.lua](https://github.com/tekkub/wow-ui-source/blob/5a98d3fd8172c95966426c62cb4e8a72165a4fd5/FrameXML/OptionsFrame.lua#L450)
+manages slider appearance separately from Button Enable/Disable. The correction
+uses native Frame:EnableMouse and SetAlpha: All mode fades and blocks mouse
+input on the count slider; limited mode and reset restore it. The selected
+count, aura enumeration and wrapping behavior remain unchanged.
+
+The corrected mock reproduces the exact Enable failure on the published source
+and the corresponding Disable failure with All enabled. All 36 frame regression
+tests now pass, including reopening the saved Raid tab in both modes, switching
+tabs, live All/count changes and reset. Strict linter: 0 errors, 0 advisories;
+diff check passed. No manifest, dependency or SavedVariables changes.
+
+[UNVERIFIED - TEST FIRST] Sync this correction to the actual game folder, reload,
+open /ft and select Raid Frames. Toggle Show All Buffs on/off, switch tabs and
+reopen. The corrected version still requires this in-client confirmation.
+
+Retrospective: UI mocks must reject known unsupported frame methods instead of
+silently supplying them. This is a scoped project regression; no framework or
+other addon changes are needed.

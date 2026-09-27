@@ -61,6 +61,11 @@ function methods:GetAlpha() return self.alpha or 1 end
 function CreateFrame(kind,name,parent,template)
  local f={name=name,parent=parent,shown=true,width=64,height=34,scale=1,left=0,top=600,scripts={},events={}}
  setmetatable(f,{__index=function(t,k)
+  -- 1.12 sliders are frames, not buttons: they have no Enable/Disable methods.
+  if k=="Enable" or k=="Disable" then
+   if kind=="Button" or kind=="CheckButton" then return methods[k] end
+   return nil
+  end
   if methods[k] then return methods[k] end
   if string.match(k,"^[A-Z]") then return function() end end
  end})
@@ -445,16 +450,44 @@ class FrameTests(unittest.TestCase):
         FCTweaksRaidBuffCountSlider:SetValue(8)
         FCTweaksRaidAllBuffsCB:SetChecked(true); fire(FCTweaksRaidAllBuffsCB,"OnClick")
         assert(FostercareTweaks_Config["Show All Raid Buffs"]==1)
-        assert(FCTweaksRaidBuffCountSlider.disabled and visible(FCTweaksRaidUnitG1M1.buffBadges)==12)
+        assert(FCTweaksRaidBuffCountSlider.mouse==false and FCTweaksRaidBuffCountSlider:GetAlpha()<1 and visible(FCTweaksRaidUnitG1M1.buffBadges)==12)
         assert(FCTweaksRaidBuffCountSlider.label:GetText()=="Buffs Per Player: All")
         FostercareTweaksSettingsGUI.raidPage:RefreshValues()
-        assert(FCTweaksRaidAllBuffsCB:GetChecked() and FCTweaksRaidBuffCountSlider.disabled)
+        assert(FCTweaksRaidAllBuffsCB:GetChecked() and FCTweaksRaidBuffCountSlider.mouse==false)
         FCTweaksRaidAllBuffsCB:SetChecked(false); fire(FCTweaksRaidAllBuffsCB,"OnClick")
-        assert(not FCTweaksRaidBuffCountSlider.disabled)
+        assert(FCTweaksRaidBuffCountSlider.mouse==true and FCTweaksRaidBuffCountSlider:GetAlpha()==1)
         assert(FostercareTweaks_Config.overwrites.raid_buff_count==8 and visible(FCTweaksRaidUnitG1M1.buffBadges)==8)
         FCTweaksRaidPageResetBtn.scripts.OnClick()
         assert(FostercareTweaks_Config["Show All Raid Buffs"]==0 and FostercareTweaks_Config.overwrites.raid_buff_count==4)
         assert(FCTweaksRaidBuffCountSlider.label:GetText()=="Buffs Per Player: 4")''')
+
+    def test_native_slider_mock_rejects_button_only_enable_methods(self):
+        lua=runtime(); lua.execute('''local slider=CreateFrame("Slider")
+        assert(slider.Enable==nil and slider.Disable==nil)
+        local button=CreateFrame("Button"); button:Disable(); assert(button.disabled)
+        button:Enable(); assert(not button.disabled)''')
+
+    def test_settings_reopen_saved_raid_tab_in_both_buff_modes(self):
+        for all_buffs in (0,1):
+            with self.subTest(all_buffs=all_buffs):
+                lua=runtime()
+                lua.execute('FostercareTweaks.UnitFrames.ApplyConfiguration=function() end')
+                lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+                lua.globals().savedAll=all_buffs
+                lua.execute('''FostercareTweaks_Config["Show All Raid Buffs"]=savedAll
+                FostercareTweaks_Config.overwrites.raid_buff_count=7
+                local gui=FostercareTweaksSettingsGUI
+                gui.currentTab=3; fire(gui,"OnShow")
+                local slider=FCTweaksRaidBuffCountSlider
+                assert(slider:GetValue()==7 and slider.mouse==(savedAll==0))
+                assert(slider:GetAlpha()==(savedAll==1 and 0.45 or 1))
+                assert(slider.label:GetText()=="Buffs Per Player: "..(savedAll==1 and "All" or "7"))
+                gui.SelectTab(2); gui.SelectTab(3)
+                gui:Hide(); fire(gui,"OnShow")
+                assert(slider:GetValue()==7 and slider.mouse==(savedAll==0))
+                fire(FCTweaksRaidPageResetBtn,"OnClick")
+                assert(slider:GetValue()==4 and slider.mouse==true and slider:GetAlpha()==1)
+                assert(FostercareTweaks_Config["Show All Raid Buffs"]==0)''')
 
     def test_disabling_buffs_hides_all_created_icons_and_removes_row_space(self):
         lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}
