@@ -132,3 +132,56 @@ same state, hiding the event-ordering distinction. Model the differing source
 contracts rather than assuming every available API shares a state snapshot.
 General widget/mock and modifier-event facts were deliberately promoted to
 VanillaForge references/workflow; this addon's geometry stays with the addon.
+
+## Mirrored standard target aura layout — 2026-09-27
+
+Task: scoped visual/layout bug fix from 03032de. The maintainer's screenshot
+showed six player buffs on one line, but five target buffs and a lone sixth
+on a second line beside the target's right-side portrait. FT imposed five
+columns on the standard target and eight on the player; both grew from the left.
+
+[SOURCE-VERIFIED] The native 1.12 target portrait is anchored TOPRIGHT, while
+its health/mana bars sit to its left. The native target-of-target extends ten
+pixels below the root frame. See pinned
+[TargetFrame.xml](https://github.com/tekkub/wow-ui-source/blob/5a98d3fd8172c95966426c62cb4e8a72165a4fd5/FrameXML/TargetFrame.xml).
+Stock aura rows grow from the left: the new right-aligned growth is an FT
+presentation choice, not a claimed Blizzard requirement. Native GetRight is
+used by the same build's
+[UIParent.lua](https://github.com/tekkub/wow-ui-source/blob/5a98d3fd8172c95966426c62cb4e8a72165a4fd5/FrameXML/UIParent.lua).
+FT's native target castbar can sit another 24 pixels below the root. The new
+default rows start 34 pixels below the root, leaving room for both controls.
+
+Standard target buffs/debuffs now grow left from a stable right edge, with eight
+icons per row. The ninth starts another row at the same right edge. Enumeration,
+texture orientation, tooltip indices and timer text do not reverse. Creation
+and resizing share the same icon placement helper. Player and modern layouts
+keep their existing growth direction.
+
+Existing target aura TOPLEFT saves convert once to TOPRIGHT using the first
+displayed row's width; the same relative anchor and vertical offset are retained.
+Old saves do not store prior aura count/width, so the exact historical rectangle
+cannot be reconstructed. This preserves the configured area as initially laid
+out by the new code and stabilizes its right edge thereafter, without discarding
+the position. Later drops save the right edge relative to TargetFrame at the
+correct effective scale. Other saved position keys keep their existing format.
+Active-drag geometry protection and current modifier-state handling remain intact.
+No TOC, dependency floor, new toggle or SavedVariables declaration changes.
+
+Validation: reproduced the old five-column/right-anchor failures before fixing.
+All 42 Lua 5.1 frame regressions pass; strict linter reports 0 errors and 0
+advisories. Covered six/eight/nine buffs and debuffs, wrapped bounds and tooltip
+identity, resize/drop at different scales, one-time saved-anchor conversion and
+container recreation, and unchanged player/modern layout behavior.
+
+[UNVERIFIED - TEST FIRST] Sync the new commit to the actual game folder and reload.
+Target a friendly player with six, eight and more than eight buffs; expect upright
+icons in right-aligned rows. Check debuff tooltips/own-debuff filtering, target
+casts and target-of-target. Adjust the separate areas with Ctrl+Shift if desired;
+remove buffs, change icon size and reload to check the stable right edge. Existing
+areas above the frame remain where configured. Rendering at the maintainer's UI
+scale needs in-game confirmation; mock tests establish geometry/state contracts.
+
+Retrospective: the screenshot exposed inconsistent row capacity and anchoring,
+which visibility-only checks missed. The native layout review also prevented
+widened default rows covering target-of-target/castbar. This is addon-specific
+layout knowledge; no VanillaForge Known Pattern or framework change is needed.

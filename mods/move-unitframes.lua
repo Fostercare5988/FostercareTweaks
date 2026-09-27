@@ -20,8 +20,11 @@ function FostercareTweaks.SaveFramePosition(frame, key, relative)
         positions[key] = { point = point, relPoint = relPoint, x = x, y = y }
     else
         local ratio = relative:GetEffectiveScale() / frame:GetEffectiveScale()
-        positions[key] = { point = "TOPLEFT", relPoint = "TOPLEFT",
-            x = frame:GetLeft() - relative:GetLeft() * ratio,
+        local rightAligned = frame.fctPositionPoint == "TOPRIGHT"
+        local point = rightAligned and "TOPRIGHT" or "TOPLEFT"
+        positions[key] = { point = point, relPoint = point,
+            x = rightAligned and (frame:GetRight() - relative:GetRight() * ratio)
+                or (frame:GetLeft() - relative:GetLeft() * ratio),
             y = frame:GetTop() - relative:GetTop() * ratio }
     end
     local p = positions[key]

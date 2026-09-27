@@ -138,6 +138,13 @@ the active player/target presentation. Presentation and aura settings save live;
 Close does not undo them. The Shared Frame Features reload button applies modules
 that are enabled at login, such as health numbers, class portraits and energy ticks.
 
+Standard target aura rows align to the right and grow left, matching the target's
+right-side portrait; player rows grow right. Both fit eight icons before wrapping.
+Icons and timer text stay upright. Default target rows leave room beneath the
+native target-of-target and FT castbar. Your moved buff/debuff areas are retained;
+older target positions convert once to a stable right edge so changing aura counts
+does not shift the row sideways. Use Ctrl+Shift to adjust either area.
+
 Open `/ft raid` for raid buff count/size, row dimensions, spacing and scale.
 Use `/ft testraid` to preview the full grid. The old HoT corner is a separate
 indicator, not a replacement for the multiple-buff row. Modern player/target

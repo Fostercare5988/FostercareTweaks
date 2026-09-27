@@ -206,12 +206,23 @@ end
 Auras.CreateAuraButton = CreateAuraButton
 Auras.ResetAuraButton = ResetAuraButton
 
+local function AnchorAuraButton(btn, frame, index, size, spacing, perRow, growsUp, alignRight)
+    local row = math.floor((index - 1) / perRow)
+    local col = (index - 1) % perRow
+    local point = (growsUp and "BOTTOM" or "TOP") .. (alignRight and "RIGHT" or "LEFT")
+    btn:SetPoint(point, frame, point,
+        col * (size + spacing) * (alignRight and -1 or 1),
+        row * (size + spacing) * (growsUp and 1 or -1))
+end
+
 function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, options)
     options = options or {}
     local buffSize = (UF.GetBuffSize and UF:GetBuffSize()) or options.buffSize or options.size or 20
     local debuffSize = (UF.GetDebuffSize and UF:GetDebuffSize()) or options.debuffSize or options.size or 20
     local spacing = options.spacing or 3
     local perRow = options.perRow or 8
+    local alignRight = options.alignRight
+    local side = alignRight and "RIGHT" or "LEFT"
 
     local container = CreateFrame("Frame", parentFrame:GetName() .. "Auras", parentFrame)
     container.unit = unit
@@ -226,22 +237,17 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
         container.buffFrame = CreateFrame("Frame", container:GetName() .. "Buffs", container)
         container.buffFrame:SetWidth((buffSize + spacing) * perRow - spacing)
         container.buffFrame:SetHeight(buffSize)
+        container.buffFrame.fctPositionPoint = alignRight and "TOPRIGHT" or nil
 
         if options.buffAnchor == "BOTTOM" then
-            container.buffFrame:SetPoint("TOPLEFT", parentFrame, "BOTTOMLEFT", 0, -4)
+            container.buffFrame:SetPoint("TOP" .. side, parentFrame, "BOTTOM" .. side, 0, -4)
         else
-            container.buffFrame:SetPoint("BOTTOMLEFT", parentFrame, "TOPLEFT", 0, 4)
+            container.buffFrame:SetPoint("BOTTOM" .. side, parentFrame, "TOP" .. side, 0, 4)
         end
 
         for i = 1, maxBuffs do
             local btn = CreateAuraButton(container.buffFrame, container.buffFrame:GetName() .. i, buffSize, false)
-            local row = math.floor((i - 1) / perRow)
-            local col = (i - 1) % perRow
-            if options.buffAnchor == "BOTTOM" then
-                btn:SetPoint("TOPLEFT", container.buffFrame, "TOPLEFT", col * (buffSize + spacing), -row * (buffSize + spacing))
-            else
-                btn:SetPoint("BOTTOMLEFT", container.buffFrame, "BOTTOMLEFT", col * (buffSize + spacing), row * (buffSize + spacing))
-            end
+            AnchorAuraButton(btn, container.buffFrame, i, buffSize, spacing, perRow, options.buffAnchor ~= "BOTTOM", alignRight)
             btn.unit = unit
             btn.auraIndex = i
             btn.container = container
@@ -254,24 +260,19 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
         container.debuffFrame = CreateFrame("Frame", container:GetName() .. "Debuffs", container)
         container.debuffFrame:SetWidth((debuffSize + spacing) * perRow - spacing)
         container.debuffFrame:SetHeight(debuffSize)
+        container.debuffFrame.fctPositionPoint = alignRight and "TOPRIGHT" or nil
 
         if options.debuffAnchor == "TOP" then
             local relative = container.buffFrame or parentFrame
-            container.debuffFrame:SetPoint("BOTTOMLEFT", relative, "TOPLEFT", 0, 4)
+            container.debuffFrame:SetPoint("BOTTOM" .. side, relative, "TOP" .. side, 0, 4)
         else
             local relative = (options.buffAnchor == "BOTTOM" and container.buffFrame) or parentFrame
-            container.debuffFrame:SetPoint("TOPLEFT", relative, "BOTTOMLEFT", 0, -4)
+            container.debuffFrame:SetPoint("TOP" .. side, relative, "BOTTOM" .. side, 0, -4)
         end
 
         for i = 1, maxDebuffs do
             local btn = CreateAuraButton(container.debuffFrame, container.debuffFrame:GetName() .. i, debuffSize, true)
-            local row = math.floor((i - 1) / perRow)
-            local col = (i - 1) % perRow
-            if options.debuffAnchor == "TOP" then
-                btn:SetPoint("BOTTOMLEFT", container.debuffFrame, "BOTTOMLEFT", col * (debuffSize + spacing), row * (debuffSize + spacing))
-            else
-                btn:SetPoint("TOPLEFT", container.debuffFrame, "TOPLEFT", col * (debuffSize + spacing), -row * (debuffSize + spacing))
-            end
+            AnchorAuraButton(btn, container.debuffFrame, i, debuffSize, spacing, perRow, options.debuffAnchor == "TOP", alignRight)
             btn.unit = unit
             btn.auraIndex = i
             btn.container = container
@@ -313,14 +314,9 @@ function Auras:ApplyBuffSize(container, newSize)
             btn.cooldown:SetHeight(36)
             btn.cooldown:SetScale((newSize + 0.7) / 36)
         end
-        local row = math.floor((i - 1) / perRow)
-        local col = (i - 1) % perRow
         btn:ClearAllPoints()
-        if container.options and container.options.buffAnchor == "BOTTOM" then
-            btn:SetPoint("TOPLEFT", container.buffFrame, "TOPLEFT", col * (newSize + spacing), -row * (newSize + spacing))
-        else
-            btn:SetPoint("BOTTOMLEFT", container.buffFrame, "BOTTOMLEFT", col * (newSize + spacing), row * (newSize + spacing))
-        end
+        AnchorAuraButton(btn, container.buffFrame, i, newSize, spacing, perRow,
+            container.options and container.options.buffAnchor ~= "BOTTOM", container.options and container.options.alignRight)
     end
 end
 
@@ -345,14 +341,9 @@ function Auras:ApplyDebuffSize(container, newSize)
             btn.cooldown:SetHeight(36)
             btn.cooldown:SetScale((newSize + 0.7) / 36)
         end
-        local row = math.floor((i - 1) / perRow)
-        local col = (i - 1) % perRow
         btn:ClearAllPoints()
-        if container.options and container.options.debuffAnchor == "TOP" then
-            btn:SetPoint("BOTTOMLEFT", container.debuffFrame, "BOTTOMLEFT", col * (newSize + spacing), row * (newSize + spacing))
-        else
-            btn:SetPoint("TOPLEFT", container.debuffFrame, "TOPLEFT", col * (newSize + spacing), -row * (newSize + spacing))
-        end
+        AnchorAuraButton(btn, container.debuffFrame, i, newSize, spacing, perRow,
+            container.options and container.options.debuffAnchor == "TOP", container.options and container.options.alignRight)
     end
 end
 
@@ -612,6 +603,16 @@ local function HasSavedPosition(key)
     return key and positions and positions[key]
 end
 
+local function NormalizeRightAnchor(frame, key, parent)
+    local p = HasSavedPosition(key)
+    if not p or p.point ~= "TOPLEFT" or not p.relPoint or not tonumber(p.x) or not tonumber(p.y) then return end
+    -- Preserve the current rectangle, then let future count/size changes grow left.
+    p.point = "TOPRIGHT"
+    p.x = tonumber(p.x) + frame:GetWidth()
+    frame:ClearAllPoints()
+    frame:SetPoint(p.point, parent, p.relPoint, p.x, p.y)
+end
+
 local function IsAreaDragging(frame)
     return frame and frame.fctMover and frame.fctMover.dragging
 end
@@ -632,27 +633,30 @@ function Auras:LayoutContainer(container)
             if not IsAreaDragging(row) then
                 row:SetWidth(math.min(perRow, math.max(1, count)) * (size + spacing) - spacing)
                 row:SetHeight(math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing)
+                if options.alignRight and options.moveKey then
+                    NormalizeRightAnchor(row, options.moveKey .. "_" .. kind .. "s", container:GetParent())
+                end
             end
         end
     end
     local parent = container:GetParent()
     local key = options.moveKey
     if options.standard then
+        local side = options.alignRight and "RIGHT" or "LEFT"
+        local x = options.alignRight and -5 or 5
+        -- The native ToT and FT castbar occupy the area below the target portrait.
+        local y = options.alignRight and -34 or 12
         if container.buffFrame and not IsAreaDragging(container.buffFrame) and not HasSavedPosition(key .. "_buffs") then
             container.buffFrame:ClearAllPoints()
-            if container.unit == "player" then
-                container.buffFrame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 5, 12)
-            else
-                container.buffFrame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 5, 32)
-            end
+            container.buffFrame:SetPoint("TOP" .. side, parent, "BOTTOM" .. side, x, y)
         end
         if container.debuffFrame and not IsAreaDragging(container.debuffFrame) and not HasSavedPosition(key .. "_debuffs") then
             container.debuffFrame:ClearAllPoints()
             local buffs = container.buffFrame
             if buffs and buffs:IsShown() and (buffs.occupiedCount or 0) > 0 then
-                container.debuffFrame:SetPoint("TOPLEFT", buffs, "BOTTOMLEFT", 0, -4)
+                container.debuffFrame:SetPoint("TOP" .. side, buffs, "BOTTOM" .. side, 0, -4)
             else
-                container.debuffFrame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 5, container.unit == "player" and 12 or 32)
+                container.debuffFrame:SetPoint("TOP" .. side, parent, "BOTTOM" .. side, x, y)
             end
         end
     end
@@ -665,18 +669,18 @@ function Auras:AttachToTargetFrame()
     local buffSize = (UF.GetBuffSize and UF:GetBuffSize()) or 20
     local debuffSize = (UF.GetDebuffSize and UF:GetDebuffSize()) or 20
 
-    -- Standard TargetFrame accommodates 5 auras per row cleanly without overlapping TargetofTargetFrame
+    -- Match the standard player row capacity; target rows grow from the portrait side.
     local container = Auras:CreateAuraContainer(TargetFrame, "target", 32, 48, {
-        standard = true, moveKey = "standard_target",
+        standard = true, moveKey = "standard_target", alignRight = true,
         buffSize = buffSize,
         debuffSize = debuffSize,
         spacing = 3,
-        perRow = 5,
+        perRow = 8,
         buffAnchor = "BOTTOM",
         debuffAnchor = "BOTTOM",
     })
     container:ClearAllPoints()
-    container:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 5, 32)
+    container:SetPoint("TOPRIGHT", TargetFrame, "BOTTOMRIGHT", -5, -34)
     container:SetFrameStrata("LOW")
 
     UF.blizzTargetAuras = container

@@ -33,6 +33,7 @@ function methods:SetScale(v) self.scale=v end
 function methods:GetScale() return self.scale end
 function methods:GetEffectiveScale() return self.scale*(self.parent and self.parent:GetEffectiveScale() or 1) end
 function methods:GetLeft() return self.left end
+function methods:GetRight() return self.left+self.width end
 function methods:GetTop() return self.top end
 function methods:ClearAllPoints() self.point=nil end
 function methods:SetPoint(...) self.point={...} end
@@ -236,21 +237,86 @@ class FrameTests(unittest.TestCase):
         auras.player.buffs={aura("B",20)}
         fire(b,"OnClick",nil,"RightButton"); assert(cancelled[1]==20)''')
 
+    def test_standard_target_mirrors_rows_and_wraps_after_eight(self):
+        lua=runtime(); lua.execute('''TargetFrame:SetWidth(232); TargetFrame:SetHeight(100)
+        auras.target={buffs={},debuffs={}}
+        local A=FostercareTweaks.UnitFrames.Auras
+        for _,count in ipairs({6,8,9}) do
+            auras.target.buffs={}; auras.target.debuffs={}
+            for i=1,count do
+                auras.target.buffs[i]=aura("B",i)
+                auras.target.debuffs[i]=aura("D",100+i)
+            end
+            A:UpdateBlizzTargetAuras()
+            local c=FostercareTweaks.UnitFrames.blizzTargetAuras
+            for _,kind in ipairs({"buff","debuff"}) do
+                local row=c[kind.."Frame"]; local buttons=c[kind.."Buttons"]
+                assert(row:GetWidth()==math.min(count,8)*23-3)
+                assert(row:GetHeight()==(count>8 and 43 or 20))
+                assert(buttons[1].point[1]=="TOPRIGHT" and buttons[1].point[4]==0)
+                assert(buttons[6].point[4]==-115 and buttons[6].point[5]==0)
+                if count==9 then assert(buttons[9].point[4]==0 and buttons[9].point[5]==-23) end
+                fire(buttons[6],"OnEnter"); assert(GameTooltip.lastAura[2]==6)
+            end
+            assert(c.buffFrame.point[1]=="TOPRIGHT" and c.buffFrame.point[3]=="BOTTOMRIGHT")
+            assert(c.buffFrame.point[4]==-5 and c.buffFrame.point[5]==-34)
+            assert(c.debuffFrame.point[2]==c.buffFrame and c.debuffFrame.point[3]=="BOTTOMRIGHT")
+        end
+        auras.player={buffs=auras.target.buffs}; A:UpdateBlizzPlayerAuras()
+        local player=FostercareTweaks.UnitFrames.blizzPlayerAuras
+        assert(player.buffButtons[6].point[1]=="TOPLEFT" and player.buffButtons[6].point[4]==115)
+        assert(player.buffFrame.point[1]=="TOPLEFT")''')
+
+    def test_target_saved_left_anchor_converts_once_and_keeps_right_edge(self):
+        lua=runtime(); lua.execute('''FostercareTweaks_Config.unitframe_positions={
+            standard_target_buffs={point="TOPLEFT",relPoint="TOPLEFT",x=70,y=60},
+            standard_target_debuffs={point="TOPLEFT",relPoint="TOPLEFT",x=90,y=-100},
+            standard_player_buffs={point="TOPLEFT",relPoint="TOPLEFT",x=40,y=60}}
+        auras.target={buffs={aura("B",1),aura("B",2)},debuffs={aura("D",3)}}
+        auras.player={buffs={aura("B",1)}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras(); A:UpdateBlizzPlayerAuras()
+        local c=FostercareTweaks.UnitFrames.blizzTargetAuras
+        local positions=FostercareTweaks_Config.unitframe_positions
+        assert(positions.standard_target_buffs.point=="TOPRIGHT" and positions.standard_target_buffs.x==113)
+        assert(positions.standard_target_debuffs.point=="TOPRIGHT" and positions.standard_target_debuffs.x==110)
+        assert(positions.standard_target_buffs.y==60 and positions.standard_target_debuffs.y==-100)
+        assert(positions.standard_player_buffs.point=="TOPLEFT" and positions.standard_player_buffs.x==40)
+        A:ApplyBuffSize(c,30); A:ApplyDebuffSize(c,32)
+        for i=3,12 do auras.target.buffs[i]=aura("B",i) end
+        A:UpdateBlizzTargetAuras()
+        assert(c.buffFrame.point[4]==113 and c.debuffFrame.point[4]==110)
+        -- Recreate containers as on reload; already converted anchors must not drift.
+        FostercareTweaks.UnitFrames.blizzTargetAuras=nil; A:UpdateBlizzTargetAuras()
+        local restored=FostercareTweaks.UnitFrames.blizzTargetAuras
+        assert(restored.buffFrame.point[1]=="TOPRIGHT" and restored.buffFrame.point[4]==113)
+        assert(restored.debuffFrame.point[1]=="TOPRIGHT" and restored.debuffFrame.point[4]==110)''')
+
+    def test_modern_aura_growth_remains_left_aligned_after_resize(self):
+        lua=runtime(); lua.execute('''auras.target={buffs={},debuffs={}}
+        for i=1,9 do auras.target.buffs[i]=aura("B",i); auras.target.debuffs[i]=aura("D",100+i) end
+        local A=FostercareTweaks.UnitFrames.Auras
+        local c=A:CreateAuraContainer(TargetFrame,"target",32,48,{perRow=8,buffAnchor="TOP",debuffAnchor="BOTTOM"})
+        A:ApplyBuffSize(c,30); A:ApplyDebuffSize(c,32); A:UpdateContainer(c)
+        assert(c.buffButtons[6].point[1]=="BOTTOMLEFT" and c.buffButtons[6].point[4]==165)
+        assert(c.buffButtons[9].point[4]==0 and c.buffButtons[9].point[5]==33)
+        assert(c.debuffButtons[6].point[1]=="TOPLEFT" and c.debuffButtons[6].point[4]==175)
+        assert(c.debuffButtons[9].point[5]==-35)''')
+
     def test_aura_position_survives_refresh_and_resize(self):
         lua=runtime(); lua.execute('''FostercareTweaks_Config.unitframe_positions={standard_target_buffs={point="TOPLEFT",relPoint="TOPLEFT",x=70,y=-90}}
         auras.target={buffs={aura("A",1),aura("B",2)}}
         local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
         local c=FostercareTweaks.UnitFrames.blizzTargetAuras
         A:ApplyBuffSize(c,30); A:UpdateBlizzTargetAuras()
-        assert(c.buffFrame.point[4]==70 and c.buffFrame.point[5]==-90)''')
+        assert(c.buffFrame.point[1]=="TOPRIGHT" and c.buffFrame.point[4]==113 and c.buffFrame.point[5]==-90)''')
 
     def test_aura_row_bounds_and_debuff_layout_cover_multiple_rows(self):
         lua=runtime(); lua.execute('''auras.target={buffs={},debuffs={aura("D",50)}}
         for i=1,12 do auras.target.buffs[i]=aura("B",i) end
         FostercareTweaks.UnitFrames.Auras:UpdateBlizzTargetAuras()
         local c=FostercareTweaks.UnitFrames.blizzTargetAuras
-        assert(c.buffFrame:GetHeight()==66)
-        assert(c.debuffFrame.point[2]==c.buffFrame and c.debuffFrame.point[3]=="BOTTOMLEFT")''')
+        assert(c.buffFrame:GetHeight()==43)
+        assert(c.debuffFrame.point[2]==c.buffFrame and c.debuffFrame.point[3]=="BOTTOMRIGHT")''')
 
     def test_modifier_events_use_current_classicapi_state_before_native_state(self):
         for shift_side in ("leftShift","rightShift"):
@@ -339,8 +405,10 @@ class FrameTests(unittest.TestCase):
                     fire(mover,"OnDragStop")
                     assert(not row.moving and not mover.dragging)
                     local p=FostercareTweaks_Config.unitframe_positions["standard_"..dragUnit.."_"..dragKind.."s"]
-                    assert(p.x==80 and p.y==180)
-                    assert(row.point[2]==c:GetParent() and row.point[4]==80 and row.point[5]==180)
+                    local expectedX=dragUnit=="target" and (100+width-(40+c:GetParent():GetWidth())*.5) or 80
+                    assert(p.x==expectedX and p.y==180)
+                    assert(p.point==(dragUnit=="target" and "TOPRIGHT" or "TOPLEFT"))
+                    assert(row.point[2]==c:GetParent() and row.point[4]==expectedX and row.point[5]==180)
                     assert(row:GetWidth()>width and row:GetHeight()>height)
                     local dropped=row.point; update(A); assert(row.point==dropped)
                     ''')
@@ -425,7 +493,7 @@ class FrameTests(unittest.TestCase):
         lua=runtime(); lua.execute('''auras.target={debuffs={aura("D",1)}}
         FostercareTweaks.UnitFrames.Auras:UpdateBlizzTargetAuras()
         local c=FostercareTweaks.UnitFrames.blizzTargetAuras
-        assert(c.debuffFrame.point[2]==TargetFrame and c.debuffFrame.point[5]==32)''')
+        assert(c.debuffFrame.point[2]==TargetFrame and c.debuffFrame.point[5]==-34)''')
 
     def test_setting_styles_are_mutually_exclusive(self):
         lua=runtime()
