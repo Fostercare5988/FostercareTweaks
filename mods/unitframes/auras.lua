@@ -115,6 +115,8 @@ local function ResetAuraButton(btn)
     btn.expirationTime = nil
     btn.duration = nil
     btn.lastTimeText = nil
+    btn.timerUnitGUID, btn.timerSpellID, btn.timerSourceGUID = nil, nil, nil
+    btn.sweepStart, btn.sweepDuration = nil, nil
     btn.isOccupied = false
     timedButtons[btn] = nil
 
@@ -163,6 +165,7 @@ local function UpdateAuraTimes()
                 timedButtons[btn] = nil
                 CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
                 btn.cooldown:Hide()
+                btn.sweepStart, btn.sweepDuration = nil, nil
             end
         end
     end
@@ -383,6 +386,37 @@ function Auras:ApplyAuraSize(container, newSize)
     Auras:ApplyDebuffSize(container, newSize)
 end
 
+-- Preserve a running model until its actual aura identity/timing changes.
+-- Native CooldownFrame_SetTimer restarts the animation sequence on every call.
+local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expiration, spin, text, now)
+    local sourceGUID = source and UnitGUID(source)
+    local changedIdentity = btn.timerUnitGUID ~= unitGUID or btn.timerSpellID ~= spellID or
+        btn.timerSourceGUID ~= sourceGUID
+    btn.timerUnitGUID, btn.timerSpellID, btn.timerSourceGUID = unitGUID, spellID, sourceGUID
+    local timed = expiration and expiration > now and duration and duration > 0
+    local start = timed and expiration - duration
+    if timed and spin then
+        if changedIdentity or btn.sweepStart ~= start or btn.sweepDuration ~= duration then
+            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
+            btn.sweepStart, btn.sweepDuration = start, duration
+        end
+        btn.cooldown:Show()
+    else
+        if btn.sweepStart then CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0) end
+        btn.sweepStart, btn.sweepDuration = nil, nil
+        btn.cooldown:Hide()
+    end
+    -- Presence comes from the aura query. Unknown remote timing stays unknown.
+    local label = timed and text and FormatAuraTime(expiration - now) or ""
+    if btn.lastTimeText ~= label then
+        btn.lastTimeText = label
+        btn.durationText:SetText(label)
+    end
+    if label ~= "" then btn.durationText:Show() else btn.durationText:Hide() end
+    btn.expirationTime, btn.duration = timed and expiration or 0, timed and duration or 0
+    timedButtons[btn] = timed and true or nil
+end
+
 function Auras:UpdateContainer(container)
     if not container or not container.unit then return end
     local unit = container.unit
@@ -439,6 +473,7 @@ function Auras:UpdateContainer(container)
     local onlyMine = (unit == "target" and UF.IsOnlyMyDebuffs and UF:IsOnlyMyDebuffs())
 
     local now = GetTime()
+    local unitGUID = UnitGUID(unit)
 
     -- Update Buffs
     if container.buffButtons then
@@ -474,40 +509,8 @@ function Auras:UpdateContainer(container)
                             btn.countText:Hide()
                         end
 
-                        -- Unknown timing stays unknown; never restart a duration on observation.
-                        local effectiveExpiration = expirationTime
-                        local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
-
-                        -- Cooldown model sweep: synchronize timing directly on every timed update (Luna behavior)
-                        if hasTimer and showBuffSpin and btn.cooldown then
-                            local start = effectiveExpiration - duration
-                            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
-                            btn.cooldown.reverse = true
-                            btn.cooldown:Show()
-                        elseif btn.cooldown then
-                            CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                            btn.cooldown:Hide()
-                        end
-
-                        -- Duration text countdown
-                        if hasTimer then
-                            local remaining = effectiveExpiration - now
-                            if remaining > 0 and showBuffText then
-                                btn.durationText:SetText(FormatAuraTime(remaining))
-                                btn.durationText:Show()
-                            else
-                                btn.durationText:SetText("")
-                                btn.durationText:Hide()
-                            end
-                            timedButtons[btn] = true
-                        else
-                            btn.durationText:SetText("")
-                            btn.durationText:Hide()
-                            timedButtons[btn] = nil
-                        end
-
-                        btn.expirationTime = hasTimer and effectiveExpiration or 0
-                        btn.duration = hasTimer and duration or 0
+                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime,
+                            showBuffSpin, showBuffText, now)
 
                         Auras.StyleBorder(btn)
                         btn:Show()
@@ -563,40 +566,8 @@ function Auras:UpdateContainer(container)
 
                         Auras.StyleBorder(btn, dispelType, colorDispel)
 
-                        -- Unknown timing stays unknown; never restart a duration on observation.
-                        local effectiveExpiration = expirationTime
-                        local hasTimer = (effectiveExpiration and effectiveExpiration > now and duration and duration > 0)
-
-                        -- Cooldown model sweep: synchronize timing directly on every timed update (Luna behavior)
-                        if hasTimer and showDebuffSpin and btn.cooldown then
-                            local start = effectiveExpiration - duration
-                            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
-                            btn.cooldown.reverse = true
-                            btn.cooldown:Show()
-                        elseif btn.cooldown then
-                            CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-                            btn.cooldown:Hide()
-                        end
-
-                        -- Duration text countdown
-                        if hasTimer then
-                            local remaining = effectiveExpiration - now
-                            if remaining > 0 and showDebuffText then
-                                btn.durationText:SetText(FormatAuraTime(remaining))
-                                btn.durationText:Show()
-                            else
-                                btn.durationText:SetText("")
-                                btn.durationText:Hide()
-                            end
-                            timedButtons[btn] = true
-                        else
-                            btn.durationText:SetText("")
-                            btn.durationText:Hide()
-                            timedButtons[btn] = nil
-                        end
-
-                        btn.expirationTime = hasTimer and effectiveExpiration or 0
-                        btn.duration = hasTimer and duration or 0
+                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime,
+                            showDebuffSpin, showDebuffText, now)
 
                         btn:Show()
                         btnIdx = btnIdx + 1
@@ -701,6 +672,18 @@ function Auras:AttachToTargetFrame()
     return container
 end
 
+local function SuppressBlizzTargetAuras()
+    if not UF:IsImprovedStandardAuras() and not UF:IsModernTarget() then return end
+    for i = 1, 5 do
+        local btn = _G["TargetFrameBuff" .. i]
+        if btn and btn:IsShown() then btn:Hide() end
+    end
+    for i = 1, 16 do
+        local btn = _G["TargetFrameDebuff" .. i]
+        if btn and btn:IsShown() then btn:Hide() end
+    end
+end
+
 local isUpdatingBlizzAuras = false
 function Auras:UpdateBlizzTargetAuras()
     if isUpdatingBlizzAuras then return end
@@ -718,24 +701,17 @@ function Auras:UpdateBlizzTargetAuras()
     if not container or not enabled or not targetShown or isModernTarget then
         if container and container:IsShown() then
             container:Hide()
-            if not enabled and targetShown and not isModernTarget and TargetFrame_UpdateAuras then
-                TargetFrame_UpdateAuras()
+            for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
+            for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
+            if not enabled and targetShown and not isModernTarget and TargetDebuffButton_Update then
+                TargetDebuffButton_Update()
             end
         end
         isUpdatingBlizzAuras = false
         return
     end
 
-    -- Suppress stock Blizzard target aura buttons
-    local _G = _G or getfenv(0)
-    for i = 1, 5 do
-        local b = _G["TargetFrameBuff" .. i]
-        if b then b:Hide() end
-    end
-    for i = 1, 16 do
-        local d = _G["TargetFrameDebuff" .. i]
-        if d then d:Hide() end
-    end
+    SuppressBlizzTargetAuras()
 
     container:Show()
     Auras:UpdateContainer(container)
@@ -743,14 +719,9 @@ function Auras:UpdateBlizzTargetAuras()
     isUpdatingBlizzAuras = false
 end
 
--- Secure hook TargetFrame_UpdateAuras so stock target frame aura changes are captured in real time
-if TargetFrame and FostercareTweaks.hooksecurefunc then
-    FostercareTweaks.hooksecurefunc("TargetFrame_UpdateAuras", function()
-        if Auras.UpdateBlizzTargetAuras then
-            Auras:UpdateBlizzTargetAuras()
-        end
-    end)
-end
+-- Native TargetofTarget_Update also calls this updater on its render path.
+-- Only suppress its stock buttons here; aura scans belong to unit events.
+FostercareTweaks.hooksecurefunc("TargetDebuffButton_Update", SuppressBlizzTargetAuras)
 
 -- Independent event dispatcher for standard target aura updating
 local auraEventFrame = CreateFrame("Frame", "FCTweaksAuraEventFrame", UIParent)
@@ -778,9 +749,12 @@ end
 auraEventFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
 auraEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 auraEventFrame:SetScript("OnEvent", function()
-    if event == "PLAYER_TARGET_CHANGED" or (event == "UNIT_AURA" and arg1 == "target") then
+    if event == "PLAYER_TARGET_CHANGED" then
         Auras:UpdateBlizzTargetAuras()
-    elseif event == "PLAYER_AURAS_CHANGED" or (event == "UNIT_AURA" and arg1 == "player") then
+    elseif event == "UNIT_AURA" then
+        if arg1 and UnitIsUnit(arg1, "target") then Auras:UpdateBlizzTargetAuras() end
+        if arg1 and UnitIsUnit(arg1, "player") then Auras:UpdateBlizzPlayerAuras() end
+    elseif event == "PLAYER_AURAS_CHANGED" then
         Auras:UpdateBlizzPlayerAuras()
     elseif event == "PLAYER_ENTERING_WORLD" then
         Auras:UpdateBlizzPlayerAuras()

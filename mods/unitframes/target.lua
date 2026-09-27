@@ -166,7 +166,7 @@ local function TargetFrame_OnEvent()
     elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
         if a1 == "target" then UpdatePortrait(targetFrame) end
     elseif ev == "UNIT_AURA" then
-        if a1 == "target" and targetFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+        if a1 and UnitIsUnit(a1, "target") and targetFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
             UF.Auras:UpdateContainer(targetFrame.auraContainer)
         end
     elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_FACTION" or ev == "UNIT_CLASSIFICATION_CHANGED" then

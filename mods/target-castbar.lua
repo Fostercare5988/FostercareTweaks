@@ -272,7 +272,7 @@ module.enable = function(self)
     end)
 
     if FostercareTweaks.hooksecurefunc then
-        FostercareTweaks.hooksecurefunc("TargetFrame_UpdateAuras", function()
+        FostercareTweaks.hooksecurefunc("TargetDebuffButton_Update", function()
             if castbar:IsShown() then
                 UpdateAnchor()
             end

@@ -41,6 +41,7 @@ function methods:GetPoint() return unpack(self.point or {"TOPLEFT",UIParent,"TOP
 function methods:GetFrameLevel() return 1 end
 function methods:SetTexture(...) self.texture={...} end
 function methods:SetVertexColor(...) self.color={...} end
+function methods:SetSequence(v) self.sequence=v; self.sequenceCalls=(self.sequenceCalls or 0)+1 end
 function methods:SetBackdropBorderColor(...) self.borderColor={...} end
 function methods:SetTexCoord(...) self.texcoords={...} end
 function methods:SetID(v) self.id=v end
@@ -99,7 +100,9 @@ function IsRightShiftKeyDown() return rightShift end
 function IsLeftControlKeyDown() if leftCtrl~=nil then return leftCtrl end; return ctrl end
 function IsRightControlKeyDown() return rightCtrl end
 function UnitExists(u) return u~=nil end
-function UnitIsUnit(a,b) return a==b end
+unitGUIDs={}
+function UnitGUID(u) if not u then return nil end; return unitGUIDs[u] or "GUID:"..u end
+function UnitIsUnit(a,b) return a and b and UnitGUID(a)==UnitGUID(b) end
 function UnitName(u) return u end
 function UnitHealth() return 3000 end
 function UnitHealthMax() return 4000 end
@@ -126,12 +129,17 @@ function SpellIsTargeting() return false end
 function GetScreenWidth() return 1200 end
 function GetScreenHeight() return 900 end
 function ReloadUI() reloads=(reloads or 0)+1 end
-function CooldownFrame_SetTimer(f,start,duration,enabled) f.timer={start,duration,enabled} end
+function CooldownFrame_SetTimer(f,start,duration,enabled)
+ f.timer={start,duration,enabled}; f.timerCalls=(f.timerCalls or 0)+1
+ if start>0 and duration>0 and enabled>0 then
+  f.start=start; f.duration=duration; f.stopping=0; f:SetSequence(0); f:Show()
+ else f:Hide() end
+end
 C_Timer={NewTicker=function(delay,cb) local h={delay=delay,callback=cb}; table.insert(timers,h); return h end}
 C_Spell={CancelSpellByID=function(id) table.insert(cancelled,id) end}
 C_UnitAuras={}
-function C_UnitAuras.UnitBuff(unit,i,filter) local t=auras[unit] and auras[unit].buffs; if t and t[i] then return unpack(t[i]) end end
-function C_UnitAuras.UnitDebuff(unit,i,filter) local t=auras[unit] and auras[unit].debuffs; if t and t[i] then return unpack(t[i]) end end
+function C_UnitAuras.UnitBuff(unit,i,filter) auraReads=(auraReads or 0)+1; local t=auras[unit] and auras[unit].buffs; if t and t[i] then return unpack(t[i]) end end
+function C_UnitAuras.UnitDebuff(unit,i,filter) auraReads=(auraReads or 0)+1; local t=auras[unit] and auras[unit].debuffs; if t and t[i] then return unpack(t[i]) end end
 FostercareTweaks_Config={overwrites={}}
 FostercareTweaks={mods={},overwrites={},T=setmetatable({},{__index=function(t,k) return k end})}
 slotReads={}; slotQueries={}
@@ -158,7 +166,24 @@ function FostercareTweaks.AddBorder(button,inset)
  return button.FostercareTweaks_border
 end
 function FostercareTweaks.HookScript() end
-function FostercareTweaks.hooksecurefunc() end
+-- Only real globals can be hooked, as in Helpers.lua. Model the native
+-- updater showing its aura buttons again, including through target-of-target.
+for i=1,5 do CreateFrame("Button","TargetFrameBuff"..i,TargetFrame):Hide() end
+for i=1,16 do CreateFrame("Button","TargetFrameDebuff"..i,TargetFrame):Hide() end
+function TargetDebuffButton_Update()
+ nativeTargetRefreshes=(nativeTargetRefreshes or 0)+1
+ for _,kind in ipairs({"Buff","Debuff"}) do
+  local list=auras.target and auras.target[kind=="Buff" and "buffs" or "debuffs"] or {}
+  for i=1,(kind=="Buff" and 5 or 16) do
+   local b=_G["TargetFrame"..kind..i]
+   if list[i] then b:Show() else b:Hide() end
+  end
+ end
+end
+function FostercareTweaks.hooksecurefunc(name,callback)
+ local orig=_G[name]; if type(orig)~="function" then return end
+ _G[name]=function() orig(); callback() end
+end
 function aura(name,id,expiration,source)
  return {name,"icon"..id,2,"Magic",30,expiration or 0,source or "raid1",false,false,id,false,false,true}
 end
@@ -866,6 +891,112 @@ class FrameTests(unittest.TestCase):
         assert(FostercareTweaks_Config["Show Weapon Enchant Borders"]==1 and TempEnchant1.fctAuraBorder:IsShown())
         assert(not BuffButton0.fctAuraBorder or not BuffButton0.fctAuraBorder:IsShown())
         assert(BuffButton16Border:GetAlpha()==0 and BuffButton0:IsVisible() and BuffButton16:IsVisible())
+        ''')
+
+    def test_native_target_refresh_cannot_reveal_duplicate_auras_or_rescan(self):
+        lua=runtime(); lua.execute('''
+        auras.target={buffs={aura("Buff",1,130)},debuffs={aura("Crippling",3409,130,"player")}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
+        local poison=FostercareTweaks.UnitFrames.blizzTargetAuras.debuffButtons[1]
+        local reads=auraReads; local calls=poison.cooldown.timerCalls
+        for i=1,50 do TargetDebuffButton_Update() end
+        assert(nativeTargetRefreshes==50 and not TargetFrameDebuff1:IsShown() and not TargetFrameBuff1:IsShown())
+        assert(poison:IsVisible() and poison.spellId==3409)
+        assert(auraReads==reads and poison.cooldown.timerCalls==calls)
+        ''')
+
+    def test_pvp_poison_application_refresh_and_dispel_update_on_event(self):
+        lua=runtime(); lua.execute('''
+        auras.target={debuffs={}}
+        local UF=FostercareTweaks.UnitFrames; UF.Auras:UpdateBlizzTargetAuras()
+        local b=UF.blizzTargetAuras.debuffButtons[1]; assert(not b:IsShown())
+        auras.target.debuffs={aura("Crippling",3409,130,"player")}
+        fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","target")
+        assert(b:IsShown() and b.spellId==3409 and b.expirationTime==130 and b.cooldown:IsShown())
+        local calls=b.cooldown.timerCalls
+        for i=1,20 do fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","target") end
+        assert(b.cooldown.timerCalls==calls)
+        now=105; auras.target.debuffs[1][6]=135
+        fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","target")
+        assert(b.expirationTime==135 and b.cooldown.timer[1]==105 and b.cooldown.timerCalls==calls+1)
+        auras.target.debuffs={}; fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","target")
+        assert(not b:IsShown() and not b.cooldown:IsShown() and b.spellId==nil and b.durationText:GetText()=="")
+        ''')
+
+    def test_same_poison_does_not_inherit_cooldown_across_casters_or_targets(self):
+        lua=runtime(); lua.execute('''
+        auras.target={debuffs={aura("Crippling",3409,130,"player")}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
+        local b=FostercareTweaks.UnitFrames.blizzTargetAuras.debuffButtons[1]
+        local calls=b.cooldown.timerCalls
+        auras.target.debuffs[1][7]="raid1"; A:UpdateBlizzTargetAuras()
+        assert(b.cooldown.timerCalls==calls+1)
+        unitGUIDs.target="GUID:newEnemy"; A:UpdateBlizzTargetAuras()
+        assert(b.cooldown.timerCalls==calls+2)
+        auras.target.debuffs[1][10]=11201; A:UpdateBlizzTargetAuras()
+        assert(b.cooldown.timerCalls==calls+3 and b.spellId==11201)
+        A:UpdateBlizzTargetAuras(); assert(b.cooldown.timerCalls==calls+3)
+        ''')
+
+    def test_poison_unknown_timing_stays_visible_and_sweep_toggle_applies(self):
+        lua=runtime(); lua.execute('''
+        auras.target={debuffs={aura("Crippling",3409,130,"player")}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
+        local b=FostercareTweaks.UnitFrames.blizzTargetAuras.debuffButtons[1]
+        FostercareTweaks_Config["Show Debuff Cooldown Spiral"]=0; A:UpdateBlizzTargetAuras()
+        assert(not b.cooldown:IsShown() and b.durationText:IsShown())
+        local calls=b.cooldown.timerCalls
+        A:UpdateBlizzTargetAuras(); assert(b.cooldown.timerCalls==calls)
+        FostercareTweaks_Config["Show Debuff Cooldown Spiral"]=1; A:UpdateBlizzTargetAuras()
+        assert(b.cooldown:IsShown() and b.cooldown.timerCalls==calls+1)
+        auras.target.debuffs[1][6]=0; A:UpdateBlizzTargetAuras()
+        assert(b:IsVisible() and b.spellId==3409 and not b.cooldown:IsShown() and not b.durationText:IsShown())
+        now=125; A:UpdateBlizzTargetAuras(); assert(b.expirationTime==0)
+        ''')
+
+    def test_target_aura_toggle_restores_native_buttons_without_recursing(self):
+        lua=runtime(); lua.execute('''
+        auras.target={debuffs={aura("Crippling",3409,130,"player")}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
+        local c=FostercareTweaks.UnitFrames.blizzTargetAuras
+        FostercareTweaks_Config["Improved Standard Auras"]=0; A:UpdateBlizzTargetAuras()
+        assert(TargetFrameDebuff1:IsShown() and not c:IsShown() and c.debuffButtons[1].spellId==nil)
+        assert(not c.debuffButtons[1].cooldown:IsShown())
+        FostercareTweaks_Config["Improved Standard Auras"]=1; A:UpdateBlizzTargetAuras()
+        assert(c:IsShown() and c.debuffButtons[1]:IsVisible() and not TargetFrameDebuff1:IsShown())
+        FostercareTweaks_Config["Modern Target Frame"]=1; TargetDebuffButton_Update()
+        assert(not TargetFrameDebuff1:IsShown())
+        ''')
+
+    def test_target_loss_clears_bound_poison_and_timer(self):
+        lua=runtime(); lua.execute('''
+        auras.target={debuffs={aura("Crippling",3409,130,"player")}}
+        local A=FostercareTweaks.UnitFrames.Auras; A:UpdateBlizzTargetAuras()
+        local c=FostercareTweaks.UnitFrames.blizzTargetAuras; local b=c.debuffButtons[1]
+        TargetFrame:Hide(); fire(FCTweaksAuraEventFrame,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not c:IsShown() and b.spellId==nil and b.timerUnitGUID==nil and not b.cooldown:IsShown())
+        TargetFrame:Show(); auras.target.debuffs={aura("Crippling",3409,0,"player")}
+        fire(FCTweaksAuraEventFrame,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(b:IsShown() and b.spellId==3409 and b.expirationTime==0 and not b.cooldown:IsShown())
+        ''')
+
+    def test_aura_event_aliases_refresh_current_unit_without_polling(self):
+        lua=runtime(); lua.execute('''
+        local timerCount=#timers
+        unitGUIDs.target="GUID:enemy"; unitGUIDs.mouseover="GUID:enemy"
+        auras.target={debuffs={}}
+        FostercareTweaks.UnitFrames.Auras:UpdateBlizzTargetAuras()
+        auras.target.debuffs={aura("Crippling",3409,130,"player")}
+        fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","mouseover")
+        assert(FostercareTweaks.UnitFrames.blizzTargetAuras.debuffButtons[1].spellId==3409)
+        local reads=auraReads
+        fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","raid1"); assert(auraReads==reads)
+        -- A self-target aura event updates both presentations.
+        unitGUIDs.target=UnitGUID("player")
+        auras.player={buffs={aura("A",42)}}
+        fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","player")
+        assert(FostercareTweaks.UnitFrames.blizzPlayerAuras.buffButtons[1].spellId==42)
+        assert(#timers==timerCount)
         ''')
 
 if __name__=='__main__': unittest.main(verbosity=2)
