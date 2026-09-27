@@ -320,7 +320,7 @@ settings.unitPage = unitPage
 local unitContainer = CreateFrame("Frame", "FCTweaksUnitSettingsContainer", unitPage)
 unitContainer:SetPoint("TOPLEFT", unitPage, "TOPLEFT", 0, 0)
 unitContainer:SetWidth(max_width - 48)
-unitContainer:SetHeight(990)
+unitContainer:SetHeight(1110)
 unitPage:SetScrollChild(unitContainer)
 
 -- Choose each presentation explicitly; classic Blizzard art is the default.
@@ -388,10 +388,33 @@ local onlyMyDebuffsCB     = CreateCheckButton("FCTweaksOnlyMyDebuffsCB",     T["
 
 local debuffSizeSlider    = CreateSlider("FCTweaksDebuffSizeSlider", T["Debuff Size"], 14, 32, 1, " px", debuffBox, 16, -122, 416)
 
+-- Styling is independent of aura visibility and inventory border settings.
+local borderBox = CreateSectionBox(unitContainer, "Aura Borders", 96)
+borderBox:SetPoint("TOPLEFT", debuffBox, "BOTTOMLEFT", 0, -14)
+borderBox:SetPoint("TOPRIGHT", debuffBox, "BOTTOMRIGHT", 0, -14)
+local auraBorderChecks = {}
+for i, spec in ipairs({
+    { "FCTweaksBuffBordersCB", "Show Buff Borders", 0, "Decorative borders on player, target, raid and top-right buffs." },
+    { "FCTweaksDebuffBordersCB", "Show Debuff Borders", 0, "Debuff borders on player, target, raid and top-right icons. Dispel coloring follows its existing setting." },
+    { "FCTweaksEnchantBordersCB", "Show Weapon Enchant Borders", 1, "Item-quality borders on top-right weapon enchants, independent of Item Rarity Borders." },
+}) do
+    local cb = CreateCheckButton(spec[1], spec[2], spec[4], borderBox, 16, -24 * i)
+    cb.setting, cb.defaultValue = spec[2], spec[3]
+    cb:SetScript("OnClick", function()
+        local value = this:GetChecked() and 1 or 0
+        FostercareTweaks_Config[this.setting] = value
+        current_config[this.setting] = value
+        if FostercareTweaks.ApplyStandardAuraSettings then FostercareTweaks.ApplyStandardAuraSettings() end
+        local UF = FostercareTweaks.UnitFrames
+        if UF and UF.Auras then UF.Auras:RefreshBorders() end
+    end)
+    table.insert(auraBorderChecks, cb)
+end
+
 -- Independent of the enhanced player-frame aura controls above.
 local nativeAuraBox = CreateSectionBox(unitContainer, "Top-right Blizzard Auras", 120)
-nativeAuraBox:SetPoint("TOPLEFT", debuffBox, "BOTTOMLEFT", 0, -14)
-nativeAuraBox:SetPoint("TOPRIGHT", debuffBox, "BOTTOMRIGHT", 0, -14)
+nativeAuraBox:SetPoint("TOPLEFT", borderBox, "BOTTOMLEFT", 0, -14)
+nativeAuraBox:SetPoint("TOPRIGHT", borderBox, "BOTTOMRIGHT", 0, -14)
 local nativeAuraChecks = {}
 for i, spec in ipairs({
     { "FCTweaksNativeBuffsCB", "Show Standard Buffs" },
@@ -707,6 +730,10 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
         FostercareTweaks.overwrites["uf_aura_size"] = 20
     end
 
+    for _, cb in ipairs(auraBorderChecks) do
+        FostercareTweaks_Config[cb.setting] = cb.defaultValue
+        current_config[cb.setting] = cb.defaultValue
+    end
     local UF = FostercareTweaks.UnitFrames
     if UF then
         if UF.ApplyScale then UF:ApplyScale(1.0) end
@@ -735,6 +762,7 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
         current_config[cb.setting] = 1
     end
     if FostercareTweaks.ApplyStandardAuraSettings then FostercareTweaks.ApplyStandardAuraSettings() end
+    if FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.Auras then FostercareTweaks.UnitFrames.Auras:RefreshBorders() end
     if unitPage.RefreshValues then unitPage:RefreshValues() end
 end)
 
@@ -753,6 +781,11 @@ function unitPage:RefreshValues()
 
     local cfg = FostercareTweaks_Config or {}
     for _, cb in ipairs(nativeAuraChecks) do cb:SetChecked(cfg[cb.setting] ~= 0) end
+    for _, cb in ipairs(auraBorderChecks) do
+        local value = cfg[cb.setting]
+        if value == nil then value = cb.defaultValue end
+        cb:SetChecked(value == 1)
+    end
     moveUFCB:SetChecked((cfg[T["Movable Unit Frames"]] == nil or cfg[T["Movable Unit Frames"]] == 1) and true or nil)
     classColorCB:SetChecked(cfg[T["Unit Frame Class Colors"]] == 1 and true or nil)
     classPortraitCB:SetChecked(cfg[T["Unit Frame Class Portraits"]] == 1 and true or nil)

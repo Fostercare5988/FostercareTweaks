@@ -6,14 +6,55 @@ local module = FostercareTweaks:register({
     description = "Separate visibility and Ctrl+Shift movement for the original player aura areas.",
 })
 local areas
-local function StyleAuraIcon(button, weaponEnchant)
-    -- Crop the icon's embedded dark edge without replacing native handlers/timers.
-    local icon = _G[button:GetName() .. "Icon"]
+local function StyleAuraIcon(button, weaponEnchant, force)
+    local cfg = FostercareTweaks_Config or {}
+    local name = button:GetName()
+    local icon = _G[name .. "Icon"]
     if icon then icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+    local nativeBorder = _G[name .. "Border"]
     if weaponEnchant then
-        local border = _G[button:GetName() .. "Border"]
-        if border then border:SetAlpha(0) end
+        -- Quality belongs to the equipped item, not the enchant spell.
+        if nativeBorder then nativeBorder:SetAlpha(0) end
+        if cfg["Show Weapon Enchant Borders"] == 0 then
+            if button.fctAuraBorder then button.fctAuraBorder:Hide() end
+            return
+        end
+        local slot = button:GetID()
+        if slot ~= 16 and slot ~= 17 then return end
+        if not button.fctAuraBorder then
+            button.fctAuraBorder = FostercareTweaks.AddBorder(button, 3)
+            button.fctAuraBorder:EnableMouse(false)
+            force = true
+        end
+        -- The native enchant updater runs every frame. Read quality only when
+        -- the displayed hand changes, inventory changes, or settings change.
+        if force or button.fctAuraSlot ~= slot then
+            local quality = GetInventoryItemQuality("player", slot)
+            local r, g, b = 0.5, 0.5, 0.5
+            if quality then r, g, b = GetItemQualityColor(quality) end
+            button.fctAuraBorder:SetBackdropBorderColor(r, g, b, 1)
+            button.fctAuraSlot = slot
+        end
+        button.fctAuraBorder:Show()
+    elseif button.buffFilter == "HARMFUL" then
+        if nativeBorder then nativeBorder:SetAlpha(cfg["Show Debuff Borders"] == 1 and 1 or 0) end
+    else
+        if cfg["Show Buff Borders"] == 1 then
+            if not button.fctAuraBorder then
+                button.fctAuraBorder = button:CreateTexture(nil, "OVERLAY")
+                button.fctAuraBorder:SetPoint("CENTER", button, "CENTER")
+                button.fctAuraBorder:SetWidth(button:GetWidth() + 2)
+                button.fctAuraBorder:SetHeight(button:GetHeight() + 2)
+                button.fctAuraBorder:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\border-dark.tga")
+                button.fctAuraBorder:SetVertexColor(0.15, 0.15, 0.15, 1)
+            end
+            button.fctAuraBorder:Show()
+        elseif button.fctAuraBorder then button.fctAuraBorder:Hide() end
     end
+end
+local function StyleWeaponEnchants(force)
+    if not areas then return end
+    for _, button in ipairs(areas[3].buttons) do StyleAuraIcon(button, true, force) end
 end
 local function AnchorButtons()
     if not areas then return end
@@ -45,11 +86,13 @@ function FostercareTweaks.ApplyStandardAuraSettings()
             for _, button in ipairs(area.buttons) do
                 this = button
                 BuffButton_Update()
+                StyleAuraIcon(button)
             end
         end
     end
     this = previous
     BuffFrame_Enchant_OnUpdate(0)
+    StyleWeaponEnchants(true)
     AnchorButtons()
     FostercareTweaks.UpdateFrameMovers()
 end
@@ -95,5 +138,14 @@ module.enable = function()
     -- This native function reanchors BuffButton8 and BuffButton16 whenever
     -- duration display changes. Restore only icon anchors, never mover positions.
     FostercareTweaks.hooksecurefunc("BuffButtons_UpdatePositions", AnchorButtons)
+    FostercareTweaks.hooksecurefunc("BuffButton_Update", function()
+        if this and this.buffFilter then StyleAuraIcon(this) end
+    end)
+    FostercareTweaks.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
+    local inventory = CreateFrame("Frame", nil, UIParent)
+    inventory:RegisterEvent("UNIT_INVENTORY_CHANGED")
+    inventory:SetScript("OnEvent", function()
+        if arg1 == "player" then StyleWeaponEnchants(true) end
+    end)
     FostercareTweaks.ApplyStandardAuraSettings()
 end

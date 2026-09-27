@@ -104,3 +104,45 @@ change target, and check the borders stay absent after refresh and resizing.
 Retrospective: the enchant frame came from Item Rarity Borders, not ClassicAPI.
 Remove it at that owner rather than adding a timer that repeatedly hides it.
 This is a project style preference; no framework lesson promotion is required.
+
+## Separate aura border choices (supersedes the unconditional plain style above)
+
+Maintainer clarification: weapon borders remain useful for identifying item
+quality. `/ft` > Unit Frames > Aura Borders now has three independent live
+settings: Show Buff Borders (default 0), Show Debuff Borders (default 0), and
+Show Weapon Enchant Borders (default 1). Missing SavedVariables use these
+same defaults. Values save in the existing per-character config; no migration
+or new SavedVariables declaration is needed. Reset to Defaults restores them.
+Visibility, positions and aura timing are independent of styling.
+
+[SOURCE-VERIFIED] Shared player/target/raid aura buttons and previews reuse one
+border policy. Enabled buff borders are decorative; enabled enhanced debuff
+borders retain the existing optional dispel colors. Native harmful icons use
+their Blizzard dispel border. Original top-right buff icons receive a reusable
+overlay only if requested. Cropping and native click/tooltips remain intact.
+
+[SOURCE-VERIFIED] The native enchant controller assigns inventory slot IDs
+16/17 to the displayed buttons. Weapon border ownership is in Blizzard Aura
+Controls, independent of Item Rarity Borders. It reuses AddBorder and colors
+from GetInventoryItemQuality/GetItemQualityColor. A native updater posthook
+handles hand reassignment; UNIT_INVENTORY_CHANGED refreshes player equipment.
+Quality is read on hand changes, equipment events and explicit settings
+refreshes, rather than on every native update. Missing quality uses neutral
+gray. Cached border frames are reused and do not intercept mouse input.
+
+Validation: all 46 Lua 5.1 frame regressions, including four saved/live-border
+lifecycle regressions, pass. These cover reopening/recreating settings,
+independent visibility, reset defaults, shared/raid previews, tooltip identity,
+weapon hand reassignment, quality changes and no per-frame quality polling.
+Strict linter and diff checks are recorded with the published checkpoint.
+
+[UNVERIFIED - TEST FIRST] Sync this checkpoint and reload in WoW. Toggle all
+three choices separately; inspect player/target, raid and top-right icons.
+Check timers, cancellation, tooltips and Ctrl+Shift movement. Equip main/offhand
+weapons of different rarity, enchant only the offhand, then both hands; confirm
+correct colors and hand reassignment. Verify choices survive relogging.
+
+Retrospective: style preferences need independent controls when a border also
+carries information. Keep quality ownership scoped to aura controls rather
+than coupling it to inventory decoration. This project-specific preference
+requires no VanillaForge Known Pattern promotion.

@@ -41,6 +41,10 @@ function methods:GetPoint() return unpack(self.point or {"TOPLEFT",UIParent,"TOP
 function methods:GetFrameLevel() return 1 end
 function methods:SetTexture(...) self.texture={...} end
 function methods:SetVertexColor(...) self.color={...} end
+function methods:SetBackdropBorderColor(...) self.borderColor={...} end
+function methods:SetTexCoord(...) self.texcoords={...} end
+function methods:SetID(v) self.id=v end
+function methods:GetID() return self.id or 0 end
 function methods:SetText(v) self.textValue=v end
 function methods:GetText() return self.textValue end
 function methods:Enable() self.disabled=false end
@@ -149,6 +153,10 @@ end
 function FostercareTweaks:register(m) self.mods[m.title]=m; return m end
 function FostercareTweaks.Abbreviate(v) return tostring(v) end
 function FostercareTweaks.HasUnitXP() return false end
+function FostercareTweaks.AddBorder(button,inset)
+ if not rawget(button, "FostercareTweaks_border") then button.FostercareTweaks_border=CreateFrame("Frame",nil,button) end
+ return button.FostercareTweaks_border
+end
 function FostercareTweaks.HookScript() end
 function FostercareTweaks.hooksecurefunc() end
 function aura(name,id,expiration,source)
@@ -173,18 +181,26 @@ def native_runtime():
         for i=0,23 do
             local b=CreateFrame("Button","BuffButton"..i,BuffFrame)
             b.buffFilter=i<16 and "HELPFUL" or "HARMFUL"
+            CreateFrame("Texture",b:GetName().."Icon",b)
+            if b.buffFilter=="HARMFUL" then CreateFrame("Texture",b:GetName().."Border",b) end
             b:SetScript("OnClick",function() nativeClicks=(nativeClicks or 0)+1 end)
             CreateFrame("FontString",b:GetName().."Duration",BuffFrame)
         end
         for i=1,2 do
             CreateFrame("Button","TempEnchant"..i,TemporaryEnchantFrame)
             CreateFrame("FontString","TempEnchant"..i.."Duration",TemporaryEnchantFrame)
+            CreateFrame("Texture","TempEnchant"..i.."Icon",_G["TempEnchant"..i])
+            CreateFrame("Texture","TempEnchant"..i.."Border",_G["TempEnchant"..i])
         end
         function BuffButton_Update()
             this:Show(); _G[this:GetName().."Duration"]:Show()
             buffUpdates=(buffUpdates or 0)+1
         end
+        qualities={[16]=4,[17]=3}; enchantSlots={16,17}; qualityReads=0
+        function GetInventoryItemQuality(unit,slot) assert(unit=="player"); qualityReads=qualityReads+1; return qualities[slot] end
+        function GetItemQualityColor(q) return q/10,0.2,0.3 end
         function BuffFrame_Enchant_OnUpdate()
+            TempEnchant1:SetID(enchantSlots[1]); TempEnchant2:SetID(enchantSlots[2])
             TempEnchant1:Show(); TempEnchant2:Hide()
             TempEnchant1Duration:Show(); TempEnchant2Duration:Hide()
             BuffFrame:SetPoint("TOPRIGHT",TemporaryEnchantFrame,"TOPLEFT",-5,0)
@@ -762,5 +778,94 @@ class FrameTests(unittest.TestCase):
         assert(FostercareTweaks.standardAuraAreas==a and #a==3 and this==previous)
         FostercareTweaks.ApplyStandardAuraSettings(); assert(this==previous)
         assert(a[1].frame.point[2]==BuffFrame and a[3].frame.point[2]==TemporaryEnchantFrame)''')
+
+    def test_aura_border_toggles_are_independent_live_and_saved(self):
+        lua=native_runtime(); lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        FCTweaksUnitSettingsPage:RefreshValues()
+        assert(not FCTweaksBuffBordersCB:GetChecked() and not FCTweaksDebuffBordersCB:GetChecked())
+        assert(FCTweaksEnchantBordersCB:GetChecked() and TempEnchant1.fctAuraBorder:IsVisible())
+        FCTweaksBuffBordersCB:SetChecked(true); fire(FCTweaksBuffBordersCB,"OnClick")
+        assert(BuffButton0.fctAuraBorder:IsShown() and BuffButton16Border:GetAlpha()==0)
+        assert(FostercareTweaks_Config["Show Buff Borders"]==1 and TempEnchant1:IsVisible())
+        FCTweaksEnchantBordersCB:SetChecked(false); fire(FCTweaksEnchantBordersCB,"OnClick")
+        FCTweaksDebuffBordersCB:SetChecked(true); fire(FCTweaksDebuffBordersCB,"OnClick")
+        assert(not TempEnchant1.fctAuraBorder:IsShown() and BuffButton16Border:GetAlpha()==1)
+        this=BuffButton16; BuffButton_Update(); this=nil
+        assert(BuffButton16Border:GetAlpha()==1)
+        assert(BuffButton0:IsVisible() and BuffButton16:IsVisible() and TempEnchant1:IsVisible())
+        assert(not reloads)
+        FostercareTweaksSettingsGUI.currentTab=2
+        FostercareTweaksSettingsGUI:Hide(); fire(FostercareTweaksSettingsGUI,"OnShow")
+        FCTweaksUnitSettingsPage:RefreshValues()
+        assert(FCTweaksBuffBordersCB:GetChecked() and FCTweaksDebuffBordersCB:GetChecked() and not FCTweaksEnchantBordersCB:GetChecked())
+        ''')
+        # Recreate UI/runtime with the SavedVariables choices, as on login.
+        saved={key:lua.globals().FostercareTweaks_Config[key] for key in
+               ('Show Buff Borders','Show Debuff Borders','Show Weapon Enchant Borders')}
+        reloaded=native_runtime()
+        for key,value in saved.items(): reloaded.globals().FostercareTweaks_Config[key]=value
+        reloaded.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        assert(BuffButton0.fctAuraBorder:IsShown() and BuffButton16Border:GetAlpha()==1)
+        assert(not TempEnchant1.fctAuraBorder and TempEnchant1:IsVisible())
+        ''')
+
+    def test_weapon_border_quality_refresh_does_not_poll_or_recreate(self):
+        lua=native_runtime(); lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        local border=TempEnchant1.fctAuraBorder
+        assert(border.borderColor[1]==0.4 and border.mouse==false and TempEnchant1Border:GetAlpha()==0)
+        local reads=qualityReads
+        for i=1,100 do BuffFrame_Enchant_OnUpdate() end
+        assert(qualityReads==reads and border==TempEnchant1.fctAuraBorder)
+        enchantSlots={17,16}; BuffFrame_Enchant_OnUpdate()
+        assert(border.borderColor[1]==0.3 and TempEnchant2.fctAuraBorder.borderColor[1]==0.4)
+        qualities[17]=2
+        for _,f in ipairs(frames) do
+            if f.events.UNIT_INVENTORY_CHANGED then fire(f,"OnEvent","UNIT_INVENTORY_CHANGED","player") end
+        end
+        assert(border.borderColor[1]==0.2)
+        FostercareTweaks_Config["Show Weapon Enchant Borders"]=0; FostercareTweaks.ApplyStandardAuraSettings()
+        reads=qualityReads; BuffFrame_Enchant_OnUpdate(); assert(qualityReads==reads and not border:IsShown())
+        qualities[17]=nil
+        FostercareTweaks_Config["Show Weapon Enchant Borders"]=1; FostercareTweaks.ApplyStandardAuraSettings()
+        assert(border:IsShown() and border.borderColor[1]==0.5 and border==TempEnchant1.fctAuraBorder)
+        ''')
+
+    def test_shared_and_raid_borders_refresh_without_changing_aura_identity(self):
+        lua=runtime(); lua.execute('''
+        auras.player={buffs={aura("A",1,130)},debuffs={aura("D",2,130)}}
+        local UF=FostercareTweaks.UnitFrames; local A=UF.Auras
+        A:UpdateBlizzPlayerAuras(); UF:ToggleRaidTest()
+        local buff=UF.blizzPlayerAuras.buffButtons[1]; local debuff=UF.blizzPlayerAuras.debuffButtons[1]
+        local raid=FCTweaksRaidUnitG1M2
+        assert(not buff.border:IsShown() and not debuff.border:IsShown() and not raid.debuffBadges[1].border:IsShown())
+        FostercareTweaks_Config["Show Buff Borders"]=1; A:RefreshBorders()
+        assert(buff.border:IsShown() and raid.buffBadges[1].border:IsShown() and not debuff.border:IsShown())
+        FostercareTweaks_Config["Show Debuff Borders"]=1; A:RefreshBorders()
+        assert(debuff.border:IsShown() and debuff.border.color[3]==UF.DispelColors.Magic.b)
+        assert(raid.debuffBadges[1].border:IsShown())
+        assert(buff.spellId==1 and buff.expirationTime==130 and buff.cooldown:IsShown())
+        fire(debuff,"OnEnter"); assert(GameTooltip.lastAura[2]==1 and GameTooltip.lastAura[3]=="HARMFUL")
+        FostercareTweaks_Config["Show Buff Borders"]=0; A:UpdateBlizzPlayerAuras(); UF:UpdateAllRaidFrames()
+        assert(not buff.border:IsShown() and not raid.buffBadges[1].border:IsShown() and debuff.border:IsShown())
+        FostercareTweaks_Config["Color Debuffs by Dispel Type"]=0; A:UpdateBlizzPlayerAuras()
+        assert(debuff.border:IsShown() and debuff.border.color[1]==0.15)
+        ''')
+
+    def test_aura_border_defaults_restore_without_resetting_visibility(self):
+        lua=native_runtime(); lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''
+        FostercareTweaks.mods["Blizzard Aura Controls"]:enable()
+        FostercareTweaks_Config["Show Buff Borders"]=1; FostercareTweaks_Config["Show Debuff Borders"]=1
+        FostercareTweaks_Config["Show Weapon Enchant Borders"]=0
+        fire(FCTweaksResetUFDefaultsBtn,"OnClick")
+        assert(FostercareTweaks_Config["Show Buff Borders"]==0 and FostercareTweaks_Config["Show Debuff Borders"]==0)
+        assert(FostercareTweaks_Config["Show Weapon Enchant Borders"]==1 and TempEnchant1.fctAuraBorder:IsShown())
+        assert(not BuffButton0.fctAuraBorder or not BuffButton0.fctAuraBorder:IsShown())
+        assert(BuffButton16Border:GetAlpha()==0 and BuffButton0:IsVisible() and BuffButton16:IsVisible())
+        ''')
 
 if __name__=='__main__': unittest.main(verbosity=2)

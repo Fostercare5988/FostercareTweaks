@@ -12,14 +12,6 @@ local unitToButton = {}
 local testMode = false
 local wipe = table.wipe or wipe
 
--- Debuff dispel color mapping (Curse, Disease, Magic, Poison)
-local DISPEL_COLORS = {
-    ["Magic"]   = { r = 0.20, g = 0.60, b = 1.00 },
-    ["Curse"]   = { r = 0.60, g = 0.00, b = 1.00 },
-    ["Disease"] = { r = 0.80, g = 0.40, b = 0.10 },
-    ["Poison"]  = { r = 0.00, g = 0.80, b = 0.10 },
-}
-
 --------------------------------------------------------------------------------
 -- 1. Dimension Settings Management
 --------------------------------------------------------------------------------
@@ -210,6 +202,7 @@ local function UpdateButtonBuffs(btn)
             -- SetUnitAura tooltips, including after an earlier buff disappears.
             badge.unit, badge.auraIndex, badge.spellId = btn.unit, i, spellID
             badge.icon:SetTexture(icon)
+            UF.Auras.StyleBorder(badge)
             if stacks and stacks > 1 then badge.countText:SetText(stacks); badge.countText:Show() end
             if duration and duration > 0 and expiration and expiration > GetTime() then
                 badge.cooldown:SetScale((size + 0.7) / 36)
@@ -268,8 +261,7 @@ local function UpdateButtonAuras(btn)
                 badge.unit, badge.auraIndex, badge.spellId = unit, b, spellID
                 if count and count > 1 then badge.countText:SetText(count); badge.countText:Show() end
                 badge.icon:SetTexture(icon)
-                local dc = (dispelType and UF.DispelColors and UF.DispelColors[dispelType]) or { r = 0.8, g = 0.2, b = 0.2 }
-                badge.border:SetVertexColor(dc.r, dc.g, dc.b, 1); badge.border:Show()
+                UF.Auras.StyleBorder(badge, dispelType, true)
                 badge:Show()
             else
                 badge:Hide()
@@ -963,8 +955,7 @@ function UF:ToggleRaidTest()
                 if m == 2 then
                     local d = MOCK_DEBUFF_ICONS[1]
                     btn.debuffBadges[1].icon:SetTexture(d.icon)
-                    local dc = DISPEL_COLORS[d.dtype]
-                    btn.debuffBadges[1].border:SetVertexColor(dc.r, dc.g, dc.b, 1); btn.debuffBadges[1].border:Show()
+                    UF.Auras.StyleBorder(btn.debuffBadges[1], d.dtype, true)
                     btn.debuffBadges[1]:Show()
                     btn.debuffBadges[2]:Hide()
                     btn.debuffBadges[3]:Hide()
@@ -972,8 +963,7 @@ function UF:ToggleRaidTest()
                     for b = 1, 2 do
                         local d = MOCK_DEBUFF_ICONS[b + 1]
                         btn.debuffBadges[b].icon:SetTexture(d.icon)
-                        local dc = DISPEL_COLORS[d.dtype]
-                        btn.debuffBadges[b].border:SetVertexColor(dc.r, dc.g, dc.b, 1); btn.debuffBadges[b].border:Show()
+                        UF.Auras.StyleBorder(btn.debuffBadges[b], d.dtype, true)
                         btn.debuffBadges[b]:Show()
                     end
                     btn.debuffBadges[3]:Hide()
@@ -1028,6 +1018,20 @@ end
 --------------------------------------------------------------------------------
 -- 9. Group Frame Size Settings Dialog (Sliders)
 --------------------------------------------------------------------------------
+
+function UF:RefreshRaidAuraBorders()
+    for _, group in pairs(groups) do
+        for _, btn in ipairs(group.buttons) do
+            for _, kind in ipairs({ "buffBadges", "debuffBadges" }) do
+                for _, badge in ipairs(btn[kind]) do
+                    if badge:IsShown() then
+                        UF.Auras.StyleBorder(badge, badge.borderDispelType, badge.borderColorDispel)
+                    end
+                end
+            end
+        end
+    end
+end
 
 function UF:UpdateAllRaidFrames()
     if not raidFrame or not raidFrame:IsShown() then return end

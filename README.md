@@ -128,11 +128,7 @@ ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from e
 
 ## Frame settings and testing
 
-Aura icons use a plain cropped appearance without FT's dark decorative border.
-This applies to player/target and raid auras, and to the original top-right
-buff/debuff/weapon-enchant icons. Weapon enchants no longer receive item-rarity
-frames. Colored debuff cues follow their existing settings; timers, tooltips,
-stack counts and Ctrl+Shift movement are retained.
+Under `/ft` > **Unit Frames** > **Aura Borders**, choose **Show Buff Borders**, **Show Debuff Borders** and **Show Weapon Enchant Borders** separately. Buff and debuff borders default to off; weapon enchant borders default to on and show the equipped weapon's item quality. These choices save per character and apply immediately, independently of aura visibility and **Item Rarity Borders**. They cover player/target, raid and top-right icons; debuff dispel coloring applies when its border is enabled. Timers, tooltips, stack counts and Ctrl+Shift movement are retained.
 
 Under `/ft` > **Unit Frames** > **Top-right Blizzard Auras**, toggle **Show Standard Buffs**, **Show Standard Debuffs** and **Show Weapon Enchants** independently. They default to visible and apply immediately. These controls do not hide the enhanced auras beside the player frame.
 

@@ -9,6 +9,40 @@ if not UF then return end
 UF.Auras = UF.Auras or {}
 local Auras = UF.Auras
 
+-- One policy for player, target, raid and preview aura buttons.
+function Auras.StyleBorder(btn, dispelType, colorDispel)
+    btn.borderDispelType, btn.borderColorDispel = dispelType, colorDispel
+    local cfg = FostercareTweaks_Config or {}
+    local setting = btn.isDebuff and "Show Debuff Borders" or "Show Buff Borders"
+    if cfg[setting] ~= 1 then btn.border:Hide(); return end
+    if btn.isDebuff and colorDispel then
+        local dc = UF.DispelColors[dispelType] or UF.DispelColors["None"]
+        btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
+        btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+        btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+    else
+        btn.border:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\border-dark.tga")
+        btn.border:SetTexCoord(0, 1, 0, 1)
+        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+    end
+    btn.border:Show()
+end
+
+function Auras:RefreshBorders()
+    for _, key in ipairs({ "playerFrame", "targetFrame", "blizzPlayerAuras", "blizzTargetAuras" }) do
+        local frame = UF[key]
+        local container = frame and (frame.auraContainer or frame)
+        if container then
+            for _, kind in ipairs({ "buffButtons", "debuffButtons" }) do
+                for _, btn in ipairs(container[kind] or {}) do
+                    if btn:IsShown() then Auras.StyleBorder(btn, btn.borderDispelType, btn.borderColorDispel) end
+                end
+            end
+        end
+    end
+    if UF.RefreshRaidAuraBorders then UF:RefreshRaidAuraBorders() end
+end
+
 
 -- Reverse cooldown animation support (Luna mechanism for auras)
 if not CooldownFrame_OnUpdateModel_FCT_Orig then
@@ -475,7 +509,7 @@ function Auras:UpdateContainer(container)
                         btn.expirationTime = hasTimer and effectiveExpiration or 0
                         btn.duration = hasTimer and duration or 0
 
-                        btn.border:Hide()
+                        Auras.StyleBorder(btn)
                         btn:Show()
 
                         btnIdx = btnIdx + 1
@@ -527,15 +561,7 @@ function Auras:UpdateContainer(container)
                             btn.countText:Hide()
                         end
 
-                        -- Keep configured dispel cues without a dark decorative border.
-                        if colorDispel then
-                            local dc = UF.DispelColors and (UF.DispelColors[dispelType] or UF.DispelColors["None"])
-                                or { r = 0.8, g = 0.2, b = 0.2 }
-                            btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
-                            btn.border:Show()
-                        else
-                            btn.border:Hide()
-                        end
+                        Auras.StyleBorder(btn, dispelType, colorDispel)
 
                         -- Unknown timing stays unknown; never restart a duration on observation.
                         local effectiveExpiration = expirationTime
