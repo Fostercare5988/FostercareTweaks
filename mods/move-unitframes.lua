@@ -43,12 +43,17 @@ local function StopDrag(mover)
     mover.dragging = nil
     mover.owner:StopMovingOrSizing()
     FostercareTweaks.SaveFramePosition(mover.owner, mover.key, mover.relative)
+    if mover.onStop then mover.onStop() end
 end
 
 function FostercareTweaks.UpdateFrameMovers()
     local cfg = FostercareTweaks_Config
     local enabled = not cfg or cfg[T["Movable Unit Frames"]] ~= 0
-    local unlocked = enabled and IsShiftKeyDown() and IsControlKeyDown()
+    -- ClassicAPI fires from the message hook before native merged key state
+    -- catches up. Its left/right queries read the bitmap updated before firing.
+    local shiftDown = IsLeftShiftKeyDown() or IsRightShiftKeyDown()
+    local controlDown = IsLeftControlKeyDown() or IsRightControlKeyDown()
+    local unlocked = enabled and shiftDown and controlDown
     unlocker.movable = unlocked and true or nil
     if unlocker.grid then
         if unlocked then unlocker.grid:Show() else unlocker.grid:Hide() end
@@ -59,12 +64,13 @@ function FostercareTweaks.UpdateFrameMovers()
     end
 end
 
-function FostercareTweaks.RegisterFrameMover(frame, key, label, relative)
+function FostercareTweaks.RegisterFrameMover(frame, key, label, relative, onStop)
     if not frame or frame.fctMover then return end
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
     local mover = CreateFrame("Frame", nil, frame)
     mover.owner, mover.key, mover.relative = frame, key, relative or UIParent
+    mover.onStop = onStop
     mover:SetAllPoints(frame)
     mover:SetFrameLevel(frame:GetFrameLevel() + 20)
     mover:EnableMouse(true)
@@ -89,6 +95,10 @@ function FostercareTweaks.RegisterFrameMover(frame, key, label, relative)
 end
 
 module.enable = function()
+    if unlocker.initialized then
+        FostercareTweaks.UpdateFrameMovers()
+        return
+    end
     if not unlocker.grid then
         unlocker.grid = CreateFrame("Frame", "FCTweaksGridFrame", WorldFrame)
         unlocker.grid:SetAllPoints(WorldFrame)
@@ -143,5 +153,6 @@ module.enable = function()
             FostercareTweaks.RegisterFrameMover(frame, entry[2], entry[3])
         end
     end
+    unlocker.initialized = true
     FostercareTweaks.UpdateFrameMovers()
 end

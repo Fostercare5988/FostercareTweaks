@@ -89,6 +89,10 @@ function GameTooltip:SetUnitAura(unit,index,filter) self.lastAura={unit,index,fi
 function GetTime() return now end
 function IsShiftKeyDown() return shift end
 function IsControlKeyDown() return ctrl end
+function IsLeftShiftKeyDown() if leftShift~=nil then return leftShift end; return shift end
+function IsRightShiftKeyDown() return rightShift end
+function IsLeftControlKeyDown() if leftCtrl~=nil then return leftCtrl end; return ctrl end
+function IsRightControlKeyDown() return rightCtrl end
 function UnitExists(u) return u~=nil end
 function UnitIsUnit(a,b) return a==b end
 function UnitName(u) return u end
@@ -248,6 +252,55 @@ class FrameTests(unittest.TestCase):
         assert(c.buffFrame:GetHeight()==66)
         assert(c.debuffFrame.point[2]==c.buffFrame and c.debuffFrame.point[3]=="BOTTOMLEFT")''')
 
+    def test_modifier_events_use_current_classicapi_state_before_native_state(self):
+        for shift_side in ("leftShift","rightShift"):
+            for ctrl_side in ("leftCtrl","rightCtrl"):
+                for order in ((shift_side,ctrl_side),(ctrl_side,shift_side)):
+                    with self.subTest(shift=shift_side,ctrl=ctrl_side,order=order):
+                        lua=runtime(); lua.execute('''leftShift=false; rightShift=false; leftCtrl=false; rightCtrl=false
+                        FostercareTweaks.mods["Movable Unit Frames"].enable()
+                        assert(not FCTweaksGridFrame:IsShown())''')
+                        lua.globals()[order[0]]=True
+                        lua.execute('fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")')
+                        lua.execute('assert(not FCTweaksGridFrame:IsShown())')
+                        lua.globals()[order[1]]=True
+                        lua.execute('''-- Native merged state is still false during the message-hook event.
+                        assert(not IsShiftKeyDown() and not IsControlKeyDown())
+                        fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")
+                        assert(FCTweaksGridFrame:IsShown() and PlayerFrame.fctMover:IsShown())
+                        fire(PlayerFrame.fctMover,"OnDragStart"); assert(PlayerFrame.moving)
+                        shift=true; ctrl=true''')
+                        lua.globals()[order[1]]=False
+                        lua.execute('''-- The native merged query still says held during the release event.
+                        fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")
+                        assert(not FCTweaksGridFrame:IsShown() and not PlayerFrame.fctMover:IsShown())
+                        assert(not PlayerFrame.moving)''')
+
+    def test_modifier_release_keeps_other_side_held_and_live_movement_toggle(self):
+        lua=runtime(); lua.execute('''FostercareTweaks_Config["Movable Unit Frames"]=0
+        FostercareTweaks.UnitFrames:ApplyConfiguration()
+        assert(FCTweaksGridFrame==nil)
+        ''')
+        lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''FostercareTweaksSettingsGUI.SelectTab(2)
+        ctrl=true; shift=true
+        FCTweaksMoveUFCB:SetChecked(true); fire(FCTweaksMoveUFCB,"OnClick")
+        assert(FCTweaksGridFrame and FCTweaksGridFrame:IsShown())
+        leftShift=true; rightShift=true; leftCtrl=true; rightCtrl=false
+        fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")
+        leftShift=false; fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")
+        assert(FCTweaksGridFrame:IsShown())
+        local m=PlayerFrame.fctMover; fire(m,"OnDragStart")
+        local anchor=PlayerFrame.point
+        FostercareTweaks.mods["Movable Unit Frames"].enable()
+        assert(PlayerFrame.point==anchor and PlayerFrame.moving)
+        FCTweaksMoveUFCB:SetChecked(false); fire(FCTweaksMoveUFCB,"OnClick")
+        assert(not FCTweaksGridFrame:IsShown() and not m:IsShown() and not PlayerFrame.moving)
+        FCTweaksMoveUFCB:SetChecked(true); fire(FCTweaksMoveUFCB,"OnClick")
+        assert(FCTweaksGridFrame:IsShown())
+        rightShift=false; fire(FCTweaksUnitFrameUnlocker,"OnEvent","MODIFIER_STATE_CHANGED")
+        assert(not FCTweaksGridFrame:IsShown())''')
+
     def test_modifier_release_stops_and_saves_only_dragged_owner(self):
         lua=runtime(); lua.execute('''FostercareTweaks.mods["Movable Unit Frames"].enable()
         shift=true; ctrl=true; FostercareTweaks.UpdateFrameMovers()
@@ -259,6 +312,38 @@ class FrameTests(unittest.TestCase):
         assert(not PlayerFrame.moving and not m:IsShown())
         assert(FostercareTweaks_Config.unitframe_positions.standard_player.x==75)
         assert(FostercareTweaks_Config.unitframe_positions.standard_target==nil)''')
+
+    def test_first_aura_drag_survives_refresh_and_reflows_after_drop(self):
+        for unit in ("player","target"):
+            for kind in ("buff","debuff"):
+                with self.subTest(unit=unit,kind=kind):
+                    lua=runtime(); lua.globals().dragUnit=unit; lua.globals().dragKind=kind
+                    lua.execute('''auras[dragUnit]={buffs={aura("B",1)},debuffs={aura("D",2)}}
+                    local A=FostercareTweaks.UnitFrames.Auras
+                    local update=dragUnit=="player" and A.UpdateBlizzPlayerAuras or A.UpdateBlizzTargetAuras
+                    update(A)
+                    local c=dragUnit=="player" and FostercareTweaks.UnitFrames.blizzPlayerAuras or FostercareTweaks.UnitFrames.blizzTargetAuras
+                    local row=c[dragKind.."Frame"]; local mover=row.fctMover
+                    ctrl=true; shift=true; FostercareTweaks.UpdateFrameMovers()
+                    fire(mover,"OnDragStart"); assert(row.moving)
+                    -- Model the root-relative anchor native StartMoving supplies.
+                    row:SetPoint("TOPLEFT",UIParent,"TOPLEFT",100,-120)
+                    row.left=100; row.top=480; row.scale=2
+                    c:GetParent().left=40; c:GetParent().top=600
+                    local anchor=row.point; local width,height=row:GetWidth(),row:GetHeight()
+                    local a=auras[dragUnit][dragKind=="buff" and "buffs" or "debuffs"]
+                    for i=2,12 do a[i]=aura("New",100+i) end
+                    update(A)
+                    assert(row.point==anchor and row:GetWidth()==width and row:GetHeight()==height)
+                    assert(row.occupiedCount==12)
+                    fire(mover,"OnDragStop")
+                    assert(not row.moving and not mover.dragging)
+                    local p=FostercareTweaks_Config.unitframe_positions["standard_"..dragUnit.."_"..dragKind.."s"]
+                    assert(p.x==80 and p.y==180)
+                    assert(row.point[2]==c:GetParent() and row.point[4]==80 and row.point[5]==180)
+                    assert(row:GetWidth()>width and row:GetHeight()>height)
+                    local dropped=row.point; update(A); assert(row.point==dropped)
+                    ''')
 
     def test_movers_preserve_native_click_scripts_and_do_not_reveal_inactive_frames(self):
         lua=runtime(); lua.execute('''local click=function() end; PlayerFrame:SetScript("OnClick",click)

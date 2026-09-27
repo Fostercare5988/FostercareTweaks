@@ -130,7 +130,7 @@ ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from e
 
 Under `/ft` > **Unit Frames** > **Top-right Blizzard Auras**, toggle **Show Standard Buffs**, **Show Standard Debuffs** and **Show Weapon Enchants** independently. They default to visible and apply immediately. These controls do not hide the enhanced auras beside the player frame.
 
-With **Movable Unit Frames** enabled, hold **Ctrl+Shift** and drag each visible Blizzard aura area. Positions are saved independently per character. **Reset Frame Positions** (or `/ft resetuf`) also resets these areas. To move a hidden area, enable it first. Native icons, tooltips, buff cancellation and enchant countdowns are retained. See [implementation and runtime checklist](docs/STANDARD_AURA_CONTROLS_2026-09-27.md).
+With **Movable Unit Frames** enabled, hold **Ctrl+Shift** and drag each visible Blizzard aura area. Positions are saved independently per character. The grid and drag handles appear while either Ctrl and either Shift are held; movement can be enabled live in settings. Aura refreshes preserve an active drag, then reconcile the current layout on drop. **Reset Frame Positions** (or `/ft resetuf`) also resets these areas. To move a hidden area, enable it first. Native icons, tooltips, buff cancellation and enchant countdowns are retained. See [implementation and runtime checklist](docs/STANDARD_AURA_CONTROLS_2026-09-27.md).
 
 Open `/ft uf`. Standard Blizzard Frames and Modern Unit Frames have separate
 sections; each unit can use only one presentation. Buff/debuff controls apply to

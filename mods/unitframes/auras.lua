@@ -282,11 +282,11 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
     if FostercareTweaks.RegisterFrameMover and options.moveKey then
         if container.buffFrame then
             FostercareTweaks.RestoreFramePosition(container.buffFrame, options.moveKey .. "_buffs", parentFrame)
-            FostercareTweaks.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame)
+            FostercareTweaks.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, function() Auras:LayoutContainer(container) end)
         end
         if container.debuffFrame then
             FostercareTweaks.RestoreFramePosition(container.debuffFrame, options.moveKey .. "_debuffs", parentFrame)
-            FostercareTweaks.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame)
+            FostercareTweaks.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame, function() Auras:LayoutContainer(container) end)
         end
     end
     return container
@@ -612,6 +612,10 @@ local function HasSavedPosition(key)
     return key and positions and positions[key]
 end
 
+local function IsAreaDragging(frame)
+    return frame and frame.fctMover and frame.fctMover.dragging
+end
+
 function Auras:LayoutContainer(container)
     if not container then return end
     local options = container.options or {}
@@ -623,14 +627,18 @@ function Auras:LayoutContainer(container)
             for _, btn in ipairs(buttons) do if btn.isOccupied then count = count + 1 end end
             local size = container[kind .. "Size"]
             row.occupiedCount = count
-            row:SetWidth(math.min(perRow, math.max(1, count)) * (size + spacing) - spacing)
-            row:SetHeight(math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing)
+            -- Refresh aura identity while the pointer owns the area's geometry.
+            -- The mover reconciles current bounds immediately after saving the drop.
+            if not IsAreaDragging(row) then
+                row:SetWidth(math.min(perRow, math.max(1, count)) * (size + spacing) - spacing)
+                row:SetHeight(math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing)
+            end
         end
     end
     local parent = container:GetParent()
     local key = options.moveKey
     if options.standard then
-        if container.buffFrame and not HasSavedPosition(key .. "_buffs") then
+        if container.buffFrame and not IsAreaDragging(container.buffFrame) and not HasSavedPosition(key .. "_buffs") then
             container.buffFrame:ClearAllPoints()
             if container.unit == "player" then
                 container.buffFrame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 5, 12)
@@ -638,7 +646,7 @@ function Auras:LayoutContainer(container)
                 container.buffFrame:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", 5, 32)
             end
         end
-        if container.debuffFrame and not HasSavedPosition(key .. "_debuffs") then
+        if container.debuffFrame and not IsAreaDragging(container.debuffFrame) and not HasSavedPosition(key .. "_debuffs") then
             container.debuffFrame:ClearAllPoints()
             local buffs = container.buffFrame
             if buffs and buffs:IsShown() and (buffs.occupiedCount or 0) > 0 then

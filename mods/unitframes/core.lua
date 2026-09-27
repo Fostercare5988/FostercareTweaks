@@ -1022,7 +1022,12 @@ function UF:ApplyConfiguration()
         UF.Auras:UpdateBlizzTargetAuras()
         UF.Auras:UpdateBlizzPlayerAuras()
     end
-    if FostercareTweaks.UpdateFrameMovers then FostercareTweaks.UpdateFrameMovers() end
+    local movement = FostercareTweaks.mods[T["Movable Unit Frames"]]
+    if movement and FostercareTweaks_Config[T["Movable Unit Frames"]] ~= 0 then
+        movement:enable()
+    elseif FostercareTweaks.UpdateFrameMovers then
+        FostercareTweaks.UpdateFrameMovers()
+    end
 end
 
 function UF:SuppressBlizzardFrames()

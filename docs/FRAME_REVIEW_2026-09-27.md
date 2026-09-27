@@ -88,3 +88,47 @@ initial visibility tests did not cover; added actual tooltip-identity tests.
 Tests should cover visible data identity, not only icon counts. Mock geometry
 is useful for ownership and layout bounds, but cannot certify WoW rendering.
 These facts stay project-specific; no framework pattern promotion was needed.
+
+## Ctrl+Shift follow-up — 2026-09-27
+
+Task: scoped bug fix, starting at ffa1213. The maintainer reported that holding
+Ctrl+Shift did not show the grid. An additional inspected defect let an aura
+refresh overwrite the first unsaved drag's anchor and bounds.
+
+[SOURCE-VERIFIED] ClassicAPI updates its left/right modifier bitmap and fires
+MODIFIER_STATE_CHANGED in its thread message hook before engine key dispatch.
+The old mover queried native merged state, which follows a separate path.
+The corrected handler reads ClassicAPI's left/right queries; no polling,
+deferred timer or compatibility fallback was added. See pinned
+[Modifier.cpp](https://github.com/brues-code/ClassicAPI/blob/71805db62f1e8a154477033dc1f50960c535af8b/src/input/Modifier.cpp),
+blob 7071459ca029f220881208df1d3cec10c0b3849f. This establishes the event ordering;
+it does not prove the state of the maintainer's running game process.
+
+Movement activation is now reconciled when configuration is applied. A session
+starting with movement disabled can enable it live without missing the grid or
+event registration. Initialization is idempotent and no longer restores anchors
+again during an active drag. Disabling movement still stops and saves the drag.
+
+Aura identity continues updating during a drag, but automatic row anchors/bounds
+leave the dragged area alone. After a drop or modifier release, save the position
+first and reconcile current aura bounds immediately. Buff/debuff areas retain
+their relative owner and existing position keys. Native clicks and visibility
+are unchanged; no TOC, DLL support floor or SavedVariables declaration changes.
+
+Validation: 39 Lua mock regressions passed. New cases reproduce the old missed
+modifier combination for eight side/order combinations, live off-to-on grid
+activation, and the first unsaved player/target buff/debuff drag at a different
+scale. Existing modifier-release, native aura and settings tests also pass.
+Strict linter: 0 errors, 0 advisories. Complete diff and whitespace checked.
+
+[UNVERIFIED - TEST FIRST] With Movable Unit Frames enabled, hold Ctrl+Shift in
+both orders and with either side of the keyboard. Expect the grid and handles
+before clicking. Release a modifier, then try again after Alt+Tab. Drag player,
+raid and aura areas; let buffs appear/disappear while dragging. Confirm the drop
+and saved position after reload. Test the movement toggle live without reloading.
+
+Retrospective: mocks previously gave native and enhanced modifier queries the
+same state, hiding the event-ordering distinction. Model the differing source
+contracts rather than assuming every available API shares a state snapshot.
+General widget/mock and modifier-event facts were deliberately promoted to
+VanillaForge references/workflow; this addon's geometry stays with the addon.
