@@ -269,7 +269,7 @@ local function UpdateButtonAuras(btn)
                 if count and count > 1 then badge.countText:SetText(count); badge.countText:Show() end
                 badge.icon:SetTexture(icon)
                 local dc = (dispelType and UF.DispelColors and UF.DispelColors[dispelType]) or { r = 0.8, g = 0.2, b = 0.2 }
-                badge.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                badge.border:SetVertexColor(dc.r, dc.g, dc.b, 1); badge.border:Show()
                 badge:Show()
             else
                 badge:Hide()
@@ -964,7 +964,7 @@ function UF:ToggleRaidTest()
                     local d = MOCK_DEBUFF_ICONS[1]
                     btn.debuffBadges[1].icon:SetTexture(d.icon)
                     local dc = DISPEL_COLORS[d.dtype]
-                    btn.debuffBadges[1].border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                    btn.debuffBadges[1].border:SetVertexColor(dc.r, dc.g, dc.b, 1); btn.debuffBadges[1].border:Show()
                     btn.debuffBadges[1]:Show()
                     btn.debuffBadges[2]:Hide()
                     btn.debuffBadges[3]:Hide()
@@ -973,7 +973,7 @@ function UF:ToggleRaidTest()
                         local d = MOCK_DEBUFF_ICONS[b + 1]
                         btn.debuffBadges[b].icon:SetTexture(d.icon)
                         local dc = DISPEL_COLORS[d.dtype]
-                        btn.debuffBadges[b].border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                        btn.debuffBadges[b].border:SetVertexColor(dc.r, dc.g, dc.b, 1); btn.debuffBadges[b].border:Show()
                         btn.debuffBadges[b]:Show()
                     end
                     btn.debuffBadges[3]:Hide()

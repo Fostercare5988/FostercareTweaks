@@ -9,7 +9,6 @@ if not UF then return end
 UF.Auras = UF.Auras or {}
 local Auras = UF.Auras
 
-local BORDER_TEXTURE = "Interface\\AddOns\\FostercareTweaks\\img\\border-dark.tga"
 
 -- Reverse cooldown animation support (Luna mechanism for auras)
 if not CooldownFrame_OnUpdateModel_FCT_Orig then
@@ -106,9 +105,7 @@ local function ResetAuraButton(btn)
     end
 
     if btn.border then
-        btn.border:SetTexture(BORDER_TEXTURE)
-        btn.border:SetTexCoord(0, 1, 0, 1)
-        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+        btn.border:Hide()
     end
 
     btn:SetAlpha(1.0)
@@ -151,14 +148,14 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     btn.icon:SetVertexColor(1, 1, 1, 1)
 
-    -- Border overlay
+    -- Dispel overlay only; ordinary aura icons have no decorative frame.
     btn.border = btn:CreateTexture(nil, "OVERLAY")
     btn.border:SetPoint("CENTER", btn, "CENTER")
     btn.border:SetWidth(size + 2)
     btn.border:SetHeight(size + 2)
-    btn.border:SetTexture(BORDER_TEXTURE)
-    btn.border:SetTexCoord(0, 1, 0, 1)
-    btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+    btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
+    btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+    btn.border:Hide()
 
     -- Cooldown radial sweep
     btn.cooldown = CreateFrame("Model", name .. "CD", btn, "CooldownFrameTemplate")
@@ -478,9 +475,7 @@ function Auras:UpdateContainer(container)
                         btn.expirationTime = hasTimer and effectiveExpiration or 0
                         btn.duration = hasTimer and duration or 0
 
-                        btn.border:SetTexture(BORDER_TEXTURE)
-                        btn.border:SetTexCoord(0, 1, 0, 1)
-                        btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+                        btn.border:Hide()
                         btn:Show()
 
                         btnIdx = btnIdx + 1
@@ -532,21 +527,14 @@ function Auras:UpdateContainer(container)
                             btn.countText:Hide()
                         end
 
-                        -- Dispel border coloring
-                        if colorDispel and dispelType and UF.DispelColors and UF.DispelColors[dispelType] then
-                            local dc = UF.DispelColors[dispelType]
-                            btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
-                            btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
+                        -- Keep configured dispel cues without a dark decorative border.
+                        if colorDispel then
+                            local dc = UF.DispelColors and (UF.DispelColors[dispelType] or UF.DispelColors["None"])
+                                or { r = 0.8, g = 0.2, b = 0.2 }
                             btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
-                        elseif colorDispel then
-                            local dc = UF.DispelColors and UF.DispelColors["None"] or { r = 0.8, g = 0.2, b = 0.2 }
-                            btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
-                            btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
-                            btn.border:SetVertexColor(dc.r, dc.g, dc.b, 1)
+                            btn.border:Show()
                         else
-                            btn.border:SetTexture(BORDER_TEXTURE)
-                            btn.border:SetTexCoord(0, 1, 0, 1)
-                            btn.border:SetVertexColor(0.15, 0.15, 0.15, 1)
+                            btn.border:Hide()
                         end
 
                         -- Unknown timing stays unknown; never restart a duration on observation.

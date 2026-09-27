@@ -220,49 +220,4 @@ module.enable = function(self)
         bank:SetScript("OnShow", refresh_bank)
     end
 
-    do -- weapon buff
-        if TempEnchant1 then
-            local b1 = AddBorder(TempEnchant1, 3, { 0.2, 0.2, 0.2 })
-            TempEnchant1.FCTweaks_border = b1
-            TempEnchant1.ShaguTweaks_border = b1
-        end
-        if TempEnchant2 then
-            local b2 = AddBorder(TempEnchant2, 3, { 0.2, 0.2, 0.2 })
-            TempEnchant2.FCTweaks_border = b2
-            TempEnchant2.ShaguTweaks_border = b2
-        end
-
-        FostercareTweaks.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function(elapsed)
-            local mh, _, _, oh = GetWeaponEnchantInfo()
-            if not mh and not oh then
-                if TempEnchant1 then TempEnchant1.lastQuality = nil end
-                if TempEnchant2 then TempEnchant2.lastQuality = nil end
-                return
-            end
-
-            if TempEnchant1 and TempEnchant1.FCTweaks_border then
-                local q = GetInventoryItemQuality("player", TempEnchant1:GetID()) or 1
-                if TempEnchant1.lastQuality ~= q then
-                    TempEnchant1.lastQuality = q
-                    local r, g, b = GetItemQualityColor(q)
-                    TempEnchant1.FCTweaks_border:SetBackdropBorderColor(r, g, b, 1)
-                end
-                if TempEnchant1Border and TempEnchant1Border:GetAlpha() ~= 0 then
-                    TempEnchant1Border:SetAlpha(0)
-                end
-            end
-
-            if TempEnchant2 and TempEnchant2.FCTweaks_border then
-                local q = GetInventoryItemQuality("player", TempEnchant2:GetID()) or 1
-                if TempEnchant2.lastQuality ~= q then
-                    TempEnchant2.lastQuality = q
-                    local r, g, b = GetItemQualityColor(q)
-                    TempEnchant2.FCTweaks_border:SetBackdropBorderColor(r, g, b, 1)
-                end
-                if TempEnchant2Border and TempEnchant2Border:GetAlpha() ~= 0 then
-                    TempEnchant2Border:SetAlpha(0)
-                end
-            end
-        end)
-    end
 end

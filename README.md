@@ -61,7 +61,7 @@ FostercareTweaks combines optional unit frames, enhancements to the original Bli
 
 ### 5. Items & Tooltips
 - **One-Click Junk Seller**: Merchant button to automatically sell all grey items with instant summary confirmation.
-- **Item Quality Borders**: Color-coded rarity borders across inventory bags, bank, character sheet, inspect window, and temporary weapon enchants.
+- **Item Quality Borders**: Color-coded rarity borders across inventory bags, bank, character sheet and inspect window.
 - **Equipment Comparison**: Side-by-side gear comparison tooltips when holding Shift.
 - **Native Vendor Values**: Displays item sell prices directly on tooltips via `C_Item.GetItemSellPrice` without external databases.
 - **Tooltip Coexistence**: Vendor values are added after Blizzard item tooltip methods; Bagnon can add holdings lines in either addon load order.
@@ -127,6 +127,12 @@ Access settings at any time:
 ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from equipped-item/reagent-use tracking. The published support minimum is v1.15.15+; no native-set import or duplicate WEAR_EQUIPMENT_SET handler is added. Verify normal spell/item actions and a ClassicAPI equipment-set action in-game after updating the DLL and restarting WoW.
 
 ## Frame settings and testing
+
+Aura icons use a plain cropped appearance without FT's dark decorative border.
+This applies to player/target and raid auras, and to the original top-right
+buff/debuff/weapon-enchant icons. Weapon enchants no longer receive item-rarity
+frames. Colored debuff cues follow their existing settings; timers, tooltips,
+stack counts and Ctrl+Shift movement are retained.
 
 Under `/ft` > **Unit Frames** > **Top-right Blizzard Auras**, toggle **Show Standard Buffs**, **Show Standard Debuffs** and **Show Weapon Enchants** independently. They default to visible and apply immediately. These controls do not hide the enhanced auras beside the player frame.
 

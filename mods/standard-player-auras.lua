@@ -6,6 +6,15 @@ local module = FostercareTweaks:register({
     description = "Separate visibility and Ctrl+Shift movement for the original player aura areas.",
 })
 local areas
+local function StyleAuraIcon(button, weaponEnchant)
+    -- Crop the icon's embedded dark edge without replacing native handlers/timers.
+    local icon = _G[button:GetName() .. "Icon"]
+    if icon then icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+    if weaponEnchant then
+        local border = _G[button:GetName() .. "Border"]
+        if border then border:SetAlpha(0) end
+    end
+end
 local function AnchorButtons()
     if not areas then return end
     for _, area in ipairs(areas) do
@@ -68,6 +77,7 @@ module.enable = function()
     local i = 0
     while _G["BuffButton" .. i] do
         local button = _G["BuffButton" .. i]
+        StyleAuraIcon(button)
         local area = button.buffFilter == "HARMFUL" and areas[2] or areas[1]
         table.insert(area.buttons, button)
         button:SetParent(area.frame)
@@ -77,6 +87,7 @@ module.enable = function()
     end
     for i = 1, 2 do
         local button = _G["TempEnchant" .. i]
+        StyleAuraIcon(button, true)
         table.insert(areas[3].buttons, button)
         button:SetParent(areas[3].frame)
         table.insert(areas[3].durations, _G[button:GetName() .. "Duration"])

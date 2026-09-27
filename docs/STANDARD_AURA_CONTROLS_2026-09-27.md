@@ -76,3 +76,31 @@ archived-source integration check supplemented geometry mocks. Static validation
 caught a legacy math.mod call, corrected to the enhanced Lua `%` syntax.
 These project details stay in the addon; existing framework ownership/evidence
 rules cover the general lesson.
+
+## Plain aura styling — 2026-09-27
+
+Scoped visual adjustment from 3dfbc2f, requested by the maintainer. Remove FT's
+dark decorative aura overlay and the weapon-enchant item-rarity frame. Shared
+player/target/raid buffs have no decorative border; dispel overlays remain
+available under their existing settings. Resetting or reusing an aura button
+hides its overlay, and active debuffs explicitly show the colored cue. Raid
+preview and live debuff badges use the same overlay visibility policy.
+
+Native top-right icon textures receive a 7% crop to remove embedded dark edges.
+The stock weapon-enchant border is transparent, matching the plain icons.
+The original BuffFrame.xml defines these Icon/Border regions; BuffFrame.lua
+updates textures/colors rather than resetting the crop/alpha. No replacement
+handlers, hooks, timers, new setting or API dependency is introduced. Native
+debuff type cues are retained. Item Rarity Borders still applies to inventory,
+bank, character and inspect slots; its enchant update hook is removed entirely.
+Positions, dimensions, duration text/sweeps, stack counts and tooltips are intact.
+
+Validation: full 42-test Lua 5.1 frame suite, strict linter and diff review.
+[UNVERIFIED - TEST FIRST] Sync and reload; inspect player/target/raid buffs and
+top-right auras with main/offhand enchants. Expect plain icon edges, retained
+timer/stack text and colored debuff cues where enabled. Add/remove a buff,
+change target, and check the borders stay absent after refresh and resizing.
+
+Retrospective: the enchant frame came from Item Rarity Borders, not ClassicAPI.
+Remove it at that owner rather than adding a timer that repeatedly hides it.
+This is a project style preference; no framework lesson promotion is required.
