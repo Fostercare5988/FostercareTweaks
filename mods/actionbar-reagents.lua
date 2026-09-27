@@ -99,6 +99,11 @@ module.enable = function(self)
         -- 1. Structured action & spell metadata (ClassicAPI C_Spell.GetSpellReagents)
         if GetActionInfo then
             local actionType, actionID = GetActionInfo(slot)
+            -- Equipment-set icons may resemble spells; never infer reagents from them.
+            if actionType == "equipmentset" then
+                reagent_slots[slot] = nil
+                return
+            end
             if actionType == "spell" and actionID then
                 foundReagent = GetReagentForSpell(actionID)
             end

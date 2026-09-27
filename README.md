@@ -1,5 +1,7 @@
 # FostercareTweaks
 
+Recommended ClassicAPI version: **v1.15.15+**. The existing enforced addon minimum remains unchanged because this update introduces no required new API calls. Native equipment-set action buttons require v1.15.15; after updating the DLL, fully restart the game client.
+
 [![Interface](https://img.shields.io/badge/Interface-1.12.1%20%28Build%205875%29-blue.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![Version](https://img.shields.io/badge/Version-3.1.0-brightgreen.svg)](https://github.com/Fostercare5988/FostercareTweaks)
 [![Engine](https://img.shields.io/badge/Engine-ClassicAPI%20%7C%20SuperWoW%20%7C%20UnitXP%20SP3-orange.svg)](https://github.com/Fostercare5988/FostercareTweaks)
@@ -117,3 +119,5 @@ Access settings at any time:
    ```
 3. Ensure both `ClassicAPI.dll` and `SuperWoW.dll` are enabled in your client loader.
 4. Launch the game and type `/ft` to configure your preferred modules.
+
+ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from equipped-item/reagent-use tracking. Existing addon dependency minimums remain unchanged; no native-set import or duplicate WEAR_EQUIPMENT_SET handler is added. Verify normal spell/item actions and a ClassicAPI equipment-set action in-game after updating the DLL and restarting WoW.
