@@ -141,11 +141,9 @@ sections; each unit can use only one presentation. Buff/debuff controls apply to
 the active player/target presentation. Presentation and aura settings save live;
 Close does not undo them. The Shared Frame Features reload button applies modules
 that are enabled at login, such as health numbers, class portraits and energy ticks.
-**Unit Frame Class Colors** is on by default for new characters and applies
-immediately to standard player/target name backgrounds and party names. It uses
-FostercareTweaks' fixed class palette, avoiding grey colors supplied by other
-addons through the shared class-color table. Existing per-character choices are
-respected. The checkbox can still restore native Blizzard colors when disabled.
+Standard Blizzard player/target name backgrounds and party names always use
+FostercareTweaks' fixed class palette. This has no toggle, and old per-character
+"Unit Frame Class Colors" values are ignored. NPC target colors remain native.
 
 Standard target aura rows align to the right and grow left, matching the target's
 right-side portrait; player rows grow right. Both fit eight icons before wrapping.

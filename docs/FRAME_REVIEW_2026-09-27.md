@@ -186,39 +186,42 @@ which visibility-only checks missed. The native layout review also prevented
 widened default rows covering target-of-target/castbar. This is addon-specific
 layout knowledge; no VanillaForge Known Pattern or framework change is needed.
 
-## Standard name-background class colors — 2026-09-28
+## Permanent standard-frame class colors — 2026-09-28
 
-The maintainer clarified that class-colored standard player/target name
-backgrounds should remain available and be on by default. A removal checkpoint
-briefly deleted this feature; the next checkpoint restores it. The class-color
-checkbox remains live so a player can choose native Blizzard coloring.
+The maintainer clarified that standard Blizzard player/target name backgrounds
+and party names must always use class colors. The old class-color checkbox and
+its registered optional module path have been removed. Core initialization
+installs the hooks unconditionally, so an old per-character
+`Unit Frame Class Colors = 0` setting cannot suppress coloring. The old key is
+ignored; this change does not rewrite the player's SavedVariables file.
 
-[SOURCE-VERIFIED] The former module read `RAID_CLASS_COLORS`, a shared table that
-other addons can change and that may have a grey fallback for unknown tokens.
-This module now uses FT's own fixed unit-frame palette and skips unknown classes,
-leaving native colors intact. `TargetFrame_CheckFaction` still owns NPC,
-reaction/PvP and tapped colors, and is only overridden for known player classes
-when the class-color option is enabled. The standard-frame feature defaults on
-for new profiles; existing per-character choices remain unchanged.
+[SOURCE-VERIFIED] The implementation uses FT's fixed unit-frame class palette,
+not the shared `RAID_CLASS_COLORS` table or its possible grey fallback. Native
+`TargetFrame_CheckFaction` still supplies NPC, reaction/PvP and tapped colors;
+the hook recolors known player classes after native updates. The player's name
+background also receives the class color at initialization and again on
+`PLAYER_ENTERING_WORLD`.
 
 The local Niko2 `Claude` SavedVariables file and its September 12 backup both
-contain an enabled class-color setting. They do not establish what flipped in
-the maintainer's separate game folder. The native name-background texture can
-make a class-color tint appear darker than its source RGB; visual appearance
-needs in-game confirmation.
+contain an enabled old setting. They do not establish why the separate game
+folder showed a green self-target while the player background was dark. A
+stored disabled setting is one source-confirmed way the previous optional
+module could fail to run. The screenshot's exact cause remains unverified.
 
-The top-right Blizzard buff, debuff and weapon-enchant borders already have
-three independent live toggles. Their settings section and tooltips now name
-those top-right icons explicitly. Buff/debuff borders default off; weapon
-enchant item-quality borders default on.
+The top-right Blizzard buff, debuff and weapon-enchant borders retain three
+independent live toggles in **Blizzard & Frame Aura Borders**. Buff/debuff
+borders default off; weapon enchant item-quality borders default on.
 
-Headless Lua regressions, strict VanillaForge lint and load-graph checks verify
-source behavior. [UNVERIFIED - TEST FIRST] After syncing and relogging in the
-actual game folder, check class colors on player and target frames for several
-classes and confirm unknown/NPC native colors. Toggle class colors off and on,
-then inspect top-right Blizzard buffs, debuffs and weapon enchants with each
-border toggle independently. Verify persistence after another relog.
+The headless Lua regression verifies color application even with the old saved
+value set to 0, the absence of a checkbox/module registration, fixed-palette
+colors, and native fallback for unknown classes and NPCs. Strict linter and
+load-graph validation also pass. [UNVERIFIED - TEST FIRST] After syncing and
+relogging in the actual game folder, target self, another player, an NPC and a
+tapped NPC. Check class colors at login and after target changes. Verify that
+no class-color checkbox appears in `/ft` and that the three aura-border toggles
+still act independently.
 
-Retrospective: the previous fix over-interpreted a request to remove unwanted
-tint as a request to delete class colors. This was an addon-specific intent
-error, not a new general VanillaForge Known Pattern.
+Retrospective: a permanent visual rule should be initialized by the owning
+component rather than routed through a per-character optional-module key.
+This is an addon-specific policy, so no VanillaForge Known Pattern change is
+required.
