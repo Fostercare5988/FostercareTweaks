@@ -128,7 +128,7 @@ ClassicAPI v1.15.15 compatibility: action type "equipmentset" is excluded from e
 
 ## Frame settings and testing
 
-Under `/ft` > **Unit Frames** > **Aura Borders**, choose **Show Buff Borders**, **Show Debuff Borders** and **Show Weapon Enchant Borders** separately. Buff and debuff borders default to off; weapon enchant borders default to on and show the equipped weapon's item quality. These choices save per character and apply immediately, independently of aura visibility and **Item Rarity Borders**. They cover player/target, raid and top-right icons; debuff dispel coloring applies when its border is enabled. Timers, tooltips, stack counts and Ctrl+Shift movement are retained.
+Under `/ft` > **Unit Frames** > **Blizzard & Frame Aura Borders**, choose **Show Buff Borders**, **Show Debuff Borders** and **Show Weapon Enchant Borders** separately. Buff and debuff borders default to off; weapon enchant borders default to on and show the equipped weapon's item quality. These choices save per character and apply immediately, independently of aura visibility and **Item Rarity Borders**. They cover player/target, raid and top-right icons; debuff dispel coloring applies when its border is enabled. Timers, tooltips, stack counts and Ctrl+Shift movement are retained.
 
 Target aura changes refresh on unit events. Standard Blizzard icons stay suppressed even when target-of-target redraws them; unchanged aura timers keep their animation running, and genuine reapplications update their timing. Target changes and removals clear old state. An enemy debuff icon can remain visible without a countdown when ClassicAPI reports the aura but its remaining time is unknown. **Only Show My Debuffs on Target** requires known player/pet attribution, so leave it off if you want to see unattributed effects too. See [PvP target aura review and test checklist](docs/PVP_TARGET_AURAS_2026-09-27.md).
 
@@ -141,8 +141,11 @@ sections; each unit can use only one presentation. Buff/debuff controls apply to
 the active player/target presentation. Presentation and aura settings save live;
 Close does not undo them. The Shared Frame Features reload button applies modules
 that are enabled at login, such as health numbers, class portraits and energy ticks.
-Standard player and target name backgrounds retain Blizzard's original artwork
-and target reaction/PvP colors.
+**Unit Frame Class Colors** is on by default for new characters and applies
+immediately to standard player/target name backgrounds and party names. It uses
+FostercareTweaks' fixed class palette, avoiding grey colors supplied by other
+addons through the shared class-color table. Existing per-character choices are
+respected. The checkbox can still restore native Blizzard colors when disabled.
 
 Standard target aura rows align to the right and grow left, matching the target's
 right-side portrait; player rows grow right. Both fit eight icons before wrapping.
