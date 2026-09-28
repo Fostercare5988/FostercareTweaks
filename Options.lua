@@ -554,6 +554,8 @@ local function OnUnitCheckboxClicked()
     if UF and UF.ApplyConfiguration then
         UF:ApplyConfiguration()
     end
+    local classColorModule = FostercareTweaks.mods[T["Unit Frame Class Colors"]]
+    if classColorModule and classColorModule.apply then classColorModule:apply() end
 end
 
 local function OnStandardStyleClicked()
@@ -700,6 +702,8 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Movable Unit Frames"]] = 1
     current_config[T["Unit Frame Class Colors"]] = 0
     current_config[T["Unit Frame Class Portraits"]] = 0
+    local classColorModule = FostercareTweaks.mods[T["Unit Frame Class Colors"]]
+    if classColorModule and classColorModule.apply then classColorModule:apply() end
     current_config[T["Real Health Numbers"]] = 1
     current_config[T["Show Energy Ticks"]] = 1
     current_config[T["Enemy Castbars"]] = 1

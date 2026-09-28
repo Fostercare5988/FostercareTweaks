@@ -141,6 +141,10 @@ sections; each unit can use only one presentation. Buff/debuff controls apply to
 the active player/target presentation. Presentation and aura settings save live;
 Close does not undo them. The Shared Frame Features reload button applies modules
 that are enabled at login, such as health numbers, class portraits and energy ticks.
+The **Unit Frame Class Colors** checkbox applies immediately to standard frame
+name backgrounds. Leave it off for Blizzard's original target reaction/PvP
+colors and untinted player artwork. Its saved value is per character; an older
+character profile may still have it on even though the default is off.
 
 Standard target aura rows align to the right and grow left, matching the target's
 right-side portrait; player rows grow right. Both fit eight icons before wrapping.

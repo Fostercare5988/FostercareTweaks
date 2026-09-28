@@ -8,57 +8,102 @@ local module = FostercareTweaks:register({
     enabled = nil,
 })
 
-local defaultClassColor = { r = 0.5, g = 0.5, b = 0.5, a = 1 }
+local hooksInstalled = false
+local ownsPlayerBackground = false
+local originalPlayerColor, originalPlayerShown
+local originalPartyColors = {}
 
-local partycolors = function()
+local function IsActive()
+    return FostercareTweaks_Config and FostercareTweaks_Config[T["Unit Frame Class Colors"]] == 1
+end
+
+local function ClassColor(unit)
+    local _, class = UnitClass(unit)
+    -- Another module may supply a grey __index fallback for unknown classes.
+    -- Unknown class must leave the native frame color alone.
+    return class and RAID_CLASS_COLORS and rawget(RAID_CLASS_COLORS, class)
+end
+
+local function ColorTarget()
+    if not IsActive() or not UnitIsPlayer("target") or not TargetFrameNameBackground then return end
+    local color = ClassColor("target")
+    if color then TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1) end
+end
+
+local function ColorParty()
+    if not IsActive() then return end
     for id = 1, MAX_PARTY_MEMBERS do
-        local name = _G['PartyMemberFrame' .. id .. 'Name']
-        local _, class = UnitClass("party" .. id)
-        local c = RAID_CLASS_COLORS[class] or defaultClassColor
-        if name then name:SetTextColor(c.r, c.g, c.b, 1) end
+        local name = _G["PartyMemberFrame" .. id .. "Name"]
+        local color = ClassColor("party" .. id)
+        if name and color then
+            if not originalPartyColors[name] then
+                originalPartyColors[name] = { name:GetTextColor() }
+            end
+            name:SetTextColor(color.r, color.g, color.b, 1)
+        end
     end
 end
 
-module.enable = function(self)
-    FostercareTweaks.hooksecurefunc("TargetFrame_CheckFaction", function(s)
-        local reaction = UnitReaction("target", "player")
+local function RestoreParty()
+    for name, color in pairs(originalPartyColors) do
+        name:SetTextColor(unpack(color))
+    end
+    originalPartyColors = {}
+end
 
-        if UnitIsPlayer("target") then
-            local _, class = UnitClass("target")
-            local c = RAID_CLASS_COLORS[class] or defaultClassColor
-            if TargetFrameNameBackground then
-                TargetFrameNameBackground:SetVertexColor(c.r, c.g, c.b, 1)
-                if not TargetFrameNameBackground:IsShown() then TargetFrameNameBackground:Show() end
-            end
-        elseif reaction and reaction > 4 then
-            if TargetFrameNameBackground and TargetFrameNameBackground:IsShown() then TargetFrameNameBackground:Hide() end
-        else
-            if TargetFrameNameBackground and not TargetFrameNameBackground:IsShown() then TargetFrameNameBackground:Show() end
-        end
+local function EnsureHooks()
+    if hooksInstalled then return end
+    FostercareTweaks.hooksecurefunc("TargetFrame_CheckFaction", ColorTarget)
+    FostercareTweaks.hooksecurefunc("PartyMemberFrame_UpdateMember", ColorParty)
+    hooksInstalled = true
+    local worldRefresh = CreateFrame("Frame")
+    worldRefresh:RegisterEvent("PLAYER_ENTERING_WORLD")
+    worldRefresh:SetScript("OnEvent", function()
+        module:apply()
+        this:UnregisterAllEvents()
     end)
+end
 
-    local _, class = UnitClass("player")
-    local c = RAID_CLASS_COLORS[class] or defaultClassColor
-
+local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground then
         PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BACKGROUND")
         PlayerFrameNameBackground:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
         PlayerFrameNameBackground:SetWidth(119)
         PlayerFrameNameBackground:SetHeight(19)
         PlayerFrameNameBackground:SetPoint("TOPLEFT", 106, -22)
+        ownsPlayerBackground = true
+    elseif not ownsPlayerBackground and not originalPlayerColor then
+        originalPlayerColor = { PlayerFrameNameBackground:GetVertexColor() }
+        originalPlayerShown = PlayerFrameNameBackground:IsShown()
     end
-    PlayerFrameNameBackground:SetVertexColor(c.r, c.g, c.b, 1)
-
-    local wait = CreateFrame("Frame")
-    wait:RegisterEvent("PLAYER_ENTERING_WORLD")
-    wait:SetScript("OnEvent", function()
-        local _, pClass = UnitClass("player")
-        local pc = RAID_CLASS_COLORS[pClass] or defaultClassColor
-        if PlayerFrameNameBackground then
-            PlayerFrameNameBackground:SetVertexColor(pc.r, pc.g, pc.b, 1)
-        end
-        this:UnregisterAllEvents()
-    end)
-
-    FostercareTweaks.hooksecurefunc("PartyMemberFrame_UpdateMember", partycolors)
 end
+
+function module:apply()
+    if IsActive() then
+        EnsureHooks()
+        local color = ClassColor("player")
+        if color then
+            EnsurePlayerBackground()
+            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+            if ownsPlayerBackground then PlayerFrameNameBackground:Show() end
+        end
+        if UnitExists("target") and TargetFrame_CheckFaction then TargetFrame_CheckFaction() end
+        ColorParty()
+    else
+        if PlayerFrameNameBackground then
+            if ownsPlayerBackground then
+                PlayerFrameNameBackground:Hide()
+            elseif originalPlayerColor then
+                PlayerFrameNameBackground:SetVertexColor(unpack(originalPlayerColor))
+                if originalPlayerShown then PlayerFrameNameBackground:Show()
+                else PlayerFrameNameBackground:Hide() end
+                originalPlayerColor, originalPlayerShown = nil, nil
+            end
+        end
+        -- The native 1.12 function owns reaction/PvP/tapped target colors.
+        if UnitExists("target") and TargetFrame_CheckFaction then TargetFrame_CheckFaction() end
+        RestoreParty()
+    end
+end
+
+module.enable = module.apply
