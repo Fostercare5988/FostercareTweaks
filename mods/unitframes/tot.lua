@@ -7,6 +7,7 @@ local UF = FostercareTweaks.UnitFrames
 if not UF then return end
 
 local totFrame = nil
+local totTicker
 local lastGuid = nil
 local lastHealth = nil
 local lastPower = nil
@@ -177,6 +178,14 @@ local function ToTFrame_OnEvent()
                 UpdateAll(totFrame)
             end
         end
+    elseif ev == "PLAYER_ENTERING_WORLD" then
+        if UnitExists("target") then
+            totTicker:Show()
+            UpdateAll(totFrame)
+        else
+            totTicker:Hide()
+            if totFrame then totFrame:Hide() end
+        end
     elseif not totFrame or not totFrame:IsShown() then
         return
     elseif ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
@@ -190,19 +199,11 @@ local function ToTFrame_OnEvent()
         end
     elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_FACTION" or ev == "UNIT_CLASSIFICATION_CHANGED" then
         if a1 == "targettarget" then UpdateHealth(totFrame) end
-    elseif ev == "PLAYER_ENTERING_WORLD" then
-        if UnitExists("target") and UnitExists("targettarget") then
-            if totTicker then totTicker:Show() end
-            UpdateAll(totFrame)
-        else
-            if totTicker then totTicker:Hide() end
-            if totFrame then totFrame:Hide() end
-        end
     end
 end
 
 -- Lightweight 150ms ticker for polling ToT health/power/target drift (active only while target exists)
-local totTicker = CreateFrame("Frame")
+totTicker = CreateFrame("Frame")
 totTicker:Hide()
 local lastTickerCheck = 0
 

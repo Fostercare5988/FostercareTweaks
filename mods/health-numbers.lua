@@ -77,9 +77,13 @@ module.enable = function(self)
         frame.TextString:SetJustifyH("LEFT")
     end
 
+    local ownedBars = {}
+    for _, bar in ipairs(targetPlayerBars) do ownedBars[bar] = true end
+    for _, bar in ipairs(petBars) do ownedBars[bar] = true end
+
     local function UpdateHealthTextString(sb)
         local bar = sb or this
-        if not bar or not bar.GetName then return end
+        if not ownedBars[bar] then return end
 
         local str = bar.TextString
         if str and bar.unit then
@@ -107,13 +111,12 @@ module.enable = function(self)
 
             if max == 0 or (bar.unit == "target" and (UnitIsDead("target") or UnitIsGhost("target"))) then
                 str:Hide()
-                if str.lastText ~= "" then
-                    str.lastText = ""
+                if str:GetText() ~= "" then
                     str:SetText("")
                 end
             else
-                if str.lastText ~= text then
-                    str.lastText = text
+                -- Native redraws also write this FontString, even at unchanged health.
+                if str:GetText() ~= tostring(text) then
                     str:SetText(text)
                 end
                 str:Show()

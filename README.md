@@ -108,7 +108,7 @@ Access settings at any time:
 
 | Component | Status | Purpose |
 | :--- | :--- | :--- |
-| **ClassicAPI** | `v1.15.15+` (Mandatory) | Modern C++ namespaces (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_Timer`), `hooksecurefunc`, `UnitInRange`, `table.wipe`, and hardware timers. |
+| **ClassicAPI** | `v1.15.15+` (Mandatory) | Structured item, spell, aura, nameplate and merchant APIs (`C_Item`, `C_Spell`, `C_UnitAuras`, `C_NamePlate`, `C_MerchantFrame`), `C_Timer`, `hooksecurefunc`, `UnitInRange` and `table.wipe`. |
 | **SuperWoW** | `v2.2+` (Mandatory) | Extended combat events (`UNIT_CASTEVENT`), GUID queries, `SetMouseoverUnit`, and combat inspection. |
 | **UnitXP SP3** | `v90+` (Optional) | Authoritative unit health values via `UnitXP("health", unit)`. |
 
@@ -161,3 +161,26 @@ After `/reload`, test dragging, buff removal, own-debuff filtering and changing
 raid dimensions at your actual UI scale. Headless tests do not verify rendering.
 Run `python -B tests/test_frames.py <directory-containing-lupa>` for Lua 5.1
 mock regressions. See [frame review](docs/FRAME_REVIEW_2026-09-27.md).
+
+## UI ownership fixes — September 2026
+
+Nameplate casts and class colors follow the plate's verified unit identity,
+including when two creatures share a name or a pooled plate is reused. Native
+cast/channel data determines whether a cast is active; unknown channel timing
+does not produce an estimated countdown. Nameplate discovery uses client events.
+
+Real Health Numbers preserves its formatting after native redraws and only
+changes the six player, target and pet bars it owns. Target-of-target sampling
+resumes after clearing and reacquiring a target. Native target debuff cooldowns
+also retain their running sweep across unchanged redraws when Improved Standard
+Auras is disabled.
+
+Sell Junk submits grey items to the client's item-identity-based merchant queue.
+It leaves the cursor alone; closing or changing the merchant cancels queued
+sells. The button refreshes from current merchant/bag state. The old estimated
+earnings message is removed because submitting a sale is not proof of payment.
+
+The existing settings, permanent standard-frame class colors and three independent
+aura-border toggles are preserved. No dependency minimum or SavedVariables schema
+has changed. Run `python -B tests/test_module_ownership.py <directory-containing-lupa>`
+alongside the frame suite. See the [review and in-game checklist](docs/MODULE_REVIEW_2026-09-28.md).

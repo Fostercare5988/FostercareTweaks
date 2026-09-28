@@ -622,16 +622,15 @@ libnameplate.OnInit = {}
 libnameplate.OnShow = {}
 libnameplate.OnUpdate = {}
 local plateRegistry = {}
-local initializedCount = 0
 
 local function InitPlate(plate, unit)
     if not plate or plateRegistry[plate] then
-        if plate and unit then plate.unit = unit end
+        if plate and unit then plate.unit = UnitGUID(unit) end
         return
     end
     if not IsNamePlate(plate) then return end
 
-    if unit then plate.unit = unit end
+    if unit then plate.unit = UnitGUID(unit) end
     plate.healthbar = plate:GetChildren()
     FostercareTweaks.ForEachRegion(plate, function(region, regIdx)
         local key = NAMEPLATE_OBJECTORDER[regIdx]
@@ -663,18 +662,13 @@ local function InitPlate(plate, unit)
     plateRegistry[plate] = plate
 end
 
-local function ScanWorldFramePlates()
-    local parentCount = WorldFrame:GetNumChildren()
-    if initializedCount < parentCount then
-        local currentIdx = 0
-        FostercareTweaks.ForEachChild(WorldFrame, function(plate)
-            currentIdx = currentIdx + 1
-            if currentIdx > initializedCount then
-                InitPlate(plate)
-            end
-        end)
-        initializedCount = parentCount
+-- Validate pooled-frame ownership before consuming any unit data.
+FostercareTweaks.GetNameplateUnit = function(plate)
+    local guid = plate.unit
+    if guid and C_NamePlate.GetNamePlateForUnit(guid) == plate then
+        return guid
     end
+    plate.unit = nil
 end
 
 libnameplate:RegisterEvent("NAME_PLATE_CREATED")
@@ -682,44 +676,35 @@ libnameplate:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 libnameplate:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 libnameplate:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-libnameplate:SetScript("OnEvent", function(arg1_param, arg2_param)
-    local ev = (type(arg1_param) == "string" and arg1_param) or arg2_param or event or _G.event
-    local a1 = (type(arg1_param) == "string" and arg2_param) or arg1 or _G.arg1
+libnameplate:SetScript("OnEvent", function(self_or_event, event_or_unit, unit_arg)
+    local ev, a1
+    if type(self_or_event) == "table" then
+        ev, a1 = event_or_unit, unit_arg
+    elseif type(self_or_event) == "string" then
+        ev, a1 = self_or_event, event_or_unit
+    else
+        ev, a1 = event, arg1
+    end
 
     if ev == "NAME_PLATE_CREATED" and a1 then
         InitPlate(a1)
     elseif ev == "NAME_PLATE_UNIT_ADDED" and a1 then
         local unit = a1
-        local plate = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unit)
+        local plate = C_NamePlate.GetNamePlateForUnit(unit)
         if plate then
             InitPlate(plate, unit)
         end
     elseif ev == "NAME_PLATE_UNIT_REMOVED" and a1 then
         local unit = a1
-        local plate = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unit)
-        if plate then
+        local plate = C_NamePlate.GetNamePlateForUnit(unit)
+        if plate and plate.unit == UnitGUID(unit) then
             plate.unit = nil
         end
     elseif ev == "PLAYER_ENTERING_WORLD" then
-        if C_NamePlate and C_NamePlate.GetNamePlates then
-            local plates = C_NamePlate.GetNamePlates()
-            if plates then
-                for _, p in ipairs(plates) do
-                    InitPlate(p)
-                end
-            end
+        for _, guid in ipairs(C_NamePlate.GetNamePlateGUIDs()) do
+            InitPlate(C_NamePlate.GetNamePlateForGUID(guid), guid)
         end
-        ScanWorldFramePlates()
     end
-end)
-
-libnameplate.tick = 0
-libnameplate:SetScript("OnUpdate", function()
-    local now = GetTime()
-    if (this.tick or 0) > now then return end
-    this.tick = now + 0.5
-
-    ScanWorldFramePlates()
 end)
 
 FostercareTweaks.libnameplate = libnameplate

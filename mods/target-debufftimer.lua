@@ -107,11 +107,14 @@ module.enable = function(self)
                 if duration and duration > 0 and effectiveExpiration and effectiveExpiration > now then
                     local start = effectiveExpiration - duration
                     CreateTextCooldown(button.cd)
-                    if button.cd.readable.spellId ~= spellId or math.abs((button.cd.readable.start or 0) - start) > 0.5 then
-                        CooldownFrame_SetTimer(button.cd, 0, 0, 0)
-                        button.cd:Hide()
+                    local unitGUID = UnitGUID("target")
+                    local sourceGUID = source and UnitGUID(source)
+                    local text = button.cd.readable
+                    if text.unitGUID ~= unitGUID or text.sourceGUID ~= sourceGUID or
+                       text.spellId ~= spellId or text.start ~= start or text.duration ~= duration then
+                        CooldownFrame_SetTimer(button.cd, start, duration, 1)
                     end
-                    CooldownFrame_SetTimer(button.cd, start, duration, 1)
+                    text.unitGUID, text.sourceGUID = unitGUID, sourceGUID
                     button.cd.readable.spellId = spellId
                     button.cd.readable.expirationTime = effectiveExpiration
                     button.cd.readable.start = start
