@@ -348,12 +348,11 @@ local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 184)
 sharedBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
 sharedBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
 local moveUFCB = CreateCheckButton("FCTweaksMoveUFCB", T["Movable Unit Frames"], "Hold Ctrl+Shift to move frames and separate buff/debuff areas.", sharedBox, 16, -24)
-local classColorCB = CreateCheckButton("FCTweaksClassColorCB", T["Unit Frame Class Colors"], "Class colors on standard player, target and party frames.", sharedBox, 16, -48)
-local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", T["Unit Frame Class Portraits"], "Class portraits on standard Blizzard frames.", sharedBox, 16, -72)
+local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", T["Unit Frame Class Portraits"], "Class portraits on standard Blizzard frames.", sharedBox, 16, -48)
 local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB", T["Real Health Numbers"], "Real health values on standard unit frames.", sharedBox, 230, -24)
 local energyTickCB = CreateCheckButton("FCTweaksEnergyTickCB", T["Show Energy Ticks"], "Resource tick indicators on the active player frame.", sharedBox, 230, -48)
 local enemyCastbarCB = CreateCheckButton("FCTweaksEnemyCastCB", T["Enemy Castbars"], "Castbar on the active target frame.", sharedBox, 230, -72)
-local uninterruptCB = CreateCheckButton("FCTweaksUninterruptCB", T["Uninterruptible Castbars"], "Highlight uninterruptible target/nameplate casts.", sharedBox, 16, -96)
+local uninterruptCB = CreateCheckButton("FCTweaksUninterruptCB", T["Uninterruptible Castbars"], "Highlight uninterruptible target/nameplate casts.", sharedBox, 16, -72)
 local debuffTimerCB = CreateCheckButton("FCTweaksDebuffTimerCB", T["Debuff Timer"], "Timers on original target debuff icons when Improved Standard Auras is disabled.", sharedBox, 230, -96)
 local reloadFrameFeaturesBtn = CreateFrame("Button", "FCTweaksReloadFrameFeaturesBtn", sharedBox, "UIPanelButtonTemplate")
 reloadFrameFeaturesBtn:SetPoint("TOPLEFT", sharedBox, "TOPLEFT", 16, -138)
@@ -474,7 +473,6 @@ local function OnUnitCheckboxClicked()
     local stdToTVal    = (modToTVal == 1) and 0 or 1
 
     local moveVal      = moveUFCB:GetChecked() and 1 or 0
-    local classColVal  = classColorCB:GetChecked() and 1 or 0
     local classPortVal = classPortraitCB:GetChecked() and 1 or 0
     local healthNumVal = healthNumbersCB:GetChecked() and 1 or 0
     local energyVal    = energyTickCB:GetChecked() and 1 or 0
@@ -511,7 +509,6 @@ local function OnUnitCheckboxClicked()
     current_config[T["Improved Standard Auras"]] = impStdAuraVal
 
     FostercareTweaks_Config[T["Movable Unit Frames"]] = moveVal
-    FostercareTweaks_Config[T["Unit Frame Class Colors"]] = classColVal
     FostercareTweaks_Config[T["Unit Frame Class Portraits"]] = classPortVal
     FostercareTweaks_Config[T["Real Health Numbers"]] = healthNumVal
     FostercareTweaks_Config[T["Show Energy Ticks"]] = energyVal
@@ -520,7 +517,6 @@ local function OnUnitCheckboxClicked()
     FostercareTweaks_Config[T["Debuff Timer"]] = debuffTmrVal
 
     current_config[T["Movable Unit Frames"]] = moveVal
-    current_config[T["Unit Frame Class Colors"]] = classColVal
     current_config[T["Unit Frame Class Portraits"]] = classPortVal
     current_config[T["Real Health Numbers"]] = healthNumVal
     current_config[T["Show Energy Ticks"]] = energyVal
@@ -554,8 +550,6 @@ local function OnUnitCheckboxClicked()
     if UF and UF.ApplyConfiguration then
         UF:ApplyConfiguration()
     end
-    local classColorModule = FostercareTweaks.mods[T["Unit Frame Class Colors"]]
-    if classColorModule and classColorModule.apply then classColorModule:apply() end
 end
 
 local function OnStandardStyleClicked()
@@ -571,7 +565,6 @@ modernPlayerCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernTargetCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernToTCB:SetScript("OnClick", OnUnitCheckboxClicked)
 moveUFCB:SetScript("OnClick", OnUnitCheckboxClicked)
-classColorCB:SetScript("OnClick", OnUnitCheckboxClicked)
 classPortraitCB:SetScript("OnClick", OnUnitCheckboxClicked)
 healthNumbersCB:SetScript("OnClick", OnUnitCheckboxClicked)
 energyTickCB:SetScript("OnClick", OnUnitCheckboxClicked)
@@ -672,7 +665,6 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     FostercareTweaks_Config[T["Improved Standard Auras"]] = 1
 
     FostercareTweaks_Config[T["Movable Unit Frames"]] = 1
-    FostercareTweaks_Config[T["Unit Frame Class Colors"]] = 0
     FostercareTweaks_Config[T["Unit Frame Class Portraits"]] = 0
     FostercareTweaks_Config[T["Real Health Numbers"]] = 1
     FostercareTweaks_Config[T["Show Energy Ticks"]] = 1
@@ -700,10 +692,7 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Improved Standard Auras"]] = 1
 
     current_config[T["Movable Unit Frames"]] = 1
-    current_config[T["Unit Frame Class Colors"]] = 0
     current_config[T["Unit Frame Class Portraits"]] = 0
-    local classColorModule = FostercareTweaks.mods[T["Unit Frame Class Colors"]]
-    if classColorModule and classColorModule.apply then classColorModule:apply() end
     current_config[T["Real Health Numbers"]] = 1
     current_config[T["Show Energy Ticks"]] = 1
     current_config[T["Enemy Castbars"]] = 1
@@ -791,7 +780,6 @@ function unitPage:RefreshValues()
         cb:SetChecked(value == 1)
     end
     moveUFCB:SetChecked((cfg[T["Movable Unit Frames"]] == nil or cfg[T["Movable Unit Frames"]] == 1) and true or nil)
-    classColorCB:SetChecked(cfg[T["Unit Frame Class Colors"]] == 1 and true or nil)
     classPortraitCB:SetChecked(cfg[T["Unit Frame Class Portraits"]] == 1 and true or nil)
     healthNumbersCB:SetChecked((cfg[T["Real Health Numbers"]] == nil or cfg[T["Real Health Numbers"]] == 1) and true or nil)
     energyTickCB:SetChecked((cfg[T["Show Energy Ticks"]] == nil or cfg[T["Show Energy Ticks"]] == 1) and true or nil)

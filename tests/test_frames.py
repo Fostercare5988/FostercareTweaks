@@ -41,9 +41,6 @@ function methods:GetPoint() return unpack(self.point or {"TOPLEFT",UIParent,"TOP
 function methods:GetFrameLevel() return 1 end
 function methods:SetTexture(...) self.texture={...} end
 function methods:SetVertexColor(...) self.color={...} end
-function methods:GetVertexColor() return unpack(self.color or {1,1,1,1}) end
-function methods:SetTextColor(...) self.textColor={...} end
-function methods:GetTextColor() return unpack(self.textColor or {1,1,1,1}) end
 function methods:SetSequence(v) self.sequence=v; self.sequenceCalls=(self.sequenceCalls or 0)+1 end
 function methods:SetBackdropBorderColor(...) self.borderColor={...} end
 function methods:SetTexCoord(...) self.texcoords={...} end
@@ -551,44 +548,6 @@ class FrameTests(unittest.TestCase):
         assert(not FCTweaksModPlayerCB:GetChecked() and FostercareTweaks_Config["Modern Player Frame"]==0)
         assert(FostercareTweaksCancel:GetText()=="Close" and not FostercareTweaksOkay:IsShown())''')
 
-
-    def test_standard_name_colors_toggle_live_and_unknown_class_keeps_blizzard_color(self):
-        lua=runtime()
-        lua.execute(r'''MAX_PARTY_MEMBERS=4
-            targetClass="ROGUE"
-            RAID_CLASS_COLORS=setmetatable({ROGUE={r=1,g=0.96,b=0.41}},
-                {__index=function() return {r=0.6,g=0.6,b=0.6} end})
-            UnitClass=function(unit)
-                if unit=="target" then return targetClass,targetClass end
-                return "Rogue","ROGUE"
-            end
-            TargetFrameNameBackground=CreateFrame("Texture",nil,TargetFrame)
-            PartyMemberFrame1Name=CreateFrame("Font",nil,UIParent)
-            function TargetFrame_CheckFaction()
-                TargetFrameNameBackground:SetVertexColor(0,0,1,1)
-            end
-            function PartyMemberFrame_UpdateMember() end
-            TargetFrame_CheckFaction()
-        ''')
-        lua.execute((ROOT/'mods/unitframes-classcolor.lua').read_text(encoding='utf-8'))
-        lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
-        lua.execute('''FostercareTweaksSettingsGUI.SelectTab(2)
-            assert(FostercareTweaks_Config["Unit Frame Class Colors"]~=1)
-            FCTweaksClassColorCB:SetChecked(true); fire(FCTweaksClassColorCB,"OnClick")
-            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==1)
-            assert(PlayerFrameNameBackground:IsShown() and PlayerFrameNameBackground.color[1]==1)
-            assert(TargetFrameNameBackground.color[1]==1 and PartyMemberFrame1Name.textColor[1]==1)
-            FCTweaksClassColorCB:SetChecked(false); fire(FCTweaksClassColorCB,"OnClick")
-            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==0)
-            assert(not PlayerFrameNameBackground:IsShown())
-            assert(TargetFrameNameBackground.color[3]==1 and TargetFrameNameBackground.color[1]==0)
-            assert(PartyMemberFrame1Name.textColor[1]==1 and PartyMemberFrame1Name.textColor[3]==1)
-            targetClass="UNKNOWN"
-            FCTweaksClassColorCB:SetChecked(true); fire(FCTweaksClassColorCB,"OnClick")
-            assert(TargetFrameNameBackground.color[3]==1 and TargetFrameNameBackground.color[1]==0)
-            FCTweaksClassColorCB:SetChecked(false); fire(FCTweaksClassColorCB,"OnClick")
-            assert(not PlayerFrameNameBackground:IsShown())
-        ''')
 
     def test_eight_buffs_wrap_at_smallest_frame_with_largest_icons(self):
         lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}

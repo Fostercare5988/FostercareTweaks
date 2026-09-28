@@ -32,7 +32,6 @@ mods\unitframes\target.lua
 mods\unitframes\tot.lua
 mods\unitframes\raid.lua
 mods\health-numbers.lua
-mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
 mods\target-castbar.lua
 mods\castbar-uninterruptible.lua

@@ -186,32 +186,26 @@ which visibility-only checks missed. The native layout review also prevented
 widened default rows covering target-of-target/castbar. This is addon-specific
 layout knowledge; no VanillaForge Known Pattern or framework change is needed.
 
-## Standard name-background color follow-up — 2026-09-28
+## Standard name-background colors — 2026-09-28
 
-The maintainer reported muted/grey-looking standard player and target name
-backgrounds and reaffirmed the preference for Blizzard's original colors.
-A local Niko2 `Claude` SavedVariables profile has `Unit Frame Class Colors = 1`;
-that is evidence for this checkout only, not the separate live game folder.
+The maintainer wants Blizzard's original colors on standard player and target
+frames. The standard-frame class-tint module, its checkbox, its TOC entry and
+its focused toggle test have been removed. Other frame styles and the separate
+raid, nameplate, map and social class colors remain as before.
 
-[SOURCE-VERIFIED] The class-color module adds/tints a player name background
-and overwrites the native target name background after
-`TargetFrame_CheckFaction`. The old options callback saved the checkbox value
-but neither enabled nor removed that visual effect until reload. The module
-now applies the toggle immediately, hides only its own player texture when
-disabled, and lets the native 1.12 target function restore reaction/PvP/tapped
-colors. For an unknown class it leaves the native color intact instead of
-using the grey `RAID_CLASS_COLORS` metatable fallback. It does not change the
-user's saved preference or the modern frame and raid palettes.
+[SOURCE-VERIFIED] The removed module created/tinted a player name background
+and hooked `TargetFrame_CheckFaction` to overwrite the native target
+reaction/PvP/tapped color. The source of that visual effect is known. The local
+Niko2 `Claude` SavedVariables file and its September 12 backup both contain
+an enabled tint setting, but they do not show when or why the user's separate
+game folder began displaying it. The old saved key is inert after removal.
 
-The focused Lua regression tests checkbox on/off, player texture ownership,
-native target restoration, party-name restoration and unknown-class handling.
-[UNVERIFIED - TEST FIRST] In the actual game folder, open `/ft uf`, uncheck
-**Unit Frame Class Colors**, then target self, a friendly player, an enemy
-player and a tapped NPC. Check that the original Blizzard colors return
-immediately and remain after relog. The local SavedVariables value does not
-prove which value the separate game folder currently loads.
+The headless Lua frame suite and strict VanillaForge linter validate the code
+and load graph. [UNVERIFIED - TEST FIRST] After syncing and relogging in the
+actual game folder, target self, a friendly player, an enemy player and a
+tapped NPC. Confirm the native colors persist through another relog.
 
-Retrospective: a settings control that claims live application must exercise
-its visual module's enable and disable paths, including restoring the native
-frame. This instance is specific to FostercareTweaks and does not require a
-new VanillaForge Known Pattern.
+Retrospective: for a native visual that the maintainer does not want, removing
+the override is simpler than adding more state-restoration paths. This is an
+addon-specific presentation decision, so no VanillaForge Known Pattern change
+is needed.
