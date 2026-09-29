@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/unitframes-classportrait.lua
 local T = FostercareTweaks.T
 

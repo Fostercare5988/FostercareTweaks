@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/unitframe-energytick.lua
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Dynamic Energy & Mana Ticks across Modern or Stock Unit Frames

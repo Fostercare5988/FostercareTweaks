@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/unitframes/auras.lua
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Shared Unit Frame Aura Subsystem (Player, Target, ToT)

@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/item-colors.lua
 -- Show item rarity as border color on bags, bank, character and inspect frames
 

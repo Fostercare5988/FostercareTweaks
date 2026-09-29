@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- Ctrl+Shift movers for native/custom frames and independent aura areas.
 local T = FostercareTweaks.T
 local module = FostercareTweaks:register({

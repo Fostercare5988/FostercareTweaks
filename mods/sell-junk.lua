@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/sell-junk.lua
 -- Adds a "Sell Junk" button to merchant windows that automatically sells grey items
 

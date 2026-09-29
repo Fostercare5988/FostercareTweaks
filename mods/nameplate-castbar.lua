@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/nameplate-castbar.lua
 -- Adds a castbar to nameplates using ClassicAPI C_Spell cast/channel queries
 

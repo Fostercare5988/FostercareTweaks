@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/cooldown-numbers.lua
 local _G = FostercareTweaks.GetGlobalEnv()
 local T = FostercareTweaks.T
@@ -65,16 +67,8 @@ local function CreateCoolDown(cooldown, start, duration)
     local parent = cooldown:GetParent()
     if not parent or cooldown.readable then return end
 
-    local parentname = parent.GetName and parent:GetName()
-    parentname = parentname or "UnknownCooldownFrame"
-
-    -- Parent directly to cooldown (Model frame) for guaranteed overlay above 3D sweep
-    local frameName = parentname .. "CooldownText"
-    if not _G[frameName] then
-        cooldown.cooldowntext = CreateFrame("Frame", frameName, cooldown)
-    else
-        cooldown.cooldowntext = _G[frameName]
-    end
+    -- Each cooldown owns its overlay, including unnamed/recycled widgets.
+    cooldown.cooldowntext = CreateFrame("Frame", nil, cooldown)
 
     cooldown.cooldowntext:SetAllPoints(cooldown)
 
@@ -85,7 +79,7 @@ local function CreateCoolDown(cooldown, start, duration)
     cooldown.cooldowntext:EnableMouse(false)
 
     if not cooldown.cooldowntext.text then
-        cooldown.cooldowntext.text = cooldown.cooldowntext:CreateFontString(parentname .. "CooldownTextFont", "OVERLAY")
+        cooldown.cooldowntext.text = cooldown.cooldowntext:CreateFontString(nil, "OVERLAY")
     end
 
     local size = (parent.GetHeight and parent:GetHeight()) or 0

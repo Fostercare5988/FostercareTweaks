@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/nameplate-scale.lua
 -- Makes all nameplates honor UI-Scale setting with zero table allocation (Rule D1)
 

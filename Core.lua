@@ -27,6 +27,7 @@ for k, v in pairs(coreFrame) do
 end
 
 FostercareTweaks.mods = FostercareTweaks.mods or {}
+FostercareTweaks.moduleOrder = FostercareTweaks.moduleOrder or {}
 FostercareTweaks.overwrites = FostercareTweaks.overwrites or {}
 FostercareTweaks.version = "3.1.0"
 
@@ -57,6 +58,9 @@ FostercareTweaks.register = function(self, mod)
     local category = mod.category or FostercareTweaks.T["General"]
     mod.category = category
     mod.expansions = mod.expansions or { ["vanilla"] = true }
+    if not self.mods[mod.title] then
+        table.insert(self.moduleOrder, mod.title)
+    end
     FostercareTweaks.mods[mod.title] = mod
     return mod
 end
@@ -66,43 +70,40 @@ if not ShaguTweaks then
     ShaguTweaks = FostercareTweaks
 end
 
-local function GetConfigValue(conf)
-    if type(conf) == "table" and conf.r and conf.g and conf.b then
-        return string.format("%s,%s,%s,%s", conf.r, conf.g, conf.b, (conf.a or 1))
-    elseif type(conf) == "number" or type(conf) == "string" then
-        return conf
-    end
-    return ""
+local function EnsureSavedTables()
+    if type(FostercareTweaks_Config) ~= "table" then FostercareTweaks_Config = {} end
+    if type(FostercareTweaks_Config.overwrites) ~= "table" then FostercareTweaks_Config.overwrites = {} end
+    if type(FostercareTweaks_Cache) ~= "table" then FostercareTweaks_Cache = {} end
+    if type(FostercareTweaks_Cache.players) ~= "table" then FostercareTweaks_Cache.players = {} end
 end
+
+-- ClassicAPI loads SavedVariables before source; modules also read them at load.
+EnsureSavedTables()
 
 function FostercareTweaks:Initialize()
     if self.initialized then return end
     self.initialized = true
+    EnsureSavedTables()
 
-    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
-    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
-    if not FostercareTweaks_Cache then FostercareTweaks_Cache = {} end
-    if not FostercareTweaks_Cache.players then FostercareTweaks_Cache.players = {} end
-
-    -- Register and enable active modules
-    for title, mod in pairs(self.mods) do
+    -- Prepare every default before dependent modules enable. TOC registration
+    -- order defines layout and hook order; hash iteration must not decide it.
+    for _, title in ipairs(self.moduleOrder) do
+        local mod = self.mods[title]
         if FostercareTweaks_Config[title] == nil then
             FostercareTweaks_Config[title] = mod.enabled and 1 or 0
         end
 
         if mod.config then
             for name, value in pairs(mod.config) do
+                local saved = FostercareTweaks_Config.overwrites[name]
+                if saved ~= nil then value = saved; mod.config[name] = saved end
                 self.overwrites[name] = value
             end
         end
 
-        if mod.config and FostercareTweaks_Config.overwrites then
-            for name, value in pairs(FostercareTweaks_Config.overwrites) do
-                self.overwrites[name] = value
-                mod.config[name] = value
-            end
-        end
-
+    end
+    for _, title in ipairs(self.moduleOrder) do
+        local mod = self.mods[title]
         if FostercareTweaks_Config[title] == 1 and mod.enable then
             local success, err = pcall(mod.enable, mod)
             if not success and DEFAULT_CHAT_FRAME then

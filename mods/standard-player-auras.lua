@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- Original 1.12 top-right auras: keep Blizzard icons, handlers and timers.
 -- BuffFrame and TemporaryEnchantFrame stay active as native update controllers.
 local T = FostercareTweaks.T

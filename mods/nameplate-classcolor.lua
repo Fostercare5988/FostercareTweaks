@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/nameplate-classcolor.lua
 -- Changes the nameplate health bar color to class color
 

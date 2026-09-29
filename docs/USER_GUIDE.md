@@ -18,7 +18,7 @@ Detailed configuration, frame controls, and module reference for **FostercareTwe
 ### Frame Styles
 Configure your preferred style under `/ft uf`:
 - **Standard Blizzard Frames**: Retains the authentic Blizzard look while adding class coloring, accurate health numbers, and enhanced aura timers. Standard player and target name backgrounds use a fixed class color palette.
-- **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring, 2D portraits, and authoritative health numbers via UnitXP SP3.
+- **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Optional UnitXP SP3 supplies raw health readings; otherwise the frames use client unit telemetry.
 
 ### Aura Controls & Borders
 - **Aura Border Toggles**: Under `/ft` > **Unit Frames** > **Blizzard & Frame Aura Borders**, toggle borders for Buffs, Debuffs, and Weapon Enchants independently:
@@ -47,8 +47,8 @@ Configure your preferred style under `/ft uf`:
 ## 4. World Map & Minimap
 
 - **Windowed World Map**: Converts the full-screen world map into an adjustable floating window.
-  - **Ctrl + Mousewheel**: Zoom the map in and out.
-  - **Shift + Mousewheel**: Adjust map window transparency.
+  - **Ctrl + Mousewheel**: Adjust window scale from 30% to 150%. The scale is retained when reopening the map during the current session.
+  - **Shift + Mousewheel**: Adjust map window opacity from 20% to 100%.
   - Press **ESC** or your map toggle key to close.
 - **Coordinates & Roster Blips**: Live player and cursor coordinates appear at the bottom of the map, and party/raid members show as class-colored circular icons.
 - **Square Minimap & Clock**: Modern square minimap with mousewheel zooming, plus a 24-hour clock displaying local and server times on mouseover.
@@ -58,7 +58,12 @@ Configure your preferred style under `/ft uf`:
 ## 5. Action Bars & General Tweaks
 
 - **Floating Action Bar**: Removes the heavy stone background textures and max-level border art from the primary action bar for a lightweight floating aesthetic.
-- **Reagent Counters**: Real-time badge counters on action bar buttons showing remaining counts for class reagents (Flash Powder, Ankhs, Soul Shards, Runes, etc.).
+- **Reagent Counters**: Action buttons show available casts based on all reagent requirements and the reagents you carry. Bank items do not count. Spell and identified macro actions are supported; re-save older macros if their spell is not identified. Item stack counts retain their normal display.
 - **Cooldown Numbers**: Clean numeric countdown text on action bar cooldowns.
 - **Auto Dismount & Stance**: Automatically dismounts or cancels shapeshift forms when casting or speaking to flight masters, and switches stances automatically on ability activation.
 - **Hide Bars**: Easily hide the Blizzard player cast bar or shapeshift/stance bar under `/ft` without breaking cast events.
+
+## 6. Chat
+
+- **Chat History**: Keeps the last 30 messages per supported chat window and restores them on login or reload, retaining their original timestamp when timestamps were enabled.
+- **Chat Timestamps**: Optional timestamps apply to new messages, with configurable brackets, clock format and color.

@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/blue-shaman.lua
 -- Changes shaman class color to blue
 

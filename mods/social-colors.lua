@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/social-colors.lua
 -- Show class colors in Who, Guild, Friends and Chat
 

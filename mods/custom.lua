@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/custom.lua
 -- This module can be used to add your own custom code.
 

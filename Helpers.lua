@@ -1,37 +1,28 @@
 -- FostercareTweaks: Helpers.lua
--- Performance helpers, hardware timers, and zero-allocation recursion
+-- Shared timers, frame traversal, metadata and nameplate ownership
 
-FostercareTweaks = FostercareTweaks or {}
+if not FostercareTweaks then return end
 
 FostercareTweaks.GetExpansion = function()
     return "vanilla"
 end
 
 FostercareTweaks.GetGlobalEnv = function()
-    return _G or getfenv(0)
+    return _G
 end
 
--- Hardware Timer Wrapper (Zero GC overhead via C_Timer)
+-- Timers use the required ClassicAPI runtime.
 FostercareTweaks.TimerAfter = function(seconds, func)
     if not func then return end
-    if not seconds or seconds <= 0 then
-        func()
-    elseif C_Timer and C_Timer.After then
-        C_Timer.After(seconds, func)
-    end
+    if not seconds or seconds <= 0 then func() else C_Timer.After(seconds, func) end
 end
 FostercareTweaks.QueueFunction = function(func, ...)
     local args = { ... }
-    if C_Timer and C_Timer.After then
-        C_Timer.After(0.01, function()
-            func(unpack(args))
-        end)
-    else
-        func(unpack(args))
-    end
+    local count = select('#', ...)
+    C_Timer.After(0.01, function() func(unpack(args, 1, count)) end)
 end
 
--- Zero-Allocation Hierarchy Iteration (Rule D1 compliance)
+-- Traverse frame returns without constructing a temporary region array.
 local function RegionWalk(idx, callback, arg1, arg2, arg3, r, ...)
     if not r then return end
     callback(r, idx, arg1, arg2, arg3)
@@ -56,39 +47,11 @@ FostercareTweaks.ForEachChild = function(frame, callback, arg1, arg2, arg3)
     end
 end
 
--- Secure Function Hooking
--- Uses native ClassicAPI engine hooksecurefunc when available, with non-destructive fallback.
-local hooks = {}
-FostercareTweaks.hooksecurefunc = function(tbl, name, func, prepend)
-    if type(tbl) == "string" then
-        prepend, func, name, tbl = func, name, tbl, _G
-    end
-    if not tbl or not tbl[name] or not func then return end
-
-    if not prepend and type(hooksecurefunc) == "function" then
-        if tbl == _G then
-            hooksecurefunc(name, func)
-        else
-            hooksecurefunc(tbl, name, func)
-        end
-        return
-    end
-
-    local orig = tbl[name]
-    if prepend then
-        tbl[name] = function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-            func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-            return orig(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-        end
-    else
-        tbl[name] = function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-            local r1, r2, r3, r4, r5, r6, r7, r8, r9, r10 = orig(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-            func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-            return r1, r2, r3, r4, r5, r6, r7, r8, r9, r10
-        end
-    end
+-- Posthooks retain the native function and its return values.
+FostercareTweaks.hooksecurefunc = function(tbl, name, func)
+    if type(tbl) == 'string' then hooksecurefunc(tbl, name)
+    else hooksecurefunc(tbl, name, func) end
 end
-
 
 -- Script Hooking
 FostercareTweaks.HookScript = function(frame, script, func)
@@ -214,38 +177,17 @@ FostercareTweaks.AddBorder = function(frame, inset, color)
     return b
 end
 
--- Sorted Key Iteration
-local function __genOrderedIndex(t, sortFunc)
-    local orderedIndex = {}
-    for key in pairs(t) do
-        table.insert(orderedIndex, key)
-    end
-    table.sort(orderedIndex, sortFunc)
-    return orderedIndex
-end
-
-local function orderedNext(t, state)
-    local key = nil
-    if state == nil then
-        key = t.__orderedIndex[1]
-    else
-        for i = 1, #t.__orderedIndex do
-            if t.__orderedIndex[i] == state then
-                key = t.__orderedIndex[i + 1]
-            end
-        end
-    end
-
-    if key then
-        return key, t[key]
-    end
-    t.__orderedIndex = nil
-    return nil
-end
-
+-- Each iterator owns its keys, including nested/early-ended iteration.
 FostercareTweaks.spairs = function(t, sortFunc)
-    t.__orderedIndex = __genOrderedIndex(t, sortFunc)
-    return orderedNext, t, nil
+    local keys = {}
+    for key in pairs(t) do table.insert(keys, key) end
+    table.sort(keys, sortFunc)
+    local index = 0
+    return function()
+        index = index + 1
+        local key = keys[index]
+        if key ~= nil then return key, t[key] end
+    end
 end
 
 -- Item Identification & Counting
@@ -254,76 +196,6 @@ FostercareTweaks.GetItemIDFromLink = function(itemLink)
     local _, _, itemID = string.find(itemLink, "item:(%d+)")
     return itemID and tonumber(itemID) or nil
 end
-
-FostercareTweaks.GetItemCount = function(itemNameOrID)
-    if not itemNameOrID then return 0 end
-
-    -- 1. Native ClassicAPI C_Item.GetItemCount
-    if C_Item and C_Item.GetItemCount then
-        local ok, count = pcall(C_Item.GetItemCount, itemNameOrID)
-        if ok and type(count) == "number" and count >= 0 then
-            return count
-        end
-    end
-
-    -- 2. Container scanning fallback
-    local count = 0
-    local targetID = tonumber(itemNameOrID)
-    for bag = 4, 0, -1 do
-        local numSlots = GetContainerNumSlots(bag) or 0
-        for slot = 1, numSlots do
-            local texture, itemCount = GetContainerItemInfo(bag, slot)
-            if texture then
-                local num = (itemCount and itemCount > 0) and itemCount or 1
-                local link = GetContainerItemLink(bag, slot)
-                if link then
-                    local id = FostercareTweaks.GetItemIDFromLink(link)
-                    local _, _, linkName = string.find(link, "%[(.+)%]")
-                    if targetID and id and id == targetID then
-                        count = count + num
-                    elseif itemNameOrID and linkName and linkName == itemNameOrID then
-                        count = count + num
-                    elseif not targetID and id then
-                        local qName = GetItemInfo(id)
-                        if qName and qName == itemNameOrID then
-                            count = count + num
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return count
-end
-
-local itemLinkByNameCache = {}
-FostercareTweaks.GetItemLinkByName = function(name)
-    if not name then return nil end
-    if itemLinkByNameCache[name] then
-        return itemLinkByNameCache[name]
-    end
-
-    -- Fast-path: ClassicAPI / modern environment where GetItemInfo accepts item name
-    local testName, testLink, testQuality = GetItemInfo(name)
-    if testName and testLink then
-        local _, _, _, hex = GetItemQualityColor(tonumber(testQuality) or 1)
-        local hyperLink = (hex or "|cffffffff") .. "|H" .. testLink .. "|h[" .. testName .. "]|h|r"
-        itemLinkByNameCache[name] = hyperLink
-        return hyperLink
-    end
-
-    -- Fallback scan across standard item IDs
-    for itemID = 1, 25818 do
-        local itemName, itemLink, itemQuality = GetItemInfo(itemID)
-        if itemName and itemName == name then
-            local _, _, _, hex = GetItemQualityColor(tonumber(itemQuality) or 1)
-            local hyperLink = (hex or "|cffffffff") .. "|H" .. itemLink .. "|h[" .. itemName .. "]|h|r"
-            itemLinkByNameCache[name] = hyperLink
-            return hyperLink
-        end
-    end
-end
-ShaguTweaks.GetItemLinkByName = FostercareTweaks.GetItemLinkByName
 
 -- Pattern Sanitization and Captures
 local sanitize_cache = {}
@@ -497,7 +369,6 @@ FostercareTweaks.GetUnitData = function(name, active)
         return ret.class, ret.level, ret.elite, true
     end
 end
-ShaguTweaks.GetUnitData = FostercareTweaks.GetUnitData
 
 unitScanFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 unitScanFrame:RegisterEvent("VARIABLES_LOADED")
@@ -606,7 +477,7 @@ unitScanFrame:SetScript("OnEvent", function(arg1_param, arg2_param, arg3_param)
     end
 end)
 
--- Zero-Allocation Nameplate Engine (Rule D1 compliant)
+-- Nameplate lifecycle and verified GUID bindings.
 local NAMEPLATE_OBJECTORDER = { "border", "glow", "name", "level", "levelicon", "raidicon", "dragon" }
 
 local function IsNamePlate(frame)
@@ -708,7 +579,6 @@ libnameplate:SetScript("OnEvent", function(self_or_event, event_or_unit, unit_ar
 end)
 
 FostercareTweaks.libnameplate = libnameplate
-ShaguTweaks.libnameplate = libnameplate
 
 -- UnitXP SP3 Extension Detection (Distinguishes UnitXP SP3 DLL from native Blizzard UnitXP(unit))
 local hasUnitXPSP3 = nil
@@ -721,7 +591,4 @@ FostercareTweaks.HasUnitXP = function()
         end
     end
     return hasUnitXPSP3
-end
-if ShaguTweaks then
-    ShaguTweaks.HasUnitXP = FostercareTweaks.HasUnitXP
 end

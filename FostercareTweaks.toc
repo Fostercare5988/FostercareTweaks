@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## X-ClassicAPI-Min-Version: 1.15.15
 ## Title: FostercareTweaks
-## Notes: A unified, modernized collection of tweaks and enhancements for the Enhanced 1.12.1 Client Stack (ClassicAPI, SuperWoW, UnitXP).
+## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.15.15+ and SuperWoW 2.2+; UnitXP SP3 is optional.
 ## Author: Fostercare
 ## Version: 3.1.0
 ## DefaultState: enabled
@@ -13,14 +13,10 @@ Helpers.lua
 Options.lua
 
 # Action Bar Modules
-mods\hide-gryphons.lua
 mods\actionbar-float.lua
 mods\actionbar-reagents.lua
-mods\actionbar-right-center.lua
 mods\cooldown-numbers.lua
 mods\reduced-actionbar.lua
-mods\reduced-actionbar-bags.lua
-mods\reduced-actionbar-micromenu.lua
 
 # Unit Frame Modules
 mods\move-unitframes.lua
@@ -35,7 +31,6 @@ mods\health-numbers.lua
 mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
 mods\target-castbar.lua
-mods\castbar-uninterruptible.lua
 mods\target-debufftimer.lua
 mods\unitframe-energytick.lua
 
@@ -46,10 +41,6 @@ mods\nameplate-castbar.lua
 
 # World & MiniMap Modules
 mods\worldmap-window.lua
-mods\worldmap-coordinates.lua
-mods\worldmap-colors.lua
-mods\minimap-clock.lua
-mods\minimap-square.lua
 mods\minimap-tweaks.lua
 
 # Bags & Item Modules
@@ -60,16 +51,9 @@ mods\equip-compare.lua
 
 # Chat & Social Modules
 mods\chat-tweaks.lua
-mods\chat-links.lua
-mods\chat-timestamps.lua
-mods\chat-history.lua
 mods\social-colors.lua
 
 # General & Gameplay Modules
-mods\hide-default-castbar.lua
-mods\hide-stancebar.lua
-mods\auto-dismount.lua
-mods\auto-stance.lua
+mods\gameplay.lua
 mods\blue-shaman.lua
-mods\hide-errors.lua
 mods\custom.lua

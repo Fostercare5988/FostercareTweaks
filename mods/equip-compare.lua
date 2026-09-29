@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/equip-compare.lua
 -- Shows currently equipped items on tooltips while the shift key is pressed
 

@@ -1,8 +1,9 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/vendor-values.lua
 -- Shows vendor sell values on item tooltips using ClassicAPI C_Item
 
 local T = FostercareTweaks.T
-local GetItemLinkByName = FostercareTweaks.GetItemLinkByName
 local GetItemIDFromLink = FostercareTweaks.GetItemIDFromLink
 
 local module = FostercareTweaks:register({
@@ -53,9 +54,6 @@ local SellValueDB = setmetatable({}, {
 })
 
 FostercareTweaks.SellValueDB = SellValueDB
-if ShaguTweaks then
-  ShaguTweaks.SellValueDB = SellValueDB
-end
 
 local function AddVendorPrices(frame, idOrLink, count)
   local price = GetSellPrice(idOrLink)
@@ -122,9 +120,9 @@ module.enable = function(self)
   end)
   hooksecurefunc(GameTooltip, "SetInboxItem", function(frame, mailID, attachmentIndex)
     local link = GetInboxItemLink and GetInboxItemLink(mailID, attachmentIndex or 1)
-    if not link and GetItemLinkByName then
-      local name = GetInboxItem(mailID)
-      if name then link = GetItemLinkByName(name) end
+    if not link then
+      local _, itemLink = frame:GetItem()
+      link = itemLink
     end
     ShowValue(frame, link, 1, true)
   end)
@@ -152,8 +150,9 @@ module.enable = function(self)
     ShowValue(frame, GetAuctionItemLink(atype, index), count, true)
   end)
   hooksecurefunc(GameTooltip, "SetAuctionSellItem", function(frame)
-    local name, _, count = GetAuctionSellItemInfo()
-    ShowValue(frame, name and GetItemLinkByName and GetItemLinkByName(name), count, true)
+    local _, _, count = GetAuctionSellItemInfo()
+    local _, link = frame:GetItem()
+    ShowValue(frame, link, count, true)
   end)
   hooksecurefunc(GameTooltip, "SetTradePlayerItem", function(frame, index)
     ShowValue(frame, GetTradePlayerItemLink(index), 1, true)

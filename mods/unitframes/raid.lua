@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/unitframes/raid.lua
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Modern Unit Frames Subsystem: Unified Group Frames (Party & 40-Player Raid)

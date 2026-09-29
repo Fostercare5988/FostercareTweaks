@@ -11,7 +11,7 @@ import subprocess
 import sys
 import unittest
 
-if len(sys.argv) > 1:
+if len(sys.argv) > 1 and Path(sys.argv[1]).is_dir():
     sys.path.insert(0, sys.argv.pop(1))
 from lupa.lua51 import LuaRuntime
 from test_frames import runtime as frame_runtime
@@ -33,6 +33,8 @@ classes={}; players={}; queries={}; messages={}; junk=2; sold=0; cursor=true
 floor=math.floor; STANDARD_TEXT_FONT="test"; UNKNOWN="Unknown"
 local methods={}
 function methods:GetName() return self.name end
+function methods:GetParent() return self.parent end
+function methods:EnableMouse(value) self.mouse=value end
 function methods:GetObjectType() return self.kind end
 function methods:SetScript(k,f) self.scripts[k]=f end
 function methods:GetScript(k) return self.scripts[k] end
@@ -45,6 +47,12 @@ function methods:IsVisible() return self.shown end
 function methods:SetWidth(v) self.width=v end
 function methods:SetHeight(v) self.height=v end
 function methods:GetWidth() return self.width end
+function methods:GetHeight() return self.height end
+function methods:SetScale(v) self.scale=v end
+function methods:GetScale() return self.scale or 1 end
+function methods:SetMovable(v) self.movable=v end
+function methods:EnableKeyboard(v) self.keyboard=v end
+function methods:EnableMouseWheel(v) self.mousewheel=v end
 function methods:GetFrameLevel() return 1 end
 function methods:GetFont() return 'test',12 end
 function methods:SetTexture(v) self.texture=v end
@@ -71,7 +79,7 @@ function methods:CreateFontString(n) return CreateFrame('FontString',n,self) end
 for _,k in ipairs({'SetPoint','ClearAllPoints','SetAllPoints','SetFontObject',
  'SetFont','SetJustifyH','SetFrameStrata','SetFrameLevel','SetBackdrop',
  'SetBackdropBorderColor','SetStatusBarTexture','SetVertexColor','SetBlendMode',
- 'SetDesaturated','SetOwner'}) do methods[k]=function() end end
+ 'SetDesaturated','SetOwner','SetTextColor','SetBackdropColor'}) do methods[k]=function() end end
 function CreateFrame(kind,name,parent)
  local f={kind=kind,name=name,parent=parent,width=100,height=20,shown=true,scripts={},events={}}
  setmetatable(f,{__index=methods})
@@ -184,6 +192,275 @@ def health():
     lua.execute(source("mods/health-numbers.lua"))
     lua.execute('FostercareTweaks.mods["Real Health Numbers"].enable()')
     return lua
+
+
+class CoreTests(unittest.TestCase):
+    def boot(self):
+        lua = runtime()
+        lua.execute('''
+            FostercareTweaks=nil; ShaguTweaks={foreign=true}
+            CLASSIC_API_VERSION=11515; SUPERWOW_VERSION='2.2'; SlashCmdList={}
+            FostercareTweaks_Cache={players={}}; enabled={}
+        ''')
+        lua.execute(source('Core.lua'))
+        lua.execute('FostercareTweaks.EnableStandardClassColors=function() end')
+        return lua
+
+    def chat_runtime(self, stored=None):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.globals().storedMessage = stored
+        lua.execute('''
+            NUM_CHAT_WINDOWS=1; strfind=string.find; CLOSE='Close'
+            function GetRealmName() return 'Realm' end
+            function date() return '12:34:56' end
+            ChatFrame1=CreateFrame('Frame','ChatFrame1',UIParent)
+            ChatFrame1.GetID=function() return 1 end
+            chatOutput={}
+            ChatFrame1.AddMessage=function(_,text) table.insert(chatOutput,text) end
+            FostercareTweaks_Config['Chat Tweaks']=0
+            FostercareTweaks_Config['Chat Hyperlinks']=0
+            FostercareTweaks_Config['Chat History']=1
+            FostercareTweaks_Config['Chat Timestamps']=1
+            if storedMessage then
+                FostercareTweaks_Cache.chathistory={Realm={['Same name']={[1]={storedMessage}}}}
+            end
+        ''')
+        lua.execute(source('mods/chat-tweaks.lua'))
+        return lua
+
+    def test_chat_restore_keeps_original_timestamp_and_records_new_messages_once(self):
+        stored = '|cffaaaaaa[01:02:03]|r previous message'
+        lua = self.chat_runtime(stored)
+        lua.execute('''
+            FostercareTweaks:Initialize()
+            assert(#chatOutput==1 and chatOutput[1]==storedMessage)
+            ChatFrame1:AddMessage('new message',1,1,1)
+            assert(#chatOutput==2)
+            local history=FostercareTweaks_Cache.chathistory.Realm['Same name'][1]
+            assert(#history==2 and history[2]==storedMessage)
+            local _,n=string.gsub(history[1],'12:34:56','')
+            assert(n==1 and string.find(history[1],'new message',1,true))
+        ''')
+
+    def test_chat_history_retains_the_last_thirty_messages(self):
+        lua = self.chat_runtime()
+        lua.execute('''
+            FostercareTweaks_Config['Chat Timestamps']=0
+            FostercareTweaks:Initialize()
+            for i=1,35 do ChatFrame1:AddMessage('message '..i) end
+            local history=FostercareTweaks_Cache.chathistory.Realm['Same name'][1]
+            assert(#history==30 and history[1]=='message 35' and history[30]=='message 6')
+        ''')
+
+    def test_chat_history_recovers_invalid_saved_branches(self):
+        for malformed in ("'invalid'", "{Realm=false}", "{Realm={['Same name']={ [1]='invalid' }}}"):
+            lua = self.chat_runtime()
+            lua.execute(f'FostercareTweaks_Cache.chathistory={malformed}')
+            lua.execute('''
+                FostercareTweaks:Initialize()
+                ChatFrame1:AddMessage('message')
+                assert(type(FostercareTweaks_Cache.chathistory)=='table')
+                assert(#FostercareTweaks_Cache.chathistory.Realm['Same name'][1]==1)
+                for _,msg in ipairs(messages) do assert(not string.find(msg,'Failed to enable',1,true)) end
+            ''')
+
+    def test_worldmap_mousewheel_stays_visible_and_preserves_scale_on_reopen(self):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.execute('''
+            UISpecialFrames={}; UIPanelWindows={}
+            WorldMapFrame=CreateFrame('Frame','WorldMapFrame',UIParent)
+            WorldMapButton=CreateFrame('Button','WorldMapButton',WorldMapFrame)
+            WorldMapDetailFrame=CreateFrame('Frame','WorldMapDetailFrame',WorldMapFrame)
+            function IsShiftKeyDown() return shift end
+            function IsControlKeyDown() return ctrl end
+        ''')
+        lua.execute(source('mods/worldmap-window.lua'))
+        lua.execute('''
+            FostercareTweaks.mods['WorldMap Window']:enable()
+            local delay=frames[#frames]
+            fire(delay,'PLAYER_ENTERING_WORLD')
+            this=WorldMapFrame; ctrl=true; arg1=-100
+            WorldMapFrame.scripts.OnMouseWheel(); assert(WorldMapFrame:GetScale()==0.3)
+            arg1=100; WorldMapFrame.scripts.OnMouseWheel(); assert(WorldMapFrame:GetScale()==1.5)
+            WorldMapFrame.scripts.OnShow(); assert(WorldMapFrame:GetScale()==1.5)
+            ctrl=false; shift=true; arg1=-100
+            WorldMapFrame.scripts.OnMouseWheel(); assert(WorldMapFrame:GetAlpha()==0.2)
+            arg1=100; WorldMapFrame.scripts.OnMouseWheel(); assert(WorldMapFrame:GetAlpha()==1)
+        ''')
+
+    def test_initialization_prepares_all_defaults_before_enabling_in_registration_order(self):
+        lua = self.boot()
+        lua.execute('''
+            FostercareTweaks:register({title='A',enabled=true,config={a=1},enable=function(self)
+                assert(FostercareTweaks_Config.B==1, 'All defaults must be prepared first')
+                assert(FostercareTweaks.overwrites.b==2)
+                table.insert(enabled,'A')
+            end})
+            FostercareTweaks:register({title='B',enabled=true,config={b=2},enable=function(self)
+                assert(self.config.a==nil, 'Config belongs to its module')
+                table.insert(enabled,'B')
+            end})
+            local nativePairs=pairs
+            pairs=function(t)
+                if t==FostercareTweaks.mods then
+                    local index=0; local keys={'B','A'}
+                    return function() index=index+1; local key=keys[index]; if key then return key,t[key] end end
+                end
+                return nativePairs(t)
+            end
+            FostercareTweaks:Initialize()
+            assert(table.concat(enabled,',')=='A,B')
+            FostercareTweaks:Initialize(); assert(#enabled==2)
+        ''')
+
+    def test_saved_overwrites_are_applied_only_to_their_declaring_module(self):
+        lua = self.boot()
+        lua.execute('''
+            FostercareTweaks_Config.overwrites={a=9,b=8,orphan='preserve'}
+            FostercareTweaks:register({title='A',config={a=1}})
+            FostercareTweaks:register({title='B',config={b=2}})
+            FostercareTweaks:Initialize()
+            assert(FostercareTweaks.mods.A.config.a==9 and FostercareTweaks.mods.A.config.b==nil)
+            assert(FostercareTweaks.mods.B.config.b==8 and FostercareTweaks.mods.B.config.a==nil)
+            assert(FostercareTweaks.overwrites.orphan==nil)
+            assert(FostercareTweaks_Config.overwrites.orphan=='preserve')
+        ''')
+
+    def test_invalid_saved_root_tables_do_not_abort_startup(self):
+        lua = self.boot()
+        lua.execute('''
+            FostercareTweaks_Config='invalid'; FostercareTweaks_Cache=false
+            FostercareTweaks:register({title='A',enabled=true,enable=function() table.insert(enabled,'A') end})
+            FostercareTweaks:Initialize()
+            assert(#enabled==1 and type(FostercareTweaks_Config.overwrites)=='table')
+            assert(type(FostercareTweaks_Cache.players)=='table')
+        ''')
+
+    def test_nested_sorted_iteration_does_not_mutate_or_invalidate_the_input(self):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.execute('''
+            local t={b=2,a=1}; local visits=0
+            for k,v in FostercareTweaks.spairs(t) do
+                for inner in FostercareTweaks.spairs(t) do visits=visits+1 end
+                assert(t.__orderedIndex==nil)
+            end
+            assert(visits==4 and t.a==1 and t.b==2)
+        ''')
+
+    def test_helpers_do_not_modify_an_independently_loaded_shagutweaks(self):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.execute('local n=0; for _ in pairs(ShaguTweaks) do n=n+1 end; assert(n==1 and ShaguTweaks.foreign)')
+
+    def test_reagent_counter_uses_spell_identity_and_available_cast_count(self):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.execute('''
+            NUM_ACTIONBAR_BUTTONS=1; actionType='spell'; actionID=123
+            function HasAction(slot) return slot==1 end
+            function GetActionInfo() return actionType,actionID end
+            function GetActionTexture() return 'Interface\\\\Icons\\\\spell_nature_reincarnation' end
+            function ActionButton_GetPagedID() return 1 end
+            function IsConsumableAction() return false end
+            function ActionButton_UpdateCount() end
+            function GetMacroSpell() return 'Spell','Rank 1',macroSpell end
+            function GetContainerNumSlots() return 0 end
+            C_Item={GetItemCount=function() return 12 end}
+            table.wipe=function(t) for key in pairs(t) do t[key]=nil end end
+            C_Timer={After=function(_,callback) reagentCallback=callback end}
+            C_Spell.GetSpellReagents=function(id)
+                if id==123 then return {{itemID=456,count=3},{itemID=789,count=1}} end
+                return {}
+            end
+            C_Spell.GetSpellCastCount=function(id) assert(id==123); return castCount or 4 end
+            ActionButton1=CreateFrame('Button','ActionButton1',UIParent)
+            ActionButton1Count=CreateFrame('FontString','ActionButton1Count',ActionButton1)
+        ''')
+        lua.execute(source('mods/actionbar-reagents.lua'))
+        lua.execute('''
+            FostercareTweaks.mods['Reagent Counter']:enable()
+            assert(ActionButton1Count:GetText()=='4', 'Use all reagent requirements')
+            castCount=2
+            fire(FCTweaksReagentCount,'BAG_UPDATE')
+        ''')
+        # Run either the old next-frame handler or the new deferred callback.
+        lua.execute('''
+            if FCTweaksReagentCount.scripts.OnUpdate then this=FCTweaksReagentCount; this.scripts.OnUpdate()
+            else reagentCallback() end
+            assert(ActionButton1Count:GetText()=='2')
+        ''')
+
+    def test_failed_dependency_guard_stops_the_entire_manifest(self):
+        for version, superwow in ((11514, "'2.2'"), ("nil", "'2.2'"), (11515, "nil")):
+            lua = runtime()
+            lua.execute(f'FostercareTweaks=nil; CLASSIC_API_VERSION={version}; SUPERWOW_VERSION={superwow}; SlashCmdList={{}}; initialFrames=#frames')
+            for line in (ROOT/'FostercareTweaks.toc').read_text().splitlines():
+                if line.strip() and not line.startswith('#'):
+                    lua.execute(source(line.replace('\\','/')))
+            lua.execute('assert(FostercareTweaks==nil and #frames==initialFrames)')
+
+    def test_reagents_preserve_native_this_macro_identity_and_item_stack_counts(self):
+        lua = self.boot()
+        lua.execute('''
+            NUM_ACTIONBAR_BUTTONS=3; actions={[1]={'macro',7},[2]={'spell',456},[3]={'item',5140}}
+            table.wipe=function(t) for k in pairs(t) do t[k]=nil end end
+            C_Timer={After=function(_,fn) reagentCallback=fn end}
+            function GetActionInfo(slot) if actions[slot] then return unpack(actions[slot]) end end
+            function GetMacroSpell(id) assert(id==7); if not unknownMacro then return 'Spell','Rank',123 end end
+            function ActionButton_GetPagedID(button) return button.slot end
+            function IsConsumableAction(slot) return slot==3 end
+            function GetActionCount(slot) assert(slot==3); return 17 end
+            -- Native 1.12.1 ActionButton.lua: UpdateCount reads global this,
+            -- ignores its arguments and clears labels on non-consumable actions.
+            function ActionButton_UpdateCount()
+                local text=_G[this:GetName()..'Count']
+                if IsConsumableAction(ActionButton_GetPagedID(this)) then
+                    text:SetText(GetActionCount(ActionButton_GetPagedID(this)))
+                else text:SetText('') end
+            end
+            C_Spell.GetSpellReagents=function(id) if id==123 then return {{itemID=5140,count=3}} end; return {} end
+            C_Spell.GetSpellCastCount=function(id) assert(id==123); return 4 end
+            for i=1,3 do
+                local b=CreateFrame('Button','ActionButton'..i,UIParent); b.slot=i
+                CreateFrame('FontString','ActionButton'..i..'Count',b)
+            end
+            outerFrame=CreateFrame('Frame',nil,UIParent); this=outerFrame
+        ''')
+        lua.execute(source('mods/actionbar-reagents.lua'))
+        lua.execute('''
+            FostercareTweaks.mods['Reagent Counter']:enable()
+            assert(this==outerFrame and ActionButton1Count:GetText()=='4')
+            assert(ActionButton2Count:GetText()=='' and ActionButton3Count:GetText()=='17')
+            unknownMacro=true; fire(FCTweaksReagentCount,'UPDATE_MACROS',nil,nil,true)
+            reagentCallback()
+            assert(this==outerFrame and ActionButton1Count:GetText()=='')
+            actions[1]={'spell',123}; fire(FCTweaksReagentCount,'ACTIONBAR_SLOT_CHANGED',0,nil,true)
+            reagentCallback(); assert(ActionButton1Count:GetText()=='4')
+            assert(ActionButton3Count:GetText()=='17')
+        ''')
+
+    def test_unnamed_cooldowns_do_not_share_an_overlay(self):
+        lua = self.boot()
+        lua.execute(source('Helpers.lua'))
+        lua.execute('''
+            function CooldownFrame_SetTimer() end
+            function GetActionCooldown() return 0,0,0 end
+            function HasAction() return false end
+        ''')
+        lua.execute(source('mods/cooldown-numbers.lua'))
+        lua.execute('''
+            FostercareTweaks.mods['Cooldown Numbers']:enable()
+            local parent=CreateFrame('Frame',nil,UIParent)
+            parent.GetHeight=function() return 24 end
+            local a,b=CreateFrame('Model',nil,parent),CreateFrame('Model',nil,parent)
+            CooldownFrame_SetTimer(a,100,60,1); CooldownFrame_SetTimer(b,100,120,1)
+            assert(a.cooldowntext~=b.cooldowntext,'Each cooldown owns its text')
+            assert(a.cooldowntext:GetParent()==a and b.cooldowntext:GetParent()==b)
+            assert(a.cooldowntext.duration==60 and b.cooldowntext.duration==120)
+        ''')
 
 
 class OwnershipTests(unittest.TestCase):

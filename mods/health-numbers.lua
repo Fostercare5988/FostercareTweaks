@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/health-numbers.lua
 local T = FostercareTweaks.T
 local Abbreviate = FostercareTweaks.Abbreviate

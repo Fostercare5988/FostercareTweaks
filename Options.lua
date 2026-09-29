@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: Options.lua
 -- Modern Configuration GUI (Rule C7, C13, AP-28 compliant)
 

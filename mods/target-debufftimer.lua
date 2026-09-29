@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- FostercareTweaks: mods/target-debufftimer.lua
 local T = FostercareTweaks.T
 local TimeConvert = FostercareTweaks.TimeConvert

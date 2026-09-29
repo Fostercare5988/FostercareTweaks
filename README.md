@@ -5,7 +5,7 @@ A modular interface and quality-of-life add-on suite for World of Warcraft 1.12.
 ## Features
 
 - **Unit Frames & Raid Grid**: Choose between enhanced standard Blizzard frames or clean modern unit frames (Player, Target, Target-of-Target). Includes a compact 40-player raid grid with class coloring, health deficits, dispel highlights, and configurable buff indicators.
-- **Action Bars & Cooldowns**: Optional floating action bar layout, on-button reagent counters (shards, powders, runes), clean numeric cooldown text, and centered right action bars.
+- **Action Bars & Cooldowns**: Optional floating action bar layout, available-cast counters for spells consuming reagents, clean numeric cooldown text, and centered right action bars.
 - **Nameplates**: Direct class-colored health bars and responsive nameplate castbars tied to enemy casting states.
 - **World Map & Minimap**: Resizable, windowed world map with mousewheel zoom and opacity controls, live player/cursor coordinates, square minimap, and hovering 24-hour clock.
 - **Items & Tooltips**: One-click merchant junk seller, bag/bank item quality borders, side-by-side equipment comparison, and native vendor sell values on tooltips.
@@ -55,11 +55,10 @@ A modular interface and quality-of-life add-on suite for World of Warcraft 1.12.
 - **Standard Frame Class Colors**: When using standard Blizzard frames, player and target name backgrounds use permanent class coloring. This design choice is always enabled.
 - **Sell Junk Queue**: Selling grey items operates via native merchant queue commands without capturing your cursor. Closing or walking away from the merchant cancels any remaining pending sales.
 - **Aura Durations**: Debuff and buff cooldown sweeps only appear when duration telemetry is available to the client.
+- **Reagent Counters**: Counts show how many casts your carried reagents support. Macro buttons need a spell identified by the client; re-save older macros if their spell is not identified.
 
 ---
 
-For detailed configuration, customization options, and layout controls, see the [User Guide](docs/USER_GUIDE.md). Technical architecture notes and review history are located under [docs/](docs/).
+For detailed configuration, customization options, and layout controls, see the [User Guide](docs/USER_GUIDE.md).
 
-## License
-
-MIT License. Maintained by [Fostercare5988](https://github.com/Fostercare5988).
+Maintained by [Fostercare5988](https://github.com/Fostercare5988).

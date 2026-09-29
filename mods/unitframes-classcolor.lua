@@ -1,3 +1,5 @@
+if not FostercareTweaks then return end
+
 -- Standard Blizzard player/target name backgrounds and party names always use class colors.
 local function ClassColor(unit)
     local _, class = UnitClass(unit)

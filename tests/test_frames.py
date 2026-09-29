@@ -4,7 +4,7 @@ Run: python -B tests/test_frames.py [directory-containing-lupa]
 from pathlib import Path
 import sys
 import unittest
-if len(sys.argv)>1: sys.path.insert(0,sys.argv.pop(1))
+if len(sys.argv)>1 and Path(sys.argv[1]).is_dir(): sys.path.insert(0,sys.argv.pop(1))
 from lupa.lua51 import LuaRuntime
 ROOT=Path(__file__).resolve().parents[1]
 

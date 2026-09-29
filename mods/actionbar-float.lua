@@ -1,4 +1,24 @@
--- FostercareTweaks: mods/actionbar-float.lua
+if not FostercareTweaks then return end
+
+-- Related modules; settings remain independent.
+
+do
+local T = FostercareTweaks.T
+
+local module = FostercareTweaks:register({
+    title = T["Hide Gryphons"],
+    description = T["Hides the gryphons left and right of the action bar."],
+    category = T["Action Bar"],
+    enabled = nil,
+})
+
+module.enable = function(self)
+    if MainMenuBarLeftEndCap then MainMenuBarLeftEndCap:Hide() end
+    if MainMenuBarRightEndCap then MainMenuBarRightEndCap:Hide() end
+end
+end
+
+do
 local T = FostercareTweaks.T
 
 local module = FostercareTweaks:register({
@@ -86,4 +106,23 @@ module.enable = function(self)
             end)
         end
     end
+end
+end
+
+do
+local T = FostercareTweaks.T
+
+local module = FostercareTweaks:register({
+    title = T["Center Vertical Actionbar"],
+    description = T["Center the vertical actionbar on the right side."],
+    category = T["Action Bar"],
+    enabled = nil,
+})
+
+module.enable = function(self)
+    if MultiBarRight then
+        MultiBarRight:ClearAllPoints()
+        MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", 0, -16)
+    end
+end
 end
