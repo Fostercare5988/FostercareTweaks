@@ -62,7 +62,7 @@ local function UpdateHealth(frame)
     end
 
     local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
-    if showLevel and frame.healthBar.levelText then
+    if showLevel and frame.levelBadge then
         local levelStr = ""
         local r, g, b = 1, 1, 1
         if level <= 0 or classification == "worldboss" then
@@ -75,22 +75,26 @@ local function UpdateHealth(frame)
                 r, g, b = c.r, c.g, c.b
             end
         end
-        frame.healthBar.levelText:SetText(levelStr)
-        frame.healthBar.levelText:SetTextColor(r, g, b, 1)
-        frame.healthBar.levelText:Show()
-
-        frame.healthBar.nameText:ClearAllPoints()
-        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar.levelText, "RIGHT", 4, 0)
-        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+        frame.levelBadge:Show()
+        if frame.levelBadge.SetLevel then
+            frame.levelBadge:SetLevel(levelStr, r, g, b)
+        else
+            frame.levelBadge.text:SetText(levelStr)
+            frame.levelBadge.text:SetTextColor(r, g, b, 1)
+        end
+        frame.levelBadge.text:Show()
     else
-        if frame.healthBar.levelText then frame.healthBar.levelText:Hide() end
-        frame.healthBar.nameText:ClearAllPoints()
-        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
-        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+        if frame.levelBadge then
+            frame.levelBadge:Hide()
+            if frame.levelBadge.text then frame.levelBadge.text:Hide() end
+        end
     end
 
     local name = UnitName("target") or "Target"
     local showName = (not UF.IsShowName) or UF:IsShowName()
+    frame.healthBar.nameText:ClearAllPoints()
+    frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
+    frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
     if showName then
         frame.healthBar.nameText:SetText(name)
         frame.healthBar.nameText:Show()
@@ -347,24 +351,51 @@ function UF:EnableTargetFrame()
         raidIcon:Hide()
         targetFrame.raidIcon = raidIcon
 
-        -- PvP Emblem
+        -- PvP Emblem (prominent circular badge on portrait top-right like Standard Frame)
         local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
-        pvpIcon:SetWidth(22)
-        pvpIcon:SetHeight(22)
-        pvpIcon:SetPoint("TOPRIGHT", portrait, "TOPRIGHT", 6, 6)
+        pvpIcon:SetWidth(40)
+        pvpIcon:SetHeight(40)
+        pvpIcon:SetPoint("CENTER", portrait, "TOPRIGHT", -4, -4)
         pvpIcon:Hide()
         targetFrame.pvpIcon = pvpIcon
 
+        -- Level Badge (anchored to portrait bottom-right corner like Standard Frame)
+        local levelBadge = CreateFrame("Frame", "FCTweaksTargetLevelBadge", portrait)
+        levelBadge:SetWidth(20)
+        levelBadge:SetHeight(18)
+        levelBadge:SetFrameLevel(portrait:GetFrameLevel() + 3)
+        levelBadge:SetBackdrop(UF.backdrop)
+        levelBadge:SetBackdropColor(0.08, 0.08, 0.08, 0.95)
+        levelBadge:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        levelBadge:SetPoint("CENTER", portrait, "BOTTOMRIGHT", -4, 4)
+
+        local levelText = levelBadge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        levelText:SetPoint("CENTER", levelBadge, "CENTER", 0, 0)
+        levelText:SetJustifyH("CENTER")
+        levelText:SetShadowColor(0, 0, 0, 1)
+        levelText:SetShadowOffset(1, -1)
+        levelBadge.text = levelText
+
+        function levelBadge:SetLevel(str, r, g, b)
+            self.text:SetText(str)
+            if r and g and b then
+                self.text:SetTextColor(r, g, b, 1)
+            end
+            local textW = self.text.GetStringWidth and self.text:GetStringWidth()
+            if not textW or textW == 0 then
+                textW = string.len(str) * 7
+            end
+            self:SetWidth(math.max(20, textW + 8))
+        end
+
+        targetFrame.levelBadge = levelBadge
+
         -- Health Bar
         local hb = UF:CreateBar("FCTweaksTargetHealthBar", targetFrame)
-        hb.levelText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.levelText:SetPoint("LEFT", hb, "LEFT", 4, 0)
-        hb.levelText:SetJustifyH("LEFT")
-        hb.levelText:SetShadowColor(0, 0, 0, 1)
-        hb.levelText:SetShadowOffset(0.8, -0.8)
+        hb.levelText = levelText
 
         hb.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.nameText:SetPoint("LEFT", hb.levelText, "RIGHT", 4, 0)
+        hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
         hb.nameText:SetShadowOffset(0.8, -0.8)
@@ -492,6 +523,9 @@ function UF:DisableTargetFrame()
         end
         if targetFrame.pvpIcon then
             targetFrame.pvpIcon:Hide()
+        end
+        if targetFrame.levelBadge then
+            targetFrame.levelBadge:Hide()
         end
     end
 end

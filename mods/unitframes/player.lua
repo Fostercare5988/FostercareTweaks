@@ -32,25 +32,31 @@ local function UpdateHealth(frame)
         frame.healthBar.healthText:SetText(UF.FormatHealthText and UF.FormatHealthText(cur, max) or "")
     end
 
-    -- Level and Name text
+    -- Level Badge on Portrait
     local level = UnitLevel("player") or 0
-    local name = UnitName("player") or "Player"
     local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
-    local showName = (not UF.IsShowName) or UF:IsShowName()
-    if showLevel and level > 0 and frame.healthBar.levelText then
-        frame.healthBar.levelText:SetText(tostring(level))
-        frame.healthBar.levelText:SetTextColor(1, 1, 1, 1)
-        frame.healthBar.levelText:Show()
-
-        frame.healthBar.nameText:ClearAllPoints()
-        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar.levelText, "RIGHT", 4, 0)
-        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+    if showLevel and level > 0 and frame.levelBadge then
+        frame.levelBadge:Show()
+        if frame.levelBadge.SetLevel then
+            frame.levelBadge:SetLevel(tostring(level), 1, 0.82, 0)
+        else
+            frame.levelBadge.text:SetText(tostring(level))
+            frame.levelBadge.text:SetTextColor(1, 0.82, 0, 1)
+        end
+        frame.levelBadge.text:Show()
     else
-        if frame.healthBar.levelText then frame.healthBar.levelText:Hide() end
-        frame.healthBar.nameText:ClearAllPoints()
-        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
-        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+        if frame.levelBadge then
+            frame.levelBadge:Hide()
+            if frame.levelBadge.text then frame.levelBadge.text:Hide() end
+        end
     end
+
+    -- Name text on Health Bar
+    local name = UnitName("player") or "Player"
+    local showName = (not UF.IsShowName) or UF:IsShowName()
+    frame.healthBar.nameText:ClearAllPoints()
+    frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
+    frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
     if showName then
         frame.healthBar.nameText:SetText(name)
         frame.healthBar.nameText:Show()
@@ -212,24 +218,51 @@ function UF:EnablePlayerFrame()
         playerFrame.portrait = portrait
         playerFrame.portraitSide = "left"
 
-        -- PvP Emblem
+        -- Level Badge (anchored to portrait bottom-left corner like Standard Frame)
+        local levelBadge = CreateFrame("Frame", "FCTweaksPlayerLevelBadge", portrait)
+        levelBadge:SetWidth(22)
+        levelBadge:SetHeight(18)
+        levelBadge:SetFrameLevel(portrait:GetFrameLevel() + 3)
+        levelBadge:SetBackdrop(UF.backdrop)
+        levelBadge:SetBackdropColor(0.08, 0.08, 0.08, 0.95)
+        levelBadge:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        levelBadge:SetPoint("CENTER", portrait, "BOTTOMLEFT", 4, 4)
+
+        local levelText = levelBadge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        levelText:SetPoint("CENTER", levelBadge, "CENTER", 0, 0)
+        levelText:SetJustifyH("CENTER")
+        levelText:SetShadowColor(0, 0, 0, 1)
+        levelText:SetShadowOffset(1, -1)
+        levelBadge.text = levelText
+
+        function levelBadge:SetLevel(str, r, g, b)
+            self.text:SetText(str)
+            if r and g and b then
+                self.text:SetTextColor(r, g, b, 1)
+            end
+            local textW = self.text.GetStringWidth and self.text:GetStringWidth()
+            if not textW or textW == 0 then
+                textW = string.len(str) * 7
+            end
+            self:SetWidth(math.max(20, textW + 8))
+        end
+
+        playerFrame.levelBadge = levelBadge
+
+        -- PvP Emblem (prominent circular badge on portrait top-left like Standard Frame)
         local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
-        pvpIcon:SetWidth(22)
-        pvpIcon:SetHeight(22)
-        pvpIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -6, 6)
+        pvpIcon:SetWidth(40)
+        pvpIcon:SetHeight(40)
+        pvpIcon:SetPoint("CENTER", portrait, "TOPLEFT", 4, -4)
         pvpIcon:Hide()
         playerFrame.pvpIcon = pvpIcon
 
         -- Health Bar
         local hb = UF:CreateBar("FCTweaksPlayerHealthBar", playerFrame)
-        hb.levelText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.levelText:SetPoint("LEFT", hb, "LEFT", 4, 0)
-        hb.levelText:SetJustifyH("LEFT")
-        hb.levelText:SetShadowColor(0, 0, 0, 1)
-        hb.levelText:SetShadowOffset(0.8, -0.8)
+        hb.levelText = levelText
 
         hb.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.nameText:SetPoint("LEFT", hb.levelText, "RIGHT", 4, 0)
+        hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
         hb.nameText:SetShadowOffset(0.8, -0.8)
@@ -266,23 +299,15 @@ function UF:EnablePlayerFrame()
         playerFrame.restIcon:SetTexCoord(0.0, 0.5, 0.0, 0.42)
         playerFrame.restIcon:SetWidth(16)
         playerFrame.restIcon:SetHeight(16)
-        playerFrame.restIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -2, 2)
+        playerFrame.restIcon:SetPoint("TOPRIGHT", portrait, "TOPRIGHT", -2, 2)
         playerFrame.restIcon:Hide()
 
         playerFrame.leaderIcon = playerFrame:CreateTexture(nil, "OVERLAY")
         playerFrame.leaderIcon:SetTexture("Interface\\GroupFrame\\UI-Group-LeaderIcon")
         playerFrame.leaderIcon:SetWidth(14)
         playerFrame.leaderIcon:SetHeight(14)
-        playerFrame.leaderIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -2, 2)
+        playerFrame.leaderIcon:SetPoint("TOP", portrait, "TOP", 0, 4)
         playerFrame.leaderIcon:Hide()
-
-        -- PvP Emblem
-        local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
-        pvpIcon:SetWidth(22)
-        pvpIcon:SetHeight(22)
-        pvpIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -6, 6)
-        pvpIcon:Hide()
-        playerFrame.pvpIcon = pvpIcon
 
         -- Aura Container (up to 32 buffs and 48 harmful auras)
         if UF.Auras and UF.Auras.CreateAuraContainer then
@@ -336,6 +361,9 @@ function UF:DisablePlayerFrame()
         playerFrame:UnregisterAllEvents()
         if playerFrame.pvpIcon then
             playerFrame.pvpIcon:Hide()
+        end
+        if playerFrame.levelBadge then
+            playerFrame.levelBadge:Hide()
         end
     end
 end

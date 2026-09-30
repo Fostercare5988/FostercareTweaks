@@ -1300,12 +1300,14 @@ class FrameTests(unittest.TestCase):
         unitPVP.player=true
         fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
         assert(pf.pvpIcon:IsShown())
+        assert(pf.pvpIcon:GetWidth()==40 and pf.pvpIcon:GetHeight()==40)
         assert(string.find(pf.pvpIcon.texture[1] or "", "UI%-PVP%-Alliance"))
 
         -- Flag target as Horde PvP
         unitPVP.target=true
         fire(tf,"OnEvent","UNIT_FACTION","target")
         assert(tf.pvpIcon:IsShown())
+        assert(tf.pvpIcon:GetWidth()==40 and tf.pvpIcon:GetHeight()==40)
         assert(string.find(tf.pvpIcon.texture[1] or "", "UI%-PVP%-Horde"))
 
         -- FFA flag overrides faction emblem on both
@@ -1352,12 +1354,17 @@ class FrameTests(unittest.TestCase):
         unitClassifications={target="normal"}
         difficultyColors={[60]={r=1, g=0.8, b=0}}
 
-        -- Normal level 60 with difficulty color
+        -- Normal level 60 with difficulty color in dedicated levelBadge on portrait
         fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.levelBadge:IsShown())
         assert(tf.healthBar.levelText:IsShown())
         assert(tf.healthBar.levelText:GetText()=="60")
         local r, g, b = tf.healthBar.levelText:GetTextColor()
         assert(math.abs(r-1.0)<0.01 and math.abs(g-0.8)<0.01 and math.abs(b-0.0)<0.01)
+
+        -- Health bar name is shown independently of levelBadge
+        assert(tf.healthBar.nameText:IsShown())
+        assert(tf.healthBar.nameText:GetText()=="target")
 
         -- Elite classification tag (+)
         unitClassifications.target="elite"
@@ -1393,9 +1400,10 @@ class FrameTests(unittest.TestCase):
         fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
         assert(tf.powerBar.leftText:GetText()=="")
 
-        -- Show Target Level toggle off hides levelText
+        -- Show Target Level toggle off hides levelBadge and levelText
         FostercareTweaks_Config["Show Target Level"]=0
         fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not tf.levelBadge:IsShown())
         assert(not tf.healthBar.levelText:IsShown())
         ''')
 
