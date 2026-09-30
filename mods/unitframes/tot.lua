@@ -48,18 +48,23 @@ local function UpdateHealth(frame)
 
     -- Name text
     local name = UnitName("targettarget") or "ToT"
-    frame.healthBar.nameText:SetText(name)
+    local showName = (not UF.IsShowName) or UF:IsShowName()
+    if showName then
+        frame.healthBar.nameText:SetText(name)
+        frame.healthBar.nameText:Show()
+    else
+        frame.healthBar.nameText:SetText("")
+        frame.healthBar.nameText:Hide()
+    end
 
     -- Health text
     if UnitIsDeadOrGhost("targettarget") then
         frame.healthBar.healthText:SetText(UnitIsGhost("targettarget") and "Ghost" or "Dead")
-    elseif max > 0 and cur < max then
-        local percent = math.floor((cur / max) * 100 + 0.5)
-        frame.healthBar.healthText:SetText(percent .. "%")
     else
-        frame.healthBar.healthText:SetText("")
+        frame.healthBar.healthText:SetText(UF.FormatHealthText and UF.FormatHealthText(cur, max) or "")
     end
 end
+UF.UpdateToTHealth = UpdateHealth
 
 local function UpdatePower(frame)
     if not frame or not frame:IsShown() or not UnitExists("targettarget") then return end
@@ -81,6 +86,7 @@ local function UpdatePower(frame)
 
     UF:LayoutBars(frame)
 end
+UF.UpdateToTPower = UpdatePower
 
 local function UpdateAll(frame)
     if not frame then return end

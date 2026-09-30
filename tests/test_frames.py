@@ -1472,4 +1472,114 @@ class FrameTests(unittest.TestCase):
         assert(pwrSize==11)
         ''')
 
+    def test_modern_health_and_power_formats(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+
+        -- Test UF.FormatHealthText across formats
+        FostercareTweaks_Config.overwrites={uf_health_format="smart"}
+        assert(UF.FormatHealthText(5000, 5000)=="5000")
+        assert(UF.FormatHealthText(3500, 5000)=="3500 / 5000")
+
+        FostercareTweaks_Config.overwrites={uf_health_format="current"}
+        assert(UF.FormatHealthText(5000, 5000)=="5000")
+        assert(UF.FormatHealthText(3500, 5000)=="3500")
+
+        FostercareTweaks_Config.overwrites={uf_health_format="percent"}
+        assert(UF.FormatHealthText(5000, 5000)=="100%")
+        assert(UF.FormatHealthText(3500, 5000)=="70%")
+
+        FostercareTweaks_Config.overwrites={uf_health_format="deficit"}
+        assert(UF.FormatHealthText(5000, 5000)=="")
+        assert(UF.FormatHealthText(3500, 5000)=="-1500")
+
+        FostercareTweaks_Config.overwrites={uf_health_format="none"}
+        assert(UF.FormatHealthText(5000, 5000)=="")
+        assert(UF.FormatHealthText(3500, 5000)=="")
+
+        -- Test UF.FormatPowerText across formats
+        -- Rage (1) and Energy (3) always raw current value
+        FostercareTweaks_Config.overwrites={uf_power_format="percent"}
+        assert(UF.FormatPowerText(60, 100, 3)=="60")
+        assert(UF.FormatPowerText(25, 100, 1)=="25")
+
+        -- Mana (0):
+        FostercareTweaks_Config.overwrites={uf_power_format="smart"}
+        assert(UF.FormatPowerText(3000, 3000, 0)=="3000")
+        assert(UF.FormatPowerText(1500, 3000, 0)=="1500 / 3000")
+
+        FostercareTweaks_Config.overwrites={uf_power_format="current"}
+        assert(UF.FormatPowerText(1500, 3000, 0)=="1500")
+
+        FostercareTweaks_Config.overwrites={uf_power_format="percent"}
+        assert(UF.FormatPowerText(1500, 3000, 0)=="50%")
+
+        FostercareTweaks_Config.overwrites={uf_power_format="none"}
+        assert(UF.FormatPowerText(1500, 3000, 0)=="")
+
+        -- Live target frame reflection
+        FostercareTweaks_Config.overwrites={uf_health_format="percent", uf_power_format="percent"}
+        UF:ApplyConfiguration()
+        assert(tf.healthBar.healthText:GetText()=="75%")
+        assert(tf.powerBar.powerText:GetText()=="66%")
+        ''')
+
+    def test_modern_show_unit_name_toggle(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Player Frame"]=1
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnablePlayerFrame()
+        UF:EnableTargetFrame()
+        local pf=UF.playerFrame
+        local tf=UF.targetFrame
+
+        assert(UF:IsShowName()==true)
+        assert(pf.healthBar.nameText:IsShown())
+        assert(pf.healthBar.nameText:GetText()=="player")
+        assert(tf.healthBar.nameText:IsShown())
+        assert(tf.healthBar.nameText:GetText()=="target")
+
+        FostercareTweaks_Config["Show Unit Name"]=0
+        assert(UF:IsShowName()==false)
+        UF:ApplyConfiguration()
+        assert(not pf.healthBar.nameText:IsShown())
+        assert(pf.healthBar.nameText:GetText()=="")
+        assert(not tf.healthBar.nameText:IsShown())
+        assert(tf.healthBar.nameText:GetText()=="")
+
+        FostercareTweaks_Config["Show Unit Name"]=1
+        assert(UF:IsShowName()==true)
+        UF:ApplyConfiguration()
+        assert(pf.healthBar.nameText:IsShown())
+        assert(pf.healthBar.nameText:GetText()=="player")
+        assert(tf.healthBar.nameText:IsShown())
+        assert(tf.healthBar.nameText:GetText()=="target")
+        ''')
+
+    def test_modern_health_bar_height_clamping_for_large_fonts(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+
+        FostercareTweaks_Config.overwrites={
+            uf_target_height=30,
+            uf_power_height=20,
+            uf_font_health=18
+        }
+        UF:ApplyDimensions()
+        UF:ApplyFonts()
+
+        local hpHeight = tf.healthBar:GetHeight()
+        local pwHeight = tf.powerBar:GetHeight()
+
+        assert(hpHeight >= 20)
+        assert(hpHeight + pwHeight <= 30)
+        ''')
+
 if __name__=='__main__': unittest.main(verbosity=2)

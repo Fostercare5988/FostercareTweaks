@@ -28,22 +28,15 @@ local function UpdateHealth(frame)
     -- Health text
     if UnitIsDeadOrGhost("player") then
         frame.healthBar.healthText:SetText(UnitIsGhost("player") and "Ghost" or "Dead")
-    elseif max > 0 then
-        local curStr = FostercareTweaks.Abbreviate(cur)
-        if cur == max then
-            frame.healthBar.healthText:SetText(curStr)
-        else
-            local maxStr = FostercareTweaks.Abbreviate(max)
-            frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr)
-        end
     else
-        frame.healthBar.healthText:SetText("")
+        frame.healthBar.healthText:SetText(UF.FormatHealthText and UF.FormatHealthText(cur, max) or "")
     end
 
     -- Level and Name text
     local level = UnitLevel("player") or 0
     local name = UnitName("player") or "Player"
     local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
+    local showName = (not UF.IsShowName) or UF:IsShowName()
     if showLevel and level > 0 and frame.healthBar.levelText then
         frame.healthBar.levelText:SetText(tostring(level))
         frame.healthBar.levelText:SetTextColor(1, 1, 1, 1)
@@ -58,7 +51,13 @@ local function UpdateHealth(frame)
         frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
         frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
     end
-    frame.healthBar.nameText:SetText(name)
+    if showName then
+        frame.healthBar.nameText:SetText(name)
+        frame.healthBar.nameText:Show()
+    else
+        frame.healthBar.nameText:SetText("")
+        frame.healthBar.nameText:Hide()
+    end
 end
 UF.UpdatePlayerHealth = UpdateHealth
 
@@ -76,17 +75,12 @@ local function UpdatePower(frame)
     frame.powerBar:SetStatusBarColor(c.r, c.g, c.b, 1)
 
     if max > 0 then
-        if powerType == 1 or powerType == 3 then
-            frame.powerBar.powerText:SetText(tostring(cur))
-        else
-            local curStr = FostercareTweaks.Abbreviate(cur)
-            local maxStr = FostercareTweaks.Abbreviate(max)
-            frame.powerBar.powerText:SetText(curStr .. " / " .. maxStr)
-        end
+        frame.powerBar.powerText:SetText(UF.FormatPowerText and UF.FormatPowerText(cur, max, powerType) or "")
     else
         frame.powerBar.powerText:SetText("")
     end
 end
+UF.UpdatePlayerPower = UpdatePower
 
 local function UpdatePortrait(frame)
     if not frame or not frame:IsShown() or not frame.portrait then return end

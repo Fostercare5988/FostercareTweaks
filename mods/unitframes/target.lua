@@ -90,7 +90,14 @@ local function UpdateHealth(frame)
     end
 
     local name = UnitName("target") or "Target"
-    frame.healthBar.nameText:SetText(name)
+    local showName = (not UF.IsShowName) or UF:IsShowName()
+    if showName then
+        frame.healthBar.nameText:SetText(name)
+        frame.healthBar.nameText:Show()
+    else
+        frame.healthBar.nameText:SetText("")
+        frame.healthBar.nameText:Hide()
+    end
 
     -- Optional class / creature type in power bar leftText (never forces [60] ROGUE)
     if frame.powerBar and frame.powerBar.leftText then
@@ -114,16 +121,8 @@ local function UpdateHealth(frame)
     -- Concise Health text (No bloat, no duplicate max, no overlap)
     if UnitIsDeadOrGhost("target") then
         frame.healthBar.healthText:SetText(UnitIsGhost("target") and "Ghost" or "Dead")
-    elseif max > 0 then
-        local curStr = FostercareTweaks.Abbreviate(cur)
-        if cur == max then
-            frame.healthBar.healthText:SetText(curStr)
-        else
-            local maxStr = FostercareTweaks.Abbreviate(max)
-            frame.healthBar.healthText:SetText(curStr .. " / " .. maxStr)
-        end
     else
-        frame.healthBar.healthText:SetText("")
+        frame.healthBar.healthText:SetText(UF.FormatHealthText and UF.FormatHealthText(cur, max) or "")
     end
 end
 UF.UpdateTargetHealth = UpdateHealth
@@ -143,13 +142,7 @@ local function UpdatePower(frame)
         local c = UF.PowerColors[powerType] or UF.PowerColors[0]
         frame.powerBar:SetStatusBarColor(c.r, c.g, c.b, 1)
 
-        if powerType == 1 or powerType == 3 then
-            frame.powerBar.powerText:SetText(tostring(cur))
-        else
-            local curStr = FostercareTweaks.Abbreviate(cur)
-            local maxStr = FostercareTweaks.Abbreviate(max)
-            frame.powerBar.powerText:SetText(curStr .. " / " .. maxStr)
-        end
+        frame.powerBar.powerText:SetText(UF.FormatPowerText and UF.FormatPowerText(cur, max, powerType) or "")
     else
         frame.powerBar:Hide()
         frame.powerBar.powerText:SetText("")
@@ -157,6 +150,7 @@ local function UpdatePower(frame)
 
     UF:LayoutBars(frame)
 end
+UF.UpdateTargetPower = UpdatePower
 
 local function UpdatePortrait(frame)
     if not frame or not frame:IsShown() or not frame.portrait or not UnitExists("target") then return end

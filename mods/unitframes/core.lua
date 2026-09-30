@@ -66,6 +66,13 @@ FostercareTweaks:register({
     enabled = false,
 })
 
+FostercareTweaks:register({
+    title = T["Show Unit Name"],
+    description = T["Display unit name text on modern unit frames."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
 -- Backward compatibility aliases
 FostercareTweaks:register({
     title = T["Use Standard Player Frame"],
@@ -279,6 +286,82 @@ function UF:IsShowClass()
     return val == 1
 end
 
+function UF:IsShowName()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Unit Name"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:GetHealthFormat()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["uf_health_format"]
+    if not val and FostercareTweaks.overwrites then
+        val = FostercareTweaks.overwrites["uf_health_format"]
+    end
+    return val or "smart"
+end
+
+function UF:GetPowerFormat()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["uf_power_format"]
+    if not val and FostercareTweaks.overwrites then
+        val = FostercareTweaks.overwrites["uf_power_format"]
+    end
+    return val or "smart"
+end
+
+function UF.FormatHealthText(cur, max)
+    if not cur or not max or max <= 0 then return "" end
+    local fmt = UF:GetHealthFormat()
+    if fmt == "none" then
+        return ""
+    elseif fmt == "current" then
+        return FostercareTweaks.Abbreviate(cur)
+    elseif fmt == "percent" then
+        local pct = math.floor((cur / max) * 100)
+        return pct .. "%"
+    elseif fmt == "deficit" then
+        local def = max - cur
+        if def > 0 then
+            return "-" .. FostercareTweaks.Abbreviate(def)
+        else
+            return ""
+        end
+    else -- "smart" / "current_max"
+        local curStr = FostercareTweaks.Abbreviate(cur)
+        if cur == max then
+            return curStr
+        else
+            return curStr .. " / " .. FostercareTweaks.Abbreviate(max)
+        end
+    end
+end
+
+function UF.FormatPowerText(cur, max, powerType)
+    if not cur then return "" end
+    local fmt = UF:GetPowerFormat()
+    if fmt == "none" then
+        return ""
+    end
+    -- For rage (1) or energy (3), current value is the standard numeric presentation
+    if powerType == 1 or powerType == 3 then
+        return tostring(cur)
+    end
+    if not max or max <= 0 then return tostring(cur) end
+    if fmt == "current" then
+        return FostercareTweaks.Abbreviate(cur)
+    elseif fmt == "percent" then
+        local pct = math.floor((cur / max) * 100)
+        return pct .. "%"
+    else -- "smart"
+        local curStr = FostercareTweaks.Abbreviate(cur)
+        if cur == max then
+            return curStr
+        else
+            return curStr .. " / " .. FostercareTweaks.Abbreviate(max)
+        end
+    end
+end
+
 function UF:GetPlayerWidth()
     local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_player_width"])
     if not val and FostercareTweaks.overwrites then
@@ -296,7 +379,7 @@ function UF:GetPlayerHeight()
         val = tonumber(FostercareTweaks.overwrites["uf_player_height"])
     end
     if not val then return 42 end
-    if val < 24 then val = 24 end
+    if val < 30 then val = 30 end
     if val > 80 then val = 80 end
     return val
 end
@@ -318,7 +401,7 @@ function UF:GetTargetHeight()
         val = tonumber(FostercareTweaks.overwrites["uf_target_height"])
     end
     if not val then return 42 end
-    if val < 24 then val = 24 end
+    if val < 30 then val = 30 end
     if val > 80 then val = 80 end
     return val
 end
@@ -340,7 +423,7 @@ function UF:GetToTHeight()
         val = tonumber(FostercareTweaks.overwrites["uf_tot_height"])
     end
     if not val then return 26 end
-    if val < 18 then val = 18 end
+    if val < 20 then val = 20 end
     if val > 50 then val = 50 end
     return val
 end
@@ -352,7 +435,7 @@ function UF:GetPowerHeight()
     end
     if not val then return 10 end
     if val < 4 then val = 4 end
-    if val > 25 then val = 25 end
+    if val > 20 then val = 20 end
     return val
 end
 
@@ -938,10 +1021,12 @@ function UF:LayoutBars(frame)
     if powerShown then
         local availH = innerH - separator
         local powerH = UF:GetPowerHeight()
-        if powerH > availH - 8 then
-            powerH = math.max(availH - 8, 4)
+        local healthFont = UF:GetFontHealthSize()
+        local minHealthH = math.max(14, healthFont + 2)
+        if powerH > availH - minHealthH then
+            powerH = math.max(4, availH - minHealthH)
         end
-        local healthH = availH - powerH
+        local healthH = math.max(4, availH - powerH)
 
         frame.healthBar:ClearAllPoints()
         frame.healthBar:SetPoint("TOPLEFT", frame, "TOPLEFT", barXOffset, -borderInset)
@@ -1234,6 +1319,7 @@ function UF:ApplyConfiguration()
         if UF.playerFrame and UF.playerFrame:IsShown() then
             if UF.UpdatePlayerPvP then UF.UpdatePlayerPvP(UF.playerFrame) end
             if UF.UpdatePlayerHealth then UF.UpdatePlayerHealth(UF.playerFrame) end
+            if UF.UpdatePlayerPower then UF.UpdatePlayerPower(UF.playerFrame) end
         end
     else
         if UF.DisablePlayerFrame then UF:DisablePlayerFrame() end
@@ -1247,6 +1333,7 @@ function UF:ApplyConfiguration()
         if UF.targetFrame and UF.targetFrame:IsShown() then
             if UF.UpdateTargetPvP then UF.UpdateTargetPvP(UF.targetFrame) end
             if UF.UpdateTargetHealth then UF.UpdateTargetHealth(UF.targetFrame) end
+            if UF.UpdateTargetPower then UF.UpdateTargetPower(UF.targetFrame) end
             if UF.UpdateComboPoints then UF.UpdateComboPoints(UF.targetFrame) end
             if UF.UpdateRaidTarget then UF.UpdateRaidTarget(UF.targetFrame) end
         end
@@ -1259,6 +1346,10 @@ function UF:ApplyConfiguration()
     if UF:IsModernToT() then
         if TargetofTargetFrame then TargetofTargetFrame:Hide() end
         if UF.EnableToTFrame then UF:EnableToTFrame() end
+        if UF.totFrame and UF.totFrame:IsShown() then
+            if UF.UpdateToTHealth then UF.UpdateToTHealth(UF.totFrame) end
+            if UF.UpdateToTPower then UF.UpdateToTPower(UF.totFrame) end
+        end
     else
         if UF.DisableToTFrame then UF:DisableToTFrame() end
         if TargetofTargetFrame then

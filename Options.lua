@@ -322,7 +322,7 @@ settings.unitPage = unitPage
 local unitContainer = CreateFrame("Frame", "FCTweaksUnitSettingsContainer", unitPage)
 unitContainer:SetPoint("TOPLEFT", unitPage, "TOPLEFT", 0, 0)
 unitContainer:SetWidth(max_width - 48)
-unitContainer:SetHeight(1540)
+unitContainer:SetHeight(1700)
 unitPage:SetScrollChild(unitContainer)
 
 -- Choose each presentation explicitly; classic Blizzard art is the default.
@@ -354,24 +354,92 @@ local dimBox = CreateSectionBox(unitContainer, "Modern Frame Dimensions", 215)
 dimBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
 dimBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
 local ufPlayerWSlider = CreateSlider("FCTweaksUFPlayerWSlider", "Player Width", 140, 350, 2, " px", dimBox, 16, -30, 195)
-local ufPlayerHSlider = CreateSlider("FCTweaksUFPlayerHSlider", "Player Height", 24, 80, 1, " px", dimBox, 230, -30, 195)
+local ufPlayerHSlider = CreateSlider("FCTweaksUFPlayerHSlider", "Player Height", 30, 80, 1, " px", dimBox, 230, -30, 195)
 local ufTargetWSlider = CreateSlider("FCTweaksUFTargetWSlider", "Target Width", 140, 350, 2, " px", dimBox, 16, -78, 195)
-local ufTargetHSlider = CreateSlider("FCTweaksUFTargetHSlider", "Target Height", 24, 80, 1, " px", dimBox, 230, -78, 195)
+local ufTargetHSlider = CreateSlider("FCTweaksUFTargetHSlider", "Target Height", 30, 80, 1, " px", dimBox, 230, -78, 195)
 local ufToTWSlider = CreateSlider("FCTweaksUFToTWSlider", "ToT Width", 80, 220, 2, " px", dimBox, 16, -126, 195)
-local ufToTHSlider = CreateSlider("FCTweaksUFToTHSlider", "ToT Height", 18, 50, 1, " px", dimBox, 230, -126, 195)
-local ufPowerHSlider = CreateSlider("FCTweaksUFPowerHSlider", "Power Bar Height", 4, 25, 1, " px", dimBox, 16, -174, 416)
+local ufToTHSlider = CreateSlider("FCTweaksUFToTHSlider", "ToT Height", 20, 50, 1, " px", dimBox, 230, -126, 195)
+local ufPowerHSlider = CreateSlider("FCTweaksUFPowerHSlider", "Power Bar Height", 4, 20, 1, " px", dimBox, 16, -174, 416)
 
 local fontBox = CreateSectionBox(unitContainer, "Modern Frame Fonts", 125)
 fontBox:SetPoint("TOPLEFT", dimBox, "BOTTOMLEFT", 0, -14)
 fontBox:SetPoint("TOPRIGHT", dimBox, "BOTTOMRIGHT", 0, -14)
-local ufFontNameSlider = CreateSlider("FCTweaksUFFontNameSlider", "Name Font Size", 8, 20, 1, " pt", fontBox, 16, -30, 195)
-local ufFontLevelSlider = CreateSlider("FCTweaksUFFontLevelSlider", "Level / Info Font Size", 8, 20, 1, " pt", fontBox, 230, -30, 195)
-local ufFontHealthSlider = CreateSlider("FCTweaksUFFontHealthSlider", "Health Font Size", 8, 20, 1, " pt", fontBox, 16, -78, 195)
-local ufFontPowerSlider = CreateSlider("FCTweaksUFFontPowerSlider", "Power Font Size", 8, 20, 1, " pt", fontBox, 230, -78, 195)
+local ufFontNameSlider = CreateSlider("FCTweaksUFFontNameSlider", "Name Font Size", 8, 18, 1, " pt", fontBox, 16, -30, 195)
+local ufFontLevelSlider = CreateSlider("FCTweaksUFFontLevelSlider", "Level / Info Font Size", 8, 16, 1, " pt", fontBox, 230, -30, 195)
+local ufFontHealthSlider = CreateSlider("FCTweaksUFFontHealthSlider", "Health Font Size", 8, 18, 1, " pt", fontBox, 16, -78, 195)
+local ufFontPowerSlider = CreateSlider("FCTweaksUFFontPowerSlider", "Power Font Size", 8, 16, 1, " pt", fontBox, 230, -78, 195)
+
+local formatBox = CreateSectionBox(unitContainer, "Modern Frame Text Content & Formatting", 136)
+formatBox:SetPoint("TOPLEFT", fontBox, "BOTTOMLEFT", 0, -14)
+formatBox:SetPoint("TOPRIGHT", fontBox, "BOTTOMRIGHT", 0, -14)
+
+local healthFmtLabel = formatBox:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+healthFmtLabel:SetPoint("TOPLEFT", formatBox, "TOPLEFT", 16, -26)
+healthFmtLabel:SetText("Health Format:")
+
+local fmtHpCurMaxBtn = CreateFrame("Button", "FCTweaksFmtHpCurMaxBtn", formatBox, "UIPanelButtonTemplate")
+fmtHpCurMaxBtn:SetWidth(72); fmtHpCurMaxBtn:SetHeight(22)
+fmtHpCurMaxBtn:SetPoint("LEFT", healthFmtLabel, "RIGHT", 10, 0)
+fmtHpCurMaxBtn:SetText("Cur / Max")
+if fmtHpCurMaxBtn:GetFontString() then fmtHpCurMaxBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtHpCurBtn = CreateFrame("Button", "FCTweaksFmtHpCurBtn", formatBox, "UIPanelButtonTemplate")
+fmtHpCurBtn:SetWidth(64); fmtHpCurBtn:SetHeight(22)
+fmtHpCurBtn:SetPoint("LEFT", fmtHpCurMaxBtn, "RIGHT", 4, 0)
+fmtHpCurBtn:SetText("Current")
+if fmtHpCurBtn:GetFontString() then fmtHpCurBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtHpPctBtn = CreateFrame("Button", "FCTweaksFmtHpPctBtn", formatBox, "UIPanelButtonTemplate")
+fmtHpPctBtn:SetWidth(60); fmtHpPctBtn:SetHeight(22)
+fmtHpPctBtn:SetPoint("LEFT", fmtHpCurBtn, "RIGHT", 4, 0)
+fmtHpPctBtn:SetText("Percent")
+if fmtHpPctBtn:GetFontString() then fmtHpPctBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtHpDefBtn = CreateFrame("Button", "FCTweaksFmtHpDefBtn", formatBox, "UIPanelButtonTemplate")
+fmtHpDefBtn:SetWidth(58); fmtHpDefBtn:SetHeight(22)
+fmtHpDefBtn:SetPoint("LEFT", fmtHpPctBtn, "RIGHT", 4, 0)
+fmtHpDefBtn:SetText("Deficit")
+if fmtHpDefBtn:GetFontString() then fmtHpDefBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtHpHideBtn = CreateFrame("Button", "FCTweaksFmtHpHideBtn", formatBox, "UIPanelButtonTemplate")
+fmtHpHideBtn:SetWidth(56); fmtHpHideBtn:SetHeight(22)
+fmtHpHideBtn:SetPoint("LEFT", fmtHpDefBtn, "RIGHT", 4, 0)
+fmtHpHideBtn:SetText("Hidden")
+if fmtHpHideBtn:GetFontString() then fmtHpHideBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local powerFmtLabel = formatBox:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+powerFmtLabel:SetPoint("TOPLEFT", formatBox, "TOPLEFT", 16, -60)
+powerFmtLabel:SetText("Power Format:")
+
+local fmtPwCurMaxBtn = CreateFrame("Button", "FCTweaksFmtPwCurMaxBtn", formatBox, "UIPanelButtonTemplate")
+fmtPwCurMaxBtn:SetWidth(72); fmtPwCurMaxBtn:SetHeight(22)
+fmtPwCurMaxBtn:SetPoint("LEFT", powerFmtLabel, "RIGHT", 12, 0)
+fmtPwCurMaxBtn:SetText("Cur / Max")
+if fmtPwCurMaxBtn:GetFontString() then fmtPwCurMaxBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtPwCurBtn = CreateFrame("Button", "FCTweaksFmtPwCurBtn", formatBox, "UIPanelButtonTemplate")
+fmtPwCurBtn:SetWidth(64); fmtPwCurBtn:SetHeight(22)
+fmtPwCurBtn:SetPoint("LEFT", fmtPwCurMaxBtn, "RIGHT", 4, 0)
+fmtPwCurBtn:SetText("Current")
+if fmtPwCurBtn:GetFontString() then fmtPwCurBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtPwPctBtn = CreateFrame("Button", "FCTweaksFmtPwPctBtn", formatBox, "UIPanelButtonTemplate")
+fmtPwPctBtn:SetWidth(60); fmtPwPctBtn:SetHeight(22)
+fmtPwPctBtn:SetPoint("LEFT", fmtPwCurBtn, "RIGHT", 4, 0)
+fmtPwPctBtn:SetText("Percent")
+if fmtPwPctBtn:GetFontString() then fmtPwPctBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local fmtPwHideBtn = CreateFrame("Button", "FCTweaksFmtPwHideBtn", formatBox, "UIPanelButtonTemplate")
+fmtPwHideBtn:SetWidth(56); fmtPwHideBtn:SetHeight(22)
+fmtPwHideBtn:SetPoint("LEFT", fmtPwPctBtn, "RIGHT", 4, 0)
+fmtPwHideBtn:SetText("Hidden")
+if fmtPwHideBtn:GetFontString() then fmtPwHideBtn:GetFontString():SetFontObject("GameFontNormalSmall") end
+
+local modernNameCB = CreateCheckButton("FCTweaksModernNameCB", T["Show Unit Name"], "Display unit name on modern unit frames.", formatBox, 16, -98)
 
 local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 184)
-sharedBox:SetPoint("TOPLEFT", fontBox, "BOTTOMLEFT", 0, -14)
-sharedBox:SetPoint("TOPRIGHT", fontBox, "BOTTOMRIGHT", 0, -14)
+sharedBox:SetPoint("TOPLEFT", formatBox, "BOTTOMLEFT", 0, -14)
+sharedBox:SetPoint("TOPRIGHT", formatBox, "BOTTOMRIGHT", 0, -14)
 local moveUFCB = CreateCheckButton("FCTweaksMoveUFCB", T["Movable Unit Frames"], "Hold Ctrl+Shift to move frames and separate buff/debuff areas.", sharedBox, 16, -24)
 local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", T["Unit Frame Class Portraits"], "Class portraits on standard Blizzard frames.", sharedBox, 16, -48)
 local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB", T["Real Health Numbers"], "Real health values on standard unit frames.", sharedBox, 230, -24)
@@ -520,6 +588,7 @@ local function OnUnitCheckboxClicked()
     local pvpVal       = modernPvPCB:GetChecked() and 1 or 0
     local levelVal     = modernLevelCB:GetChecked() and 1 or 0
     local classVal     = modernClassCB:GetChecked() and 1 or 0
+    local nameVal      = modernNameCB:GetChecked() and 1 or 0
 
     FostercareTweaks_Config[T["Modern Player Frame"]] = modPlayerVal
     FostercareTweaks_Config[T["Modern Target Frame"]] = modTargetVal
@@ -528,6 +597,7 @@ local function OnUnitCheckboxClicked()
     FostercareTweaks_Config[T["Show PvP Emblem"]] = pvpVal
     FostercareTweaks_Config[T["Show Target Level"]] = levelVal
     FostercareTweaks_Config[T["Show Target Class"]] = classVal
+    FostercareTweaks_Config[T["Show Unit Name"]] = nameVal
     FostercareTweaks_Config[T["Use Standard Player Frame"]] = stdPlayerVal
     FostercareTweaks_Config[T["Use Standard Target Frame"]] = stdTargetVal
     FostercareTweaks_Config[T["Use Standard Target's Target"]] = stdToTVal
@@ -540,6 +610,7 @@ local function OnUnitCheckboxClicked()
     current_config[T["Show PvP Emblem"]] = pvpVal
     current_config[T["Show Target Level"]] = levelVal
     current_config[T["Show Target Class"]] = classVal
+    current_config[T["Show Unit Name"]] = nameVal
     current_config[T["Use Standard Player Frame"]] = stdPlayerVal
     current_config[T["Use Standard Target Frame"]] = stdTargetVal
     current_config[T["Use Standard Target's Target"]] = stdToTVal
@@ -605,6 +676,7 @@ modernComboCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernPvPCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernLevelCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernClassCB:SetScript("OnClick", OnUnitCheckboxClicked)
+modernNameCB:SetScript("OnClick", OnUnitCheckboxClicked)
 moveUFCB:SetScript("OnClick", OnUnitCheckboxClicked)
 classPortraitCB:SetScript("OnClick", OnUnitCheckboxClicked)
 healthNumbersCB:SetScript("OnClick", OnUnitCheckboxClicked)
@@ -827,6 +899,99 @@ ufFontPowerSlider:SetScript("OnValueChanged", function()
     if UF and UF.ApplyFonts then UF:ApplyFonts() end
 end)
 
+local function UpdateUFHealthFormatButtons(fmt)
+    if fmt == "current" then
+        fmtHpCurMaxBtn:Enable()
+        fmtHpCurBtn:Disable()
+        fmtHpPctBtn:Enable()
+        fmtHpDefBtn:Enable()
+        fmtHpHideBtn:Enable()
+    elseif fmt == "percent" then
+        fmtHpCurMaxBtn:Enable()
+        fmtHpCurBtn:Enable()
+        fmtHpPctBtn:Disable()
+        fmtHpDefBtn:Enable()
+        fmtHpHideBtn:Enable()
+    elseif fmt == "deficit" then
+        fmtHpCurMaxBtn:Enable()
+        fmtHpCurBtn:Enable()
+        fmtHpPctBtn:Enable()
+        fmtHpDefBtn:Disable()
+        fmtHpHideBtn:Enable()
+    elseif fmt == "none" then
+        fmtHpCurMaxBtn:Enable()
+        fmtHpCurBtn:Enable()
+        fmtHpPctBtn:Enable()
+        fmtHpDefBtn:Enable()
+        fmtHpHideBtn:Disable()
+    else -- "smart"
+        fmtHpCurMaxBtn:Disable()
+        fmtHpCurBtn:Enable()
+        fmtHpPctBtn:Enable()
+        fmtHpDefBtn:Enable()
+        fmtHpHideBtn:Enable()
+    end
+end
+
+local function SetUFHealthFormat(fmt)
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_health_format"] = fmt
+    if FostercareTweaks.overwrites then
+        FostercareTweaks.overwrites["uf_health_format"] = fmt
+    end
+    UpdateUFHealthFormatButtons(fmt)
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyConfiguration then UF:ApplyConfiguration() end
+end
+
+local function UpdateUFPowerFormatButtons(fmt)
+    if fmt == "current" then
+        fmtPwCurMaxBtn:Enable()
+        fmtPwCurBtn:Disable()
+        fmtPwPctBtn:Enable()
+        fmtPwHideBtn:Enable()
+    elseif fmt == "percent" then
+        fmtPwCurMaxBtn:Enable()
+        fmtPwCurBtn:Enable()
+        fmtPwPctBtn:Disable()
+        fmtPwHideBtn:Enable()
+    elseif fmt == "none" then
+        fmtPwCurMaxBtn:Enable()
+        fmtPwCurBtn:Enable()
+        fmtPwPctBtn:Enable()
+        fmtPwHideBtn:Disable()
+    else -- "smart"
+        fmtPwCurMaxBtn:Disable()
+        fmtPwCurBtn:Enable()
+        fmtPwPctBtn:Enable()
+        fmtPwHideBtn:Enable()
+    end
+end
+
+local function SetUFPowerFormat(fmt)
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_power_format"] = fmt
+    if FostercareTweaks.overwrites then
+        FostercareTweaks.overwrites["uf_power_format"] = fmt
+    end
+    UpdateUFPowerFormatButtons(fmt)
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyConfiguration then UF:ApplyConfiguration() end
+end
+
+fmtHpCurMaxBtn:SetScript("OnClick", function() SetUFHealthFormat("smart") end)
+fmtHpCurBtn:SetScript("OnClick", function() SetUFHealthFormat("current") end)
+fmtHpPctBtn:SetScript("OnClick", function() SetUFHealthFormat("percent") end)
+fmtHpDefBtn:SetScript("OnClick", function() SetUFHealthFormat("deficit") end)
+fmtHpHideBtn:SetScript("OnClick", function() SetUFHealthFormat("none") end)
+
+fmtPwCurMaxBtn:SetScript("OnClick", function() SetUFPowerFormat("smart") end)
+fmtPwCurBtn:SetScript("OnClick", function() SetUFPowerFormat("current") end)
+fmtPwPctBtn:SetScript("OnClick", function() SetUFPowerFormat("percent") end)
+fmtPwHideBtn:SetScript("OnClick", function() SetUFPowerFormat("none") end)
+
 resetUFDefaultsBtn:SetScript("OnClick", function()
     if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
     FostercareTweaks_Config[T["Modern Player Frame"]] = 0
@@ -887,10 +1052,12 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Show PvP Emblem"]] = 1
     current_config[T["Show Target Level"]] = 1
     current_config[T["Show Target Class"]] = 0
+    current_config[T["Show Unit Name"]] = 1
 
     FostercareTweaks_Config[T["Show PvP Emblem"]] = 1
     FostercareTweaks_Config[T["Show Target Level"]] = 1
     FostercareTweaks_Config[T["Show Target Class"]] = 0
+    FostercareTweaks_Config[T["Show Unit Name"]] = 1
 
     if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
     FostercareTweaks_Config.overwrites["uf_scale"] = 1.0
@@ -908,6 +1075,8 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     FostercareTweaks_Config.overwrites["uf_font_level"] = 11
     FostercareTweaks_Config.overwrites["uf_font_health"] = 11
     FostercareTweaks_Config.overwrites["uf_font_power"] = 11
+    FostercareTweaks_Config.overwrites["uf_health_format"] = "smart"
+    FostercareTweaks_Config.overwrites["uf_power_format"] = "smart"
 
     if FostercareTweaks.overwrites then
         FostercareTweaks.overwrites["uf_scale"] = 1.0
@@ -925,6 +1094,8 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
         FostercareTweaks.overwrites["uf_font_level"] = 11
         FostercareTweaks.overwrites["uf_font_health"] = 11
         FostercareTweaks.overwrites["uf_font_power"] = 11
+        FostercareTweaks.overwrites["uf_health_format"] = "smart"
+        FostercareTweaks.overwrites["uf_power_format"] = "smart"
     end
 
     for _, cb in ipairs(auraBorderChecks) do
@@ -960,6 +1131,9 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
         FostercareTweaks_Config[cb.setting] = 1
         current_config[cb.setting] = 1
     end
+    UpdateUFHealthFormatButtons("smart")
+    UpdateUFPowerFormatButtons("smart")
+    modernNameCB:SetChecked(true)
     if FostercareTweaks.ApplyStandardAuraSettings then FostercareTweaks.ApplyStandardAuraSettings() end
     if FostercareTweaks.UnitFrames and FostercareTweaks.UnitFrames.Auras then FostercareTweaks.UnitFrames.Auras:RefreshBorders() end
     if unitPage.RefreshValues then unitPage:RefreshValues() end
@@ -977,6 +1151,7 @@ function unitPage:RefreshValues()
     modernPvPCB:SetChecked(UF:IsShowPvP() and true or nil)
     modernLevelCB:SetChecked(UF:IsShowLevel() and true or nil)
     modernClassCB:SetChecked(UF:IsShowClass() and true or nil)
+    modernNameCB:SetChecked(UF:IsShowName() and true or nil)
     stdPlayerCB:SetChecked(not UF:IsModernPlayer())
     stdTargetCB:SetChecked(not UF:IsModernTarget())
     stdToTCB:SetChecked(not UF:IsModernToT())
@@ -1070,6 +1245,9 @@ function unitPage:RefreshValues()
     local fp = UF:GetFontPowerSize()
     ufFontPowerSlider:SetValue(fp)
     if ufFontPowerSlider.label then ufFontPowerSlider.label:SetText("Power Font Size: " .. fp .. " pt") end
+
+    UpdateUFHealthFormatButtons(UF:GetHealthFormat())
+    UpdateUFPowerFormatButtons(UF:GetPowerFormat())
 
     isUFUpdating = false
 end
