@@ -344,6 +344,7 @@ ufBox:SetPoint("TOPRIGHT", stdBox, "BOTTOMRIGHT", 0, -14)
 local modernPlayerCB = CreateCheckButton("FCTweaksModPlayerCB", T["Modern Player Frame"], "Replace the Blizzard player frame with a modern frame.", ufBox, 16, -24)
 local modernTargetCB = CreateCheckButton("FCTweaksModTargetCB", T["Modern Target Frame"], "Replace the Blizzard target frame with a modern frame.", ufBox, 16, -48)
 local modernToTCB = CreateCheckButton("FCTweaksModToTCB", T["Modern Target's Target"], "Replace the Blizzard target-of-target frame with a modern frame.", ufBox, 16, -72)
+local modernComboCB = CreateCheckButton("FCTweaksModComboCB", T["Modern Combo Points"], "Display combo points on the modern target unit frame.", ufBox, 230, -24)
 local ufScaleSlider = CreateSlider("FCTweaksUFScaleSlider", T["Modern Frame Scale"], 0.5, 2.0, 0.05, "x", ufBox, 16, -122, 416)
 
 local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 184)
@@ -466,6 +467,7 @@ local function OnUnitCheckboxClicked()
     local modPlayerVal = modernPlayerCB:GetChecked() and 1 or 0
     local modTargetVal = modernTargetCB:GetChecked() and 1 or 0
     local modToTVal    = modernToTCB:GetChecked() and 1 or 0
+    local modComboVal  = modernComboCB:GetChecked() and 1 or 0
     stdPlayerCB:SetChecked(modPlayerVal == 0)
     stdTargetCB:SetChecked(modTargetVal == 0)
     stdToTCB:SetChecked(modToTVal == 0)
@@ -497,6 +499,7 @@ local function OnUnitCheckboxClicked()
     FostercareTweaks_Config[T["Modern Player Frame"]] = modPlayerVal
     FostercareTweaks_Config[T["Modern Target Frame"]] = modTargetVal
     FostercareTweaks_Config[T["Modern Target's Target"]] = modToTVal
+    FostercareTweaks_Config[T["Modern Combo Points"]] = modComboVal
     FostercareTweaks_Config[T["Use Standard Player Frame"]] = stdPlayerVal
     FostercareTweaks_Config[T["Use Standard Target Frame"]] = stdTargetVal
     FostercareTweaks_Config[T["Use Standard Target's Target"]] = stdToTVal
@@ -505,6 +508,7 @@ local function OnUnitCheckboxClicked()
     current_config[T["Modern Player Frame"]] = modPlayerVal
     current_config[T["Modern Target Frame"]] = modTargetVal
     current_config[T["Modern Target's Target"]] = modToTVal
+    current_config[T["Modern Combo Points"]] = modComboVal
     current_config[T["Use Standard Player Frame"]] = stdPlayerVal
     current_config[T["Use Standard Target Frame"]] = stdTargetVal
     current_config[T["Use Standard Target's Target"]] = stdToTVal
@@ -566,6 +570,7 @@ stdToTCB:SetScript("OnClick", OnStandardStyleClicked)
 modernPlayerCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernTargetCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernToTCB:SetScript("OnClick", OnUnitCheckboxClicked)
+modernComboCB:SetScript("OnClick", OnUnitCheckboxClicked)
 moveUFCB:SetScript("OnClick", OnUnitCheckboxClicked)
 classPortraitCB:SetScript("OnClick", OnUnitCheckboxClicked)
 healthNumbersCB:SetScript("OnClick", OnUnitCheckboxClicked)
@@ -661,6 +666,7 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     FostercareTweaks_Config[T["Modern Player Frame"]] = 0
     FostercareTweaks_Config[T["Modern Target Frame"]] = 0
     FostercareTweaks_Config[T["Modern Target's Target"]] = 0
+    FostercareTweaks_Config[T["Modern Combo Points"]] = 1
     FostercareTweaks_Config[T["Use Standard Player Frame"]] = 1
     FostercareTweaks_Config[T["Use Standard Target Frame"]] = 1
     FostercareTweaks_Config[T["Use Standard Target's Target"]] = 1
@@ -688,6 +694,7 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Modern Player Frame"]] = 0
     current_config[T["Modern Target Frame"]] = 0
     current_config[T["Modern Target's Target"]] = 0
+    current_config[T["Modern Combo Points"]] = 1
     current_config[T["Use Standard Player Frame"]] = 1
     current_config[T["Use Standard Target Frame"]] = 1
     current_config[T["Use Standard Target's Target"]] = 1
@@ -769,6 +776,7 @@ function unitPage:RefreshValues()
     modernPlayerCB:SetChecked(UF:IsModernPlayer() and true or nil)
     modernTargetCB:SetChecked(UF:IsModernTarget() and true or nil)
     modernToTCB:SetChecked(UF:IsModernToT() and true or nil)
+    modernComboCB:SetChecked(UF:IsModernComboPoints() and true or nil)
     stdPlayerCB:SetChecked(not UF:IsModernPlayer())
     stdTargetCB:SetChecked(not UF:IsModernTarget())
     stdToTCB:SetChecked(not UF:IsModernToT())

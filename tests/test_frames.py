@@ -93,6 +93,7 @@ WorldFrame=CreateFrame("Frame","WorldFrame")
 PlayerFrame=CreateFrame("Button","PlayerFrame",UIParent)
 TargetFrame=CreateFrame("Button","TargetFrame",UIParent)
 TargetofTargetFrame=CreateFrame("Button","TargetofTargetFrame",UIParent)
+ComboFrame=CreateFrame("Frame","ComboFrame",UIParent)
 GameTooltip=CreateFrame("Frame","GameTooltip",UIParent)
 function GameTooltip:SetUnitAura(unit,index,filter) self.lastAura={unit,index,filter} end
 function GetTime() return now end
@@ -126,6 +127,13 @@ function GetNumRaidMembers() return raidCount or 0 end
 function GetNumPartyMembers() return partyCount or 0 end
 function GetRaidRosterInfo(i) return "Player"..i,0,math.ceil(i/5),60,"Priest","PRIEST","Zone",true,false end
 function SetRaidTargetIconTexture() end
+function UnitLevel() return 60 end
+function SetPortraitTexture() end
+function UnitClassification() return "normal" end
+function UnitCreatureType() return "Humanoid" end
+function UnitReaction() return 4 end
+function UnitCanAttack() return true end
+function GetComboPoints() return comboPoints or 0 end
 function SetMouseoverUnit(u) mouseover=u end
 function TargetUnit(u) clickedUnit=u end
 function SpellIsTargeting() return false end
@@ -196,7 +204,7 @@ function visible(t) local n=0; for _,b in ipairs(t) do if b:IsShown() then n=n+1
 def runtime():
     lua=LuaRuntime(unpack_returned_tuples=True)
     lua.execute(STUBS)
-    for name in ('move-unitframes','unitframes/core','unitframes/auras','unitframes/raid'):
+    for name in ('move-unitframes','unitframes/core','unitframes/auras','unitframes/raid','unitframes/target'):
         lua.execute((ROOT/'mods'/f'{name}.lua').read_text(encoding='utf-8'))
     return lua
 
@@ -1048,6 +1056,118 @@ class FrameTests(unittest.TestCase):
         fire(FCTweaksAuraEventFrame,"OnEvent","UNIT_AURA","player")
         assert(FostercareTweaks.UnitFrames.blizzPlayerAuras.buffButtons[1].spellId==42)
         assert(#timers==timerCount)
+        ''')
+
+    def test_modern_combo_points_0_to_5_and_colors(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        FostercareTweaks_Config["Modern Combo Points"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+        local cf=tf.comboFrame
+        assert(cf and cf.pips and #cf.pips==5)
+
+        -- 0 points: frame hidden
+        comboPoints=0
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(not cf:IsShown())
+
+        -- 1 point: frame shown, pip 1 shown with amber/yellow color, pips 2-5 hidden
+        comboPoints=1
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(cf:IsShown())
+        assert(cf.pips[1].fill:IsShown())
+        local r,g,b = cf.pips[1].fill:GetVertexColor()
+        assert(math.abs(r-1.0)<0.01 and math.abs(g-0.82)<0.01 and math.abs(b-0.0)<0.01)
+        for i=2,5 do assert(not cf.pips[i].fill:IsShown()) end
+
+        -- 3 points: pips 1-3 shown, pips 4-5 hidden
+        comboPoints=3
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(cf:IsShown())
+        assert(cf.pips[1].fill:IsShown() and cf.pips[2].fill:IsShown() and cf.pips[3].fill:IsShown())
+        assert(not cf.pips[4].fill:IsShown() and not cf.pips[5].fill:IsShown())
+
+        -- 5 points: all 5 pips shown, pip 5 is red
+        comboPoints=5
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(cf:IsShown())
+        for i=1,5 do assert(cf.pips[i].fill:IsShown()) end
+        local r5,g5,b5 = cf.pips[5].fill:GetVertexColor()
+        assert(math.abs(r5-1.0)<0.01 and math.abs(g5-0.20)<0.01 and math.abs(b5-0.20)<0.01)
+        ''')
+
+    def test_modern_combo_points_spending_and_target_switch(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        FostercareTweaks_Config["Modern Combo Points"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+        local cf=tf.comboFrame
+
+        -- Spend 5 points -> 0 points
+        comboPoints=5
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(cf:IsShown())
+        comboPoints=0
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(not cf:IsShown())
+
+        -- Clear target -> frame hides
+        local oldExists = UnitExists
+        UnitExists = function(u) if u=="target" then return false end return oldExists(u) end
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not tf:IsShown())
+        assert(not cf:IsShown())
+
+        -- Reacquire target with 2 points
+        UnitExists = oldExists
+        comboPoints=2
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf:IsShown())
+        assert(cf:IsShown())
+        assert(cf.pips[1].fill:IsShown() and cf.pips[2].fill:IsShown() and not cf.pips[3].fill:IsShown())
+        ''')
+
+    def test_modern_combo_points_toggle_and_native_restoration(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        FostercareTweaks_Config["Modern Combo Points"]=1
+        UF:ApplyConfiguration()
+        local tf=UF.targetFrame
+        local cf=tf.comboFrame
+        comboPoints=3
+        fire(tf,"OnEvent","PLAYER_COMBO_POINTS")
+        assert(cf:IsShown())
+
+        -- Toggle Modern Combo Points off
+        FostercareTweaks_Config["Modern Combo Points"]=0
+        UF:ApplyConfiguration()
+        assert(not cf:IsShown())
+
+        -- Toggle Modern Combo Points back on
+        FostercareTweaks_Config["Modern Combo Points"]=1
+        UF:ApplyConfiguration()
+        assert(cf:IsShown())
+        assert(cf.pips[1].fill:IsShown() and cf.pips[2].fill:IsShown() and cf.pips[3].fill:IsShown())
+
+        -- Switch to Standard Frames: native ComboFrame restored, modern frame suppressed
+        FostercareTweaks_Config["Modern Target Frame"]=0
+        UF:ApplyConfiguration()
+        assert(not tf:IsShown())
+        assert(not cf:IsShown())
+        assert(ComboFrame.events["PLAYER_COMBO_POINTS"]==true)
+        assert(ComboFrame.events["PLAYER_TARGET_CHANGED"]==true)
+
+        -- Switch back to Modern Frames: native ComboFrame suppressed, modern frame active
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:ApplyConfiguration()
+        assert(ComboFrame.events["PLAYER_COMBO_POINTS"]==nil)
+        assert(tf.events["PLAYER_COMBO_POINTS"]==true)
+        assert(cf:IsShown())
         ''')
 
 if __name__=='__main__': unittest.main(verbosity=2)

@@ -32,6 +32,13 @@ FostercareTweaks:register({
 })
 
 FostercareTweaks:register({
+    title = T["Modern Combo Points"],
+    description = T["Display combo points on the modern target unit frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
     title = T["Modern Target's Target"],
     description = T["Enable the modern FostercareTweaks Target of Target frame instead of the standard Blizzard frame."],
     category = T["Unit Frames"],
@@ -198,6 +205,13 @@ function UF:IsModernTarget()
         return FostercareTweaks_Config[T["Use Standard Target Frame"]] == 0
     end
     return false
+end
+
+function UF:IsModernComboPoints()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Modern Combo Points"]]
+    if val == nil then return true end
+    return val == 1
 end
 
 function UF:IsModernToT()
@@ -861,7 +875,10 @@ function UF:SuppressTargetFrame()
         TargetFrame:UnregisterAllEvents()
         if TargetFrameHealthBar then TargetFrameHealthBar:UnregisterAllEvents() end
         if TargetFrameManaBar then TargetFrameManaBar:UnregisterAllEvents() end
-        if ComboFrame then ComboFrame:UnregisterAllEvents() end
+        if ComboFrame then
+            ComboFrame:Hide()
+            ComboFrame:UnregisterAllEvents()
+        end
     end
 end
 
@@ -901,7 +918,11 @@ function UF:RestoreTargetFrame()
         TargetFrame:Show()
         if TargetFrame_Update then TargetFrame_Update() end
         if TargetFrame_CheckDead then TargetFrame_CheckDead() end
-        if ComboFrame_Update then ComboFrame_Update() end
+        if ComboFrame_Update then
+            ComboFrame_Update()
+        elseif ComboPointsFrame_OnEvent then
+            ComboPointsFrame_OnEvent()
+        end
         this = oldThis
     else
         TargetFrame:Hide()
@@ -955,6 +976,9 @@ function UF:ApplyConfiguration()
     if UF:IsModernTarget() then
         UF:SuppressTargetFrame()
         if UF.EnableTargetFrame then UF:EnableTargetFrame() end
+        if UF.targetFrame and UF.UpdateComboPoints then
+            UF.UpdateComboPoints(UF.targetFrame)
+        end
     else
         if UF.DisableTargetFrame then UF:DisableTargetFrame() end
         UF:RestoreTargetFrame()

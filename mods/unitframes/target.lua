@@ -135,10 +135,58 @@ local function UpdatePortrait(frame)
     frame.portrait.tex:SetTexCoord(0.14, 0.86, 0.14, 0.86)
 end
 
+local COMBO_COLORS = {
+    [1] = { r = 1.00, g = 0.82, b = 0.00 },
+    [2] = { r = 1.00, g = 0.82, b = 0.00 },
+    [3] = { r = 1.00, g = 0.70, b = 0.00 },
+    [4] = { r = 1.00, g = 0.50, b = 0.00 },
+    [5] = { r = 1.00, g = 0.20, b = 0.20 },
+}
+
+local function UpdateComboPoints(frame)
+    if not frame or not frame.comboFrame then return end
+
+    if not UnitExists("target") or not frame:IsShown() then
+        frame.comboFrame:Hide()
+        return
+    end
+
+    if UF.IsModernComboPoints and not UF:IsModernComboPoints() then
+        frame.comboFrame:Hide()
+        return
+    end
+
+    local points = GetComboPoints and GetComboPoints() or 0
+    if points > 5 then points = 5 end
+    if points < 0 then points = 0 end
+
+    if points <= 0 then
+        frame.comboFrame:Hide()
+        return
+    end
+
+    for i = 1, 5 do
+        local pip = frame.comboFrame.pips[i]
+        if pip then
+            if i <= points then
+                local c = COMBO_COLORS[i]
+                pip.fill:SetVertexColor(c.r, c.g, c.b, 1)
+                pip.fill:Show()
+            else
+                pip.fill:Hide()
+            end
+        end
+    end
+
+    frame.comboFrame:Show()
+end
+UF.UpdateComboPoints = UpdateComboPoints
+
 local function UpdateAll(frame)
     if not frame then return end
     if not UnitExists("target") then
         frame:Hide()
+        if frame.comboFrame then frame.comboFrame:Hide() end
         return
     end
 
@@ -147,6 +195,7 @@ local function UpdateAll(frame)
     UpdateHealth(frame)
     UpdatePower(frame)
     UF:LayoutBars(frame)
+    UpdateComboPoints(frame)
     if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
         UF.Auras:UpdateContainer(frame.auraContainer)
     end
@@ -158,6 +207,10 @@ local function TargetFrame_OnEvent()
 
     if ev == "PLAYER_TARGET_CHANGED" then
         UpdateAll(targetFrame)
+    elseif ev == "PLAYER_COMBO_POINTS" then
+        if targetFrame and targetFrame:IsShown() then
+            UpdateComboPoints(targetFrame)
+        end
     elseif not targetFrame or not targetFrame:IsShown() then
         return
     elseif ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
@@ -239,6 +292,43 @@ function UF:EnableTargetFrame()
 
         targetFrame.powerBar = pb
 
+        -- Combo Points (5 pips anchored above the portrait)
+        local comboFrame = CreateFrame("Frame", "FCTweaksTargetComboFrame", targetFrame)
+        comboFrame:SetWidth(42)
+        comboFrame:SetHeight(9)
+        comboFrame:SetPoint("BOTTOMLEFT", portrait, "TOPLEFT", 0, 2)
+        comboFrame:SetBackdrop(UF.backdrop)
+        comboFrame:SetBackdropColor(0, 0, 0, 0.9)
+        comboFrame:SetBackdropBorderColor(0, 0, 0, 1)
+
+        comboFrame.pips = {}
+        local pipWidth = 7
+        local pipHeight = 7
+        local pipSpacing = 1
+        local leftOffset = 1
+
+        for i = 1, 5 do
+            local pip = CreateFrame("Frame", nil, comboFrame)
+            pip:SetWidth(pipWidth)
+            pip:SetHeight(pipHeight)
+            pip:SetPoint("LEFT", comboFrame, "LEFT", leftOffset + (i - 1) * (pipWidth + pipSpacing), 0)
+
+            pip.bg = pip:CreateTexture(nil, "BACKGROUND")
+            pip.bg:SetAllPoints(pip)
+            pip.bg:SetTexture(UF.defaultBarTexture)
+            pip.bg:SetVertexColor(0.15, 0.15, 0.15, 0.8)
+
+            pip.fill = pip:CreateTexture(nil, "ARTWORK")
+            pip.fill:SetAllPoints(pip)
+            pip.fill:SetTexture(UF.defaultBarTexture)
+            pip.fill:Hide()
+
+            comboFrame.pips[i] = pip
+        end
+
+        comboFrame:Hide()
+        targetFrame.comboFrame = comboFrame
+
         -- Aura Container (up to 32 buffs and 48 harmful auras)
         if UF.Auras and UF.Auras.CreateAuraContainer then
             targetFrame.auraContainer = UF.Auras:CreateAuraContainer(targetFrame, "target", 32, 48, {
@@ -256,6 +346,7 @@ function UF:EnableTargetFrame()
 
     -- Event Registration
     targetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    targetFrame:RegisterEvent("PLAYER_COMBO_POINTS")
     targetFrame:RegisterEvent("UNIT_HEALTH")
     targetFrame:RegisterEvent("UNIT_MAXHEALTH")
     targetFrame:RegisterEvent("UNIT_MANA")
@@ -287,5 +378,8 @@ function UF:DisableTargetFrame()
     if targetFrame then
         targetFrame:Hide()
         targetFrame:UnregisterAllEvents()
+        if targetFrame.comboFrame then
+            targetFrame.comboFrame:Hide()
+        end
     end
 end
