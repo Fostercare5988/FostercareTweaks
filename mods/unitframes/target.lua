@@ -182,11 +182,30 @@ local function UpdateComboPoints(frame)
 end
 UF.UpdateComboPoints = UpdateComboPoints
 
+local function UpdateRaidTarget(frame)
+    if not frame or not frame.raidIcon then return end
+
+    if not UnitExists("target") or not frame:IsShown() then
+        frame.raidIcon:Hide()
+        return
+    end
+
+    local index = GetRaidTargetIndex and GetRaidTargetIndex("target")
+    if index and index >= 1 and index <= 8 and SetRaidTargetIconTexture then
+        SetRaidTargetIconTexture(frame.raidIcon, index)
+        frame.raidIcon:Show()
+    else
+        frame.raidIcon:Hide()
+    end
+end
+UF.UpdateRaidTarget = UpdateRaidTarget
+
 local function UpdateAll(frame)
     if not frame then return end
     if not UnitExists("target") then
         frame:Hide()
         if frame.comboFrame then frame.comboFrame:Hide() end
+        if frame.raidIcon then frame.raidIcon:Hide() end
         return
     end
 
@@ -196,6 +215,7 @@ local function UpdateAll(frame)
     UpdatePower(frame)
     UF:LayoutBars(frame)
     UpdateComboPoints(frame)
+    UpdateRaidTarget(frame)
     if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
         UF.Auras:UpdateContainer(frame.auraContainer)
     end
@@ -226,6 +246,8 @@ local function TargetFrame_OnEvent()
         end
     elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_FACTION" or ev == "UNIT_CLASSIFICATION_CHANGED" then
         if a1 == "target" then UpdateHealth(targetFrame) end
+    elseif ev == "RAID_TARGET_UPDATE" then
+        UpdateRaidTarget(targetFrame)
     elseif ev == "PLAYER_ENTERING_WORLD" then
         UpdateAll(targetFrame)
     end
@@ -259,6 +281,15 @@ function UF:EnableTargetFrame()
 
         targetFrame.portrait = portrait
         targetFrame.portraitSide = "right"
+
+        -- Raid Target Icon
+        local raidIcon = portrait:CreateTexture(nil, "OVERLAY")
+        raidIcon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+        raidIcon:SetWidth(22)
+        raidIcon:SetHeight(22)
+        raidIcon:SetPoint("CENTER", portrait, "CENTER", 0, 0)
+        raidIcon:Hide()
+        targetFrame.raidIcon = raidIcon
 
         -- Health Bar
         local hb = UF:CreateBar("FCTweaksTargetHealthBar", targetFrame)
@@ -364,6 +395,7 @@ function UF:EnableTargetFrame()
     targetFrame:RegisterEvent("UNIT_FACTION")
     targetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
     targetFrame:RegisterEvent("UNIT_AURA")
+    targetFrame:RegisterEvent("RAID_TARGET_UPDATE")
     targetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     targetFrame:SetScript("OnEvent", TargetFrame_OnEvent)
 
@@ -380,6 +412,9 @@ function UF:DisableTargetFrame()
         targetFrame:UnregisterAllEvents()
         if targetFrame.comboFrame then
             targetFrame.comboFrame:Hide()
+        end
+        if targetFrame.raidIcon then
+            targetFrame.raidIcon:Hide()
         end
     end
 end

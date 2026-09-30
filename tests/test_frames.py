@@ -121,12 +121,23 @@ function UnitIsPartyLeader() return false end
 function UnitInRange() return true end
 function UnitIsPlayer() return true end
 function UnitPlayerControlled() return true end
-function GetRaidTargetIndex() return nil end
+function GetRaidTargetIndex(u) return (raidTargets and raidTargets[u]) or nil end
 function UnitThreatSituation() return 0 end
 function GetNumRaidMembers() return raidCount or 0 end
 function GetNumPartyMembers() return partyCount or 0 end
 function GetRaidRosterInfo(i) return "Player"..i,0,math.ceil(i/5),60,"Priest","PRIEST","Zone",true,false end
-function SetRaidTargetIconTexture() end
+function SetRaidTargetIconTexture(texture, idx)
+    if not texture then return end
+    texture.raidIndex = idx
+    if not idx or idx < 1 or idx > 8 then return end
+    local i = idx - 1
+    local l = (i % 4) * 0.25
+    local r = l + 0.25
+    local t = math.floor(i / 4) * 0.25
+    local b = t + 0.25
+    texture:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
+    texture:SetTexCoord(l, r, t, b)
+end
 function UnitLevel() return 60 end
 function SetPortraitTexture() end
 function UnitClassification() return "normal" end
@@ -1168,6 +1179,94 @@ class FrameTests(unittest.TestCase):
         assert(ComboFrame.events["PLAYER_COMBO_POINTS"]==nil)
         assert(tf.events["PLAYER_COMBO_POINTS"]==true)
         assert(cf:IsShown())
+        ''')
+
+    def test_modern_target_raid_marks_1_to_8_and_texcoords(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+        assert(tf and tf.raidIcon)
+        assert(tf.events["RAID_TARGET_UPDATE"]==true)
+
+        -- Initially no mark -> raidIcon hidden
+        raidTargets={target=nil}
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(not tf.raidIcon:IsShown())
+
+        -- Test all 8 indices
+        -- Index 1: Star (left 0, right 0.25, top 0, bottom 0.25)
+        raidTargets.target=1
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(tf.raidIcon:IsShown())
+        assert(tf.raidIcon.raidIndex==1)
+        local c1=tf.raidIcon.texcoords
+        assert(math.abs(c1[1]-0.0)<0.001 and math.abs(c1[2]-0.25)<0.001)
+        assert(math.abs(c1[3]-0.0)<0.001 and math.abs(c1[4]-0.25)<0.001)
+
+        -- Index 8: Skull (left 0.75, right 1.0, top 0.25, bottom 0.5)
+        raidTargets.target=8
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(tf.raidIcon:IsShown())
+        assert(tf.raidIcon.raidIndex==8)
+        local c8=tf.raidIcon.texcoords
+        assert(math.abs(c8[1]-0.75)<0.001 and math.abs(c8[2]-1.0)<0.001)
+        assert(math.abs(c8[3]-0.25)<0.001 and math.abs(c8[4]-0.5)<0.001)
+
+        -- Indices 2 through 7
+        for idx=2,7 do
+            raidTargets.target=idx
+            fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+            assert(tf.raidIcon:IsShown())
+            assert(tf.raidIcon.raidIndex==idx)
+        end
+        ''')
+
+    def test_modern_target_raid_mark_clearing_and_target_switch(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+
+        -- Active Skull on target
+        raidTargets={target=8}
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(tf.raidIcon:IsShown())
+
+        -- Mark cleared on target
+        raidTargets.target=nil
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(not tf.raidIcon:IsShown())
+
+        -- Target switch to marked target
+        raidTargets.target=7 -- Cross
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.raidIcon:IsShown())
+        assert(tf.raidIcon.raidIndex==7)
+
+        -- Target loss -> frame and raidIcon hidden
+        local oldExists = UnitExists
+        UnitExists = function(u) if u=="target" then return false end return oldExists(u) end
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not tf:IsShown())
+        assert(not tf.raidIcon:IsShown())
+
+        -- Target reacquisition without mark
+        UnitExists = oldExists
+        raidTargets.target=nil
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf:IsShown())
+        assert(not tf.raidIcon:IsShown())
+
+        -- Disable target frame hides raidIcon
+        raidTargets.target=8
+        fire(tf,"OnEvent","RAID_TARGET_UPDATE")
+        assert(tf.raidIcon:IsShown())
+        UF:DisableTargetFrame()
+        assert(not tf:IsShown())
+        assert(not tf.raidIcon:IsShown())
         ''')
 
 if __name__=='__main__': unittest.main(verbosity=2)
