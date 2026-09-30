@@ -40,10 +40,27 @@ local function UpdateHealth(frame)
         frame.healthBar.healthText:SetText("")
     end
 
-    -- Name text
+    -- Level and Name text
+    local level = UnitLevel("player") or 0
     local name = UnitName("player") or "Player"
+    local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
+    if showLevel and level > 0 and frame.healthBar.levelText then
+        frame.healthBar.levelText:SetText(tostring(level))
+        frame.healthBar.levelText:SetTextColor(1, 1, 1, 1)
+        frame.healthBar.levelText:Show()
+
+        frame.healthBar.nameText:ClearAllPoints()
+        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar.levelText, "RIGHT", 4, 0)
+        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+    else
+        if frame.healthBar.levelText then frame.healthBar.levelText:Hide() end
+        frame.healthBar.nameText:ClearAllPoints()
+        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
+        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
+    end
     frame.healthBar.nameText:SetText(name)
 end
+UF.UpdatePlayerHealth = UpdateHealth
 
 local function UpdatePower(frame)
     if not frame or not frame:IsShown() then return end
@@ -76,6 +93,29 @@ local function UpdatePortrait(frame)
     SetPortraitTexture(frame.portrait.tex, "player")
     frame.portrait.tex:SetTexCoord(0.14, 0.86, 0.14, 0.86)
 end
+
+local function UpdatePvP(frame)
+    if not frame or not frame.pvpIcon then return end
+    if not UnitExists("player") or not frame:IsShown() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    if UF.IsShowPvP and not UF:IsShowPvP() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    local factionGroup = UnitFactionGroup and UnitFactionGroup("player")
+    if UnitIsPVPFreeForAll and UnitIsPVPFreeForAll("player") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-FFA")
+        frame.pvpIcon:Show()
+    elseif factionGroup and UnitIsPVP and UnitIsPVP("player") and (factionGroup == "Alliance" or factionGroup == "Horde") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. factionGroup)
+        frame.pvpIcon:Show()
+    else
+        frame.pvpIcon:Hide()
+    end
+end
+UF.UpdatePlayerPvP = UpdatePvP
 
 local function UpdateStatusIcons(frame)
     if not frame or not frame:IsShown() then return end
@@ -112,8 +152,10 @@ local function UpdateAll(frame)
     UpdatePortrait(frame)
     UpdateHealth(frame)
     UpdatePower(frame)
+    UpdatePvP(frame)
     UpdateStatusIcons(frame)
     UF:LayoutBars(frame)
+    if UF.ApplyFonts then UF:ApplyFonts() end
     if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
         UF.Auras:UpdateContainer(frame.auraContainer)
     end
@@ -130,6 +172,12 @@ local function PlayerFrame_OnEvent()
         if a1 == "player" then UpdatePower(playerFrame) end
     elseif ev == "PLAYER_REGEN_DISABLED" or ev == "PLAYER_REGEN_ENABLED" or ev == "PLAYER_UPDATE_RESTING" or ev == "PARTY_LEADER_CHANGED" then
         UpdateStatusIcons(playerFrame)
+    elseif ev == "PLAYER_FLAGS_CHANGED" then
+        UpdatePvP(playerFrame)
+    elseif ev == "UNIT_FACTION" then
+        if a1 == "player" then UpdatePvP(playerFrame) end
+    elseif ev == "UNIT_LEVEL" then
+        if a1 == "player" then UpdateHealth(playerFrame) end
     elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
         if a1 == "player" then UpdatePortrait(playerFrame) end
     elseif ev == "PLAYER_AURAS_CHANGED" or (ev == "UNIT_AURA" and a1 == "player") then
@@ -144,8 +192,8 @@ end
 function UF:EnablePlayerFrame()
     if not playerFrame then
         playerFrame = UF:CreateUnitFrame("player", "FCTweaksPlayerFrame", UIParent)
-        playerFrame:SetWidth(240)
-        playerFrame:SetHeight(44)
+        playerFrame:SetWidth(UF:GetPlayerWidth())
+        playerFrame:SetHeight(UF:GetPlayerHeight())
         playerFrame:SetScale(UF:GetScale())
 
         -- Position restoration or default
@@ -170,10 +218,24 @@ function UF:EnablePlayerFrame()
         playerFrame.portrait = portrait
         playerFrame.portraitSide = "left"
 
+        -- PvP Emblem
+        local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
+        pvpIcon:SetWidth(22)
+        pvpIcon:SetHeight(22)
+        pvpIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -6, 6)
+        pvpIcon:Hide()
+        playerFrame.pvpIcon = pvpIcon
+
         -- Health Bar
         local hb = UF:CreateBar("FCTweaksPlayerHealthBar", playerFrame)
+        hb.levelText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hb.levelText:SetPoint("LEFT", hb, "LEFT", 4, 0)
+        hb.levelText:SetJustifyH("LEFT")
+        hb.levelText:SetShadowColor(0, 0, 0, 1)
+        hb.levelText:SetShadowOffset(0.8, -0.8)
+
         hb.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
+        hb.nameText:SetPoint("LEFT", hb.levelText, "RIGHT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
         hb.nameText:SetShadowOffset(0.8, -0.8)
@@ -220,6 +282,14 @@ function UF:EnablePlayerFrame()
         playerFrame.leaderIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -2, 2)
         playerFrame.leaderIcon:Hide()
 
+        -- PvP Emblem
+        local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
+        pvpIcon:SetWidth(22)
+        pvpIcon:SetHeight(22)
+        pvpIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -6, 6)
+        pvpIcon:Hide()
+        playerFrame.pvpIcon = pvpIcon
+
         -- Aura Container (up to 32 buffs and 48 harmful auras)
         if UF.Auras and UF.Auras.CreateAuraContainer then
             playerFrame.auraContainer = UF.Auras:CreateAuraContainer(playerFrame, "player", 32, 48, {
@@ -249,6 +319,9 @@ function UF:EnablePlayerFrame()
     playerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
     playerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     playerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+    playerFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
+    playerFrame:RegisterEvent("UNIT_FACTION")
+    playerFrame:RegisterEvent("UNIT_LEVEL")
     playerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
     playerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
     playerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
@@ -257,6 +330,8 @@ function UF:EnablePlayerFrame()
     playerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     playerFrame:SetScript("OnEvent", PlayerFrame_OnEvent)
 
+    playerFrame:SetWidth(UF:GetPlayerWidth())
+    playerFrame:SetHeight(UF:GetPlayerHeight())
     playerFrame:Show()
     UpdateAll(playerFrame)
 end
@@ -265,5 +340,8 @@ function UF:DisablePlayerFrame()
     if playerFrame then
         playerFrame:Hide()
         playerFrame:UnregisterAllEvents()
+        if playerFrame.pvpIcon then
+            playerFrame.pvpIcon:Hide()
+        end
     end
 end

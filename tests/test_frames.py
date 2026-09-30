@@ -65,6 +65,8 @@ function methods:EnableMouse(v) self.mouse=v end
 function methods:GetFontString() if not self.font then self.font=CreateFrame("Font",nil,self) end; return self.font end
 function methods:CreateTexture(n) return CreateFrame("Texture",n,self) end
 function methods:CreateFontString(n) return CreateFrame("Font",n,self) end
+function methods:SetFont(font, size, flags) self.fontFile=font; self.fontSize=size; self.fontFlags=flags end
+function methods:GetFont() return self.fontFile or "Fonts\\FRIZQT__.TTF", self.fontSize or 10, self.fontFlags or "OUTLINE" end
 function methods:SetAlpha(v) self.alpha=v end
 function methods:GetAlpha() return self.alpha or 1 end
 function CreateFrame(kind,name,parent,template)
@@ -118,6 +120,8 @@ function UnitIsDeadOrGhost() return false end
 function UnitIsGhost() return false end
 function UnitIsConnected() return true end
 function UnitIsPartyLeader() return false end
+function UnitAffectingCombat(u) return inCombat or false end
+function IsResting() return resting or false end
 function UnitInRange() return true end
 function UnitIsPlayer() return true end
 function UnitPlayerControlled() return true end
@@ -138,9 +142,13 @@ function SetRaidTargetIconTexture(texture, idx)
     texture:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     texture:SetTexCoord(l, r, t, b)
 end
-function UnitLevel() return 60 end
+function UnitLevel(u) return (unitLevels and unitLevels[u]) or 60 end
 function SetPortraitTexture() end
-function UnitClassification() return "normal" end
+function UnitClassification(u) return (unitClassifications and unitClassifications[u]) or "normal" end
+function UnitFactionGroup(u) return (unitFaction and unitFaction[u]) or "Alliance" end
+function UnitIsPVP(u) return (unitPVP and unitPVP[u]) or false end
+function UnitIsPVPFreeForAll(u) return (unitFFA and unitFFA[u]) or false end
+function GetDifficultyColor(lvl) if difficultyColors and difficultyColors[lvl] then return difficultyColors[lvl] end; return {r=1,g=1,b=0} end
 function UnitCreatureType() return "Humanoid" end
 function UnitReaction() return 4 end
 function UnitCanAttack() return true end
@@ -215,7 +223,7 @@ function visible(t) local n=0; for _,b in ipairs(t) do if b:IsShown() then n=n+1
 def runtime():
     lua=LuaRuntime(unpack_returned_tuples=True)
     lua.execute(STUBS)
-    for name in ('move-unitframes','unitframes/core','unitframes/auras','unitframes/raid','unitframes/target'):
+    for name in ('move-unitframes','unitframes/core','unitframes/auras','unitframes/player','unitframes/target','unitframes/tot','unitframes/raid'):
         lua.execute((ROOT/'mods'/f'{name}.lua').read_text(encoding='utf-8'))
     return lua
 
@@ -1267,6 +1275,201 @@ class FrameTests(unittest.TestCase):
         UF:DisableTargetFrame()
         assert(not tf:IsShown())
         assert(not tf.raidIcon:IsShown())
+        ''')
+
+    def test_modern_pvp_emblem_player_and_target_flags(self):
+        lua=runtime(); lua.execute(r'''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Player Frame"]=1
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnablePlayerFrame()
+        UF:EnableTargetFrame()
+        local pf=UF.playerFrame
+        local tf=UF.targetFrame
+
+        -- Initial state: unflagged
+        unitPVP={player=false, target=false}
+        unitFFA={player=false, target=false}
+        unitFaction={player="Alliance", target="Horde"}
+        fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
+        fire(tf,"OnEvent","UNIT_FACTION","target")
+        assert(not pf.pvpIcon:IsShown())
+        assert(not tf.pvpIcon:IsShown())
+
+        -- Flag player as Alliance PvP
+        unitPVP.player=true
+        fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
+        assert(pf.pvpIcon:IsShown())
+        assert(string.find(pf.pvpIcon.texture[1] or "", "UI%-PVP%-Alliance"))
+
+        -- Flag target as Horde PvP
+        unitPVP.target=true
+        fire(tf,"OnEvent","UNIT_FACTION","target")
+        assert(tf.pvpIcon:IsShown())
+        assert(string.find(tf.pvpIcon.texture[1] or "", "UI%-PVP%-Horde"))
+
+        -- FFA flag overrides faction emblem on both
+        unitFFA.player=true
+        fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
+        assert(pf.pvpIcon:IsShown())
+        assert(string.find(pf.pvpIcon.texture[1] or "", "UI%-PVP%-FFA"))
+
+        unitFFA.target=true
+        fire(tf,"OnEvent","UNIT_FACTION","target")
+        assert(tf.pvpIcon:IsShown())
+        assert(string.find(tf.pvpIcon.texture[1] or "", "UI%-PVP%-FFA"))
+
+        -- Toggle Show PvP Emblem off hides both
+        FostercareTweaks_Config["Show PvP Emblem"]=0
+        fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
+        fire(tf,"OnEvent","UNIT_FACTION","target")
+        assert(not pf.pvpIcon:IsShown())
+        assert(not tf.pvpIcon:IsShown())
+
+        -- Re-enable toggle restores icons
+        FostercareTweaks_Config["Show PvP Emblem"]=1
+        fire(pf,"OnEvent","PLAYER_FLAGS_CHANGED")
+        fire(tf,"OnEvent","UNIT_FACTION","target")
+        assert(pf.pvpIcon:IsShown())
+        assert(tf.pvpIcon:IsShown())
+
+        -- Target loss hides target pvpIcon
+        local oldExists = UnitExists
+        UnitExists = function(u) if u=="target" then return false end return oldExists(u) end
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not tf.pvpIcon:IsShown())
+        UnitExists = oldExists
+        ''')
+
+    def test_modern_target_level_and_difficulty_color(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+
+        unitLevels={target=60}
+        unitClassifications={target="normal"}
+        difficultyColors={[60]={r=1, g=0.8, b=0}}
+
+        -- Normal level 60 with difficulty color
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.healthBar.levelText:IsShown())
+        assert(tf.healthBar.levelText:GetText()=="60")
+        local r, g, b = tf.healthBar.levelText:GetTextColor()
+        assert(math.abs(r-1.0)<0.01 and math.abs(g-0.8)<0.01 and math.abs(b-0.0)<0.01)
+
+        -- Elite classification tag (+)
+        unitClassifications.target="elite"
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.healthBar.levelText:GetText()=="60+")
+
+        -- Rare elite classification tag (r+)
+        unitClassifications.target="rareelite"
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.healthBar.levelText:GetText()=="60r+")
+
+        -- Rare classification tag (r)
+        unitClassifications.target="rare"
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.healthBar.levelText:GetText()=="60r")
+
+        -- Worldboss classification tag (?? and red color)
+        unitClassifications.target="worldboss"
+        unitLevels.target=-1
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.healthBar.levelText:GetText()=="??")
+        local br, bg, bb = tf.healthBar.levelText:GetTextColor()
+        assert(math.abs(br-1.0)<0.01 and math.abs(bg-0.0)<0.01 and math.abs(bb-0.0)<0.01)
+
+        -- Show Target Class option: default false, powerBar leftText is empty (no forced [60] ROGUE)
+        assert(tf.powerBar.leftText:GetText()=="" or tf.powerBar.leftText:GetText()==nil)
+
+        FostercareTweaks_Config["Show Target Class"]=1
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.powerBar.leftText:GetText()=="Priest")
+
+        FostercareTweaks_Config["Show Target Class"]=0
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(tf.powerBar.leftText:GetText()=="")
+
+        -- Show Target Level toggle off hides levelText
+        FostercareTweaks_Config["Show Target Level"]=0
+        fire(tf,"OnEvent","PLAYER_TARGET_CHANGED")
+        assert(not tf.healthBar.levelText:IsShown())
+        ''')
+
+    def test_modern_frame_dimensions_and_live_updates(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Player Frame"]=1
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        FostercareTweaks_Config["Modern Target of Target"]=1
+        UF:EnablePlayerFrame()
+        UF:EnableTargetFrame()
+        UF:EnableToTFrame()
+        local pf=UF.playerFrame
+        local tf=UF.targetFrame
+        local tot=UF.totFrame
+
+        -- Default compact dimensions
+        assert(pf:GetWidth()==200)
+        assert(pf:GetHeight()==42)
+        assert(tf:GetWidth()==200)
+        assert(tf:GetHeight()==42)
+        assert(tot:GetWidth()==120)
+        assert(tot:GetHeight()==26)
+
+        -- Custom dimensions via overwrites and ApplyDimensions
+        FostercareTweaks_Config.overwrites={
+            uf_player_width=240, uf_player_height=48,
+            uf_target_width=250, uf_target_height=50,
+            uf_tot_width=135, uf_tot_height=30,
+            uf_power_height=12
+        }
+        UF:ApplyDimensions()
+
+        assert(pf:GetWidth()==240)
+        assert(pf:GetHeight()==48)
+        assert(tf:GetWidth()==250)
+        assert(tf:GetHeight()==50)
+        assert(tot:GetWidth()==135)
+        assert(tot:GetHeight()==30)
+        assert(pf.powerBar:GetHeight()==12)
+        assert(tf.powerBar:GetHeight()==12)
+        assert(tot.powerBar:GetHeight()==12)
+
+        -- Combo points remain anchored ABOVE target portrait
+        local pt, relTo, relPt, x, y = tf.comboFrame:GetPoint()
+        assert(pt=="BOTTOMLEFT")
+        assert(relTo==tf.portrait)
+        assert(relPt=="TOPLEFT")
+        assert(x==0 and y==2)
+        ''')
+
+    def test_modern_frame_fonts_and_live_updates(self):
+        lua=runtime(); lua.execute('''
+        local UF=FostercareTweaks.UnitFrames
+        FostercareTweaks_Config["Modern Target Frame"]=1
+        UF:EnableTargetFrame()
+        local tf=UF.targetFrame
+
+        FostercareTweaks_Config.overwrites={
+            uf_font_name=14,
+            uf_font_level=13,
+            uf_font_health=12,
+            uf_font_power=11
+        }
+        UF:ApplyFonts()
+
+        local _, nameSize = tf.healthBar.nameText:GetFont()
+        assert(nameSize==14)
+        local _, levelSize = tf.healthBar.levelText:GetFont()
+        assert(levelSize==13)
+        local _, hpSize = tf.healthBar.healthText:GetFont()
+        assert(hpSize==12)
+        local _, pwrSize = tf.powerBar.powerText:GetFont()
+        assert(pwrSize==11)
         ''')
 
 if __name__=='__main__': unittest.main(verbosity=2)

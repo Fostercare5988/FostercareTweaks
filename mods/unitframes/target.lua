@@ -47,14 +47,12 @@ local function UpdateHealth(frame)
         end
     end
 
-    -- Level, Classification, and Name
-    local name = UnitName("target") or "Target"
+    -- Level, Difficulty Color & Classification
     local level = UnitLevel("target") or 0
-    local levelStr = (level > 0) and tostring(level) or "??"
     local classification = UnitClassification("target") or "normal"
     local classTag = ""
     if classification == "worldboss" then
-        classTag = "b"
+        classTag = ""
     elseif classification == "rareelite" then
         classTag = "r+"
     elseif classification == "elite" then
@@ -63,24 +61,54 @@ local function UpdateHealth(frame)
         classTag = "r"
     end
 
-    local typeText = ""
-    if isPlayer then
-        local _, cls = UnitClass("target")
-        typeText = cls or ""
+    local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
+    if showLevel and frame.healthBar.levelText then
+        local levelStr = ""
+        local r, g, b = 1, 1, 1
+        if level <= 0 or classification == "worldboss" then
+            levelStr = "??" .. classTag
+            r, g, b = 1.0, 0.0, 0.0
+        else
+            levelStr = tostring(level) .. classTag
+            local c = GetDifficultyColor and GetDifficultyColor(level)
+            if c then
+                r, g, b = c.r, c.g, c.b
+            end
+        end
+        frame.healthBar.levelText:SetText(levelStr)
+        frame.healthBar.levelText:SetTextColor(r, g, b, 1)
+        frame.healthBar.levelText:Show()
+
+        frame.healthBar.nameText:ClearAllPoints()
+        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar.levelText, "RIGHT", 4, 0)
+        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
     else
-        typeText = UnitCreatureType("target") or ""
+        if frame.healthBar.levelText then frame.healthBar.levelText:Hide() end
+        frame.healthBar.nameText:ClearAllPoints()
+        frame.healthBar.nameText:SetPoint("LEFT", frame.healthBar, "LEFT", 4, 0)
+        frame.healthBar.nameText:SetPoint("RIGHT", frame.healthBar.healthText, "LEFT", -4, 0)
     end
 
-    local subInfo = "[" .. levelStr .. classTag .. "]"
-    if typeText ~= "" then
-        subInfo = subInfo .. " " .. typeText
-    end
+    local name = UnitName("target") or "Target"
+    frame.healthBar.nameText:SetText(name)
 
-    if frame.powerBar and frame.powerBar:IsShown() and frame.powerBar.leftText then
-        frame.powerBar.leftText:SetText(subInfo)
-        frame.healthBar.nameText:SetText(name)
-    else
-        frame.healthBar.nameText:SetText(subInfo .. " " .. name)
+    -- Optional class / creature type in power bar leftText (never forces [60] ROGUE)
+    if frame.powerBar and frame.powerBar.leftText then
+        local showClass = UF.IsShowClass and UF:IsShowClass()
+        if showClass then
+            local typeText = ""
+            if isPlayer then
+                local className = UnitClass("target")
+                typeText = className or ""
+            else
+                typeText = UnitCreatureType("target") or ""
+            end
+            frame.powerBar.leftText:SetText(typeText)
+            frame.powerBar.leftText:Show()
+        else
+            frame.powerBar.leftText:SetText("")
+            frame.powerBar.leftText:Hide()
+        end
     end
 
     -- Concise Health text (No bloat, no duplicate max, no overlap)
@@ -98,6 +126,7 @@ local function UpdateHealth(frame)
         frame.healthBar.healthText:SetText("")
     end
 end
+UF.UpdateTargetHealth = UpdateHealth
 
 local function UpdatePower(frame)
     if not frame or not frame:IsShown() or not UnitExists("target") then return end
@@ -200,12 +229,36 @@ local function UpdateRaidTarget(frame)
 end
 UF.UpdateRaidTarget = UpdateRaidTarget
 
+local function UpdatePvP(frame)
+    if not frame or not frame.pvpIcon then return end
+    if not UnitExists("target") or not frame:IsShown() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    if UF.IsShowPvP and not UF:IsShowPvP() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    local factionGroup = UnitFactionGroup and UnitFactionGroup("target")
+    if UnitIsPVPFreeForAll and UnitIsPVPFreeForAll("target") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-FFA")
+        frame.pvpIcon:Show()
+    elseif factionGroup and UnitIsPVP and UnitIsPVP("target") and (factionGroup == "Alliance" or factionGroup == "Horde") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. factionGroup)
+        frame.pvpIcon:Show()
+    else
+        frame.pvpIcon:Hide()
+    end
+end
+UF.UpdateTargetPvP = UpdatePvP
+
 local function UpdateAll(frame)
     if not frame then return end
     if not UnitExists("target") then
         frame:Hide()
         if frame.comboFrame then frame.comboFrame:Hide() end
         if frame.raidIcon then frame.raidIcon:Hide() end
+        if frame.pvpIcon then frame.pvpIcon:Hide() end
         return
     end
 
@@ -214,8 +267,10 @@ local function UpdateAll(frame)
     UpdateHealth(frame)
     UpdatePower(frame)
     UF:LayoutBars(frame)
+    if UF.ApplyFonts then UF:ApplyFonts() end
     UpdateComboPoints(frame)
     UpdateRaidTarget(frame)
+    UpdatePvP(frame)
     if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
         UF.Auras:UpdateContainer(frame.auraContainer)
     end
@@ -244,8 +299,15 @@ local function TargetFrame_OnEvent()
         if a1 and UnitIsUnit(a1, "target") and targetFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
             UF.Auras:UpdateContainer(targetFrame.auraContainer)
         end
-    elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_FACTION" or ev == "UNIT_CLASSIFICATION_CHANGED" then
+    elseif ev == "UNIT_LEVEL" or ev == "UNIT_NAME_UPDATE" or ev == "UNIT_CLASSIFICATION_CHANGED" then
         if a1 == "target" then UpdateHealth(targetFrame) end
+    elseif ev == "UNIT_FACTION" then
+        if a1 == "target" then
+            UpdateHealth(targetFrame)
+            UpdatePvP(targetFrame)
+        end
+    elseif ev == "PLAYER_FLAGS_CHANGED" then
+        UpdatePvP(targetFrame)
     elseif ev == "RAID_TARGET_UPDATE" then
         UpdateRaidTarget(targetFrame)
     elseif ev == "PLAYER_ENTERING_WORLD" then
@@ -256,8 +318,8 @@ end
 function UF:EnableTargetFrame()
     if not targetFrame then
         targetFrame = UF:CreateUnitFrame("target", "FCTweaksTargetFrame", UIParent)
-        targetFrame:SetWidth(240)
-        targetFrame:SetHeight(44)
+        targetFrame:SetWidth(UF:GetTargetWidth())
+        targetFrame:SetHeight(UF:GetTargetHeight())
         targetFrame:SetScale(UF:GetScale())
 
         -- Position restoration or default
@@ -291,10 +353,24 @@ function UF:EnableTargetFrame()
         raidIcon:Hide()
         targetFrame.raidIcon = raidIcon
 
+        -- PvP Emblem
+        local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
+        pvpIcon:SetWidth(22)
+        pvpIcon:SetHeight(22)
+        pvpIcon:SetPoint("TOPRIGHT", portrait, "TOPRIGHT", 6, 6)
+        pvpIcon:Hide()
+        targetFrame.pvpIcon = pvpIcon
+
         -- Health Bar
         local hb = UF:CreateBar("FCTweaksTargetHealthBar", targetFrame)
+        hb.levelText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hb.levelText:SetPoint("LEFT", hb, "LEFT", 4, 0)
+        hb.levelText:SetJustifyH("LEFT")
+        hb.levelText:SetShadowColor(0, 0, 0, 1)
+        hb.levelText:SetShadowOffset(0.8, -0.8)
+
         hb.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
+        hb.nameText:SetPoint("LEFT", hb.levelText, "RIGHT", 4, 0)
         hb.nameText:SetJustifyH("LEFT")
         hb.nameText:SetShadowColor(0, 0, 0, 1)
         hb.nameText:SetShadowOffset(0.8, -0.8)
@@ -393,11 +469,15 @@ function UF:EnableTargetFrame()
     targetFrame:RegisterEvent("UNIT_LEVEL")
     targetFrame:RegisterEvent("UNIT_NAME_UPDATE")
     targetFrame:RegisterEvent("UNIT_FACTION")
+    targetFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
     targetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
     targetFrame:RegisterEvent("UNIT_AURA")
     targetFrame:RegisterEvent("RAID_TARGET_UPDATE")
     targetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     targetFrame:SetScript("OnEvent", TargetFrame_OnEvent)
+
+    targetFrame:SetWidth(UF:GetTargetWidth())
+    targetFrame:SetHeight(UF:GetTargetHeight())
 
     if UnitExists("target") then
         UpdateAll(targetFrame)
@@ -415,6 +495,9 @@ function UF:DisableTargetFrame()
         end
         if targetFrame.raidIcon then
             targetFrame.raidIcon:Hide()
+        end
+        if targetFrame.pvpIcon then
+            targetFrame.pvpIcon:Hide()
         end
     end
 end

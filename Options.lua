@@ -322,7 +322,7 @@ settings.unitPage = unitPage
 local unitContainer = CreateFrame("Frame", "FCTweaksUnitSettingsContainer", unitPage)
 unitContainer:SetPoint("TOPLEFT", unitPage, "TOPLEFT", 0, 0)
 unitContainer:SetWidth(max_width - 48)
-unitContainer:SetHeight(1110)
+unitContainer:SetHeight(1540)
 unitPage:SetScrollChild(unitContainer)
 
 -- Choose each presentation explicitly; classic Blizzard art is the default.
@@ -338,18 +338,40 @@ stdHint:SetPoint("TOPLEFT", stdBox, "TOPLEFT", 240, -56)
 stdHint:SetWidth(185); stdHint:SetJustifyH("LEFT")
 stdHint:SetText("Classic appearance, enhanced auras. Settings apply immediately.")
 
-local ufBox = CreateSectionBox(unitContainer, T["Modern Unit Frames"], 154)
+local ufBox = CreateSectionBox(unitContainer, T["Modern Unit Frames"], 180)
 ufBox:SetPoint("TOPLEFT", stdBox, "BOTTOMLEFT", 0, -14)
 ufBox:SetPoint("TOPRIGHT", stdBox, "BOTTOMRIGHT", 0, -14)
 local modernPlayerCB = CreateCheckButton("FCTweaksModPlayerCB", T["Modern Player Frame"], "Replace the Blizzard player frame with a modern frame.", ufBox, 16, -24)
 local modernTargetCB = CreateCheckButton("FCTweaksModTargetCB", T["Modern Target Frame"], "Replace the Blizzard target frame with a modern frame.", ufBox, 16, -48)
 local modernToTCB = CreateCheckButton("FCTweaksModToTCB", T["Modern Target's Target"], "Replace the Blizzard target-of-target frame with a modern frame.", ufBox, 16, -72)
-local modernComboCB = CreateCheckButton("FCTweaksModComboCB", T["Modern Combo Points"], "Display combo points on the modern target unit frame.", ufBox, 230, -24)
-local ufScaleSlider = CreateSlider("FCTweaksUFScaleSlider", T["Modern Frame Scale"], 0.5, 2.0, 0.05, "x", ufBox, 16, -122, 416)
+local modernComboCB = CreateCheckButton("FCTweaksModComboCB", T["Modern Combo Points"], "Display combo points on the modern target unit frame.", ufBox, 16, -96)
+local modernPvPCB = CreateCheckButton("FCTweaksModPvPCB", T["Show PvP Emblem"], "Display faction PvP emblem on modern unit frames.", ufBox, 230, -24)
+local modernLevelCB = CreateCheckButton("FCTweaksModLevelCB", T["Show Target Level"], "Display target level and difficulty color on the modern target frame.", ufBox, 230, -48)
+local modernClassCB = CreateCheckButton("FCTweaksModClassCB", T["Show Target Class"], "Display target class or creature type on the modern target frame.", ufBox, 230, -72)
+local ufScaleSlider = CreateSlider("FCTweaksUFScaleSlider", T["Modern Frame Scale"], 0.5, 2.0, 0.05, "x", ufBox, 16, -146, 416)
+
+local dimBox = CreateSectionBox(unitContainer, "Modern Frame Dimensions", 215)
+dimBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
+dimBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
+local ufPlayerWSlider = CreateSlider("FCTweaksUFPlayerWSlider", "Player Width", 140, 350, 2, " px", dimBox, 16, -30, 195)
+local ufPlayerHSlider = CreateSlider("FCTweaksUFPlayerHSlider", "Player Height", 24, 80, 1, " px", dimBox, 230, -30, 195)
+local ufTargetWSlider = CreateSlider("FCTweaksUFTargetWSlider", "Target Width", 140, 350, 2, " px", dimBox, 16, -78, 195)
+local ufTargetHSlider = CreateSlider("FCTweaksUFTargetHSlider", "Target Height", 24, 80, 1, " px", dimBox, 230, -78, 195)
+local ufToTWSlider = CreateSlider("FCTweaksUFToTWSlider", "ToT Width", 80, 220, 2, " px", dimBox, 16, -126, 195)
+local ufToTHSlider = CreateSlider("FCTweaksUFToTHSlider", "ToT Height", 18, 50, 1, " px", dimBox, 230, -126, 195)
+local ufPowerHSlider = CreateSlider("FCTweaksUFPowerHSlider", "Power Bar Height", 4, 25, 1, " px", dimBox, 16, -174, 416)
+
+local fontBox = CreateSectionBox(unitContainer, "Modern Frame Fonts", 125)
+fontBox:SetPoint("TOPLEFT", dimBox, "BOTTOMLEFT", 0, -14)
+fontBox:SetPoint("TOPRIGHT", dimBox, "BOTTOMRIGHT", 0, -14)
+local ufFontNameSlider = CreateSlider("FCTweaksUFFontNameSlider", "Name Font Size", 8, 20, 1, " pt", fontBox, 16, -30, 195)
+local ufFontLevelSlider = CreateSlider("FCTweaksUFFontLevelSlider", "Level / Info Font Size", 8, 20, 1, " pt", fontBox, 230, -30, 195)
+local ufFontHealthSlider = CreateSlider("FCTweaksUFFontHealthSlider", "Health Font Size", 8, 20, 1, " pt", fontBox, 16, -78, 195)
+local ufFontPowerSlider = CreateSlider("FCTweaksUFFontPowerSlider", "Power Font Size", 8, 20, 1, " pt", fontBox, 230, -78, 195)
 
 local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 184)
-sharedBox:SetPoint("TOPLEFT", ufBox, "BOTTOMLEFT", 0, -14)
-sharedBox:SetPoint("TOPRIGHT", ufBox, "BOTTOMRIGHT", 0, -14)
+sharedBox:SetPoint("TOPLEFT", fontBox, "BOTTOMLEFT", 0, -14)
+sharedBox:SetPoint("TOPRIGHT", fontBox, "BOTTOMRIGHT", 0, -14)
 local moveUFCB = CreateCheckButton("FCTweaksMoveUFCB", T["Movable Unit Frames"], "Hold Ctrl+Shift to move frames and separate buff/debuff areas.", sharedBox, 16, -24)
 local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", T["Unit Frame Class Portraits"], "Class portraits on standard Blizzard frames.", sharedBox, 16, -48)
 local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB", T["Real Health Numbers"], "Real health values on standard unit frames.", sharedBox, 230, -24)
@@ -495,11 +517,17 @@ local function OnUnitCheckboxClicked()
     local dispelVal    = colorDispelCB:GetChecked() and 1 or 0
     local myDebuffVal  = onlyMyDebuffsCB:GetChecked() and 1 or 0
     local impStdAuraVal = improvedStandardAurasCB:GetChecked() and 1 or 0
+    local pvpVal       = modernPvPCB:GetChecked() and 1 or 0
+    local levelVal     = modernLevelCB:GetChecked() and 1 or 0
+    local classVal     = modernClassCB:GetChecked() and 1 or 0
 
     FostercareTweaks_Config[T["Modern Player Frame"]] = modPlayerVal
     FostercareTweaks_Config[T["Modern Target Frame"]] = modTargetVal
     FostercareTweaks_Config[T["Modern Target's Target"]] = modToTVal
     FostercareTweaks_Config[T["Modern Combo Points"]] = modComboVal
+    FostercareTweaks_Config[T["Show PvP Emblem"]] = pvpVal
+    FostercareTweaks_Config[T["Show Target Level"]] = levelVal
+    FostercareTweaks_Config[T["Show Target Class"]] = classVal
     FostercareTweaks_Config[T["Use Standard Player Frame"]] = stdPlayerVal
     FostercareTweaks_Config[T["Use Standard Target Frame"]] = stdTargetVal
     FostercareTweaks_Config[T["Use Standard Target's Target"]] = stdToTVal
@@ -509,6 +537,9 @@ local function OnUnitCheckboxClicked()
     current_config[T["Modern Target Frame"]] = modTargetVal
     current_config[T["Modern Target's Target"]] = modToTVal
     current_config[T["Modern Combo Points"]] = modComboVal
+    current_config[T["Show PvP Emblem"]] = pvpVal
+    current_config[T["Show Target Level"]] = levelVal
+    current_config[T["Show Target Class"]] = classVal
     current_config[T["Use Standard Player Frame"]] = stdPlayerVal
     current_config[T["Use Standard Target Frame"]] = stdTargetVal
     current_config[T["Use Standard Target's Target"]] = stdToTVal
@@ -571,6 +602,9 @@ modernPlayerCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernTargetCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernToTCB:SetScript("OnClick", OnUnitCheckboxClicked)
 modernComboCB:SetScript("OnClick", OnUnitCheckboxClicked)
+modernPvPCB:SetScript("OnClick", OnUnitCheckboxClicked)
+modernLevelCB:SetScript("OnClick", OnUnitCheckboxClicked)
+modernClassCB:SetScript("OnClick", OnUnitCheckboxClicked)
 moveUFCB:SetScript("OnClick", OnUnitCheckboxClicked)
 classPortraitCB:SetScript("OnClick", OnUnitCheckboxClicked)
 healthNumbersCB:SetScript("OnClick", OnUnitCheckboxClicked)
@@ -661,6 +695,138 @@ ufScaleSlider:SetScript("OnValueChanged", function()
     if UF and UF.ApplyScale then UF:ApplyScale(val) end
 end)
 
+ufPlayerWSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufPlayerWSlider.label then ufPlayerWSlider.label:SetText("Player Width: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_player_width"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_player_width"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufPlayerHSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufPlayerHSlider.label then ufPlayerHSlider.label:SetText("Player Height: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_player_height"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_player_height"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufTargetWSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufTargetWSlider.label then ufTargetWSlider.label:SetText("Target Width: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_target_width"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_target_width"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufTargetHSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufTargetHSlider.label then ufTargetHSlider.label:SetText("Target Height: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_target_height"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_target_height"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufToTWSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufToTWSlider.label then ufToTWSlider.label:SetText("ToT Width: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_tot_width"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_tot_width"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufToTHSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufToTHSlider.label then ufToTHSlider.label:SetText("ToT Height: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_tot_height"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_tot_height"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufPowerHSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufPowerHSlider.label then ufPowerHSlider.label:SetText("Power Bar Height: " .. val .. " px") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_power_height"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_power_height"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyDimensions then UF:ApplyDimensions() end
+end)
+
+ufFontNameSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufFontNameSlider.label then ufFontNameSlider.label:SetText("Name Font Size: " .. val .. " pt") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_font_name"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_font_name"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyFonts then UF:ApplyFonts() end
+end)
+
+ufFontLevelSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufFontLevelSlider.label then ufFontLevelSlider.label:SetText("Level / Info Font Size: " .. val .. " pt") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_font_level"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_font_level"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyFonts then UF:ApplyFonts() end
+end)
+
+ufFontHealthSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufFontHealthSlider.label then ufFontHealthSlider.label:SetText("Health Font Size: " .. val .. " pt") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_font_health"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_font_health"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyFonts then UF:ApplyFonts() end
+end)
+
+ufFontPowerSlider:SetScript("OnValueChanged", function()
+    if isUFUpdating then return end
+    local val = math.floor(this:GetValue() + 0.5)
+    if ufFontPowerSlider.label then ufFontPowerSlider.label:SetText("Power Font Size: " .. val .. " pt") end
+    if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
+    if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
+    FostercareTweaks_Config.overwrites["uf_font_power"] = val
+    if FostercareTweaks.overwrites then FostercareTweaks.overwrites["uf_font_power"] = val end
+    local UF = FostercareTweaks.UnitFrames
+    if UF and UF.ApplyFonts then UF:ApplyFonts() end
+end)
+
 resetUFDefaultsBtn:SetScript("OnClick", function()
     if not FostercareTweaks_Config then FostercareTweaks_Config = {} end
     FostercareTweaks_Config[T["Modern Player Frame"]] = 0
@@ -718,18 +884,47 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     current_config[T["Show Debuff Duration Text"]] = 1
     current_config[T["Color Debuffs by Dispel Type"]] = 1
     current_config[T["Only Show My Debuffs on Target"]] = 0
+    current_config[T["Show PvP Emblem"]] = 1
+    current_config[T["Show Target Level"]] = 1
+    current_config[T["Show Target Class"]] = 0
+
+    FostercareTweaks_Config[T["Show PvP Emblem"]] = 1
+    FostercareTweaks_Config[T["Show Target Level"]] = 1
+    FostercareTweaks_Config[T["Show Target Class"]] = 0
 
     if not FostercareTweaks_Config.overwrites then FostercareTweaks_Config.overwrites = {} end
     FostercareTweaks_Config.overwrites["uf_scale"] = 1.0
     FostercareTweaks_Config.overwrites["uf_buff_size"] = 20
     FostercareTweaks_Config.overwrites["uf_debuff_size"] = 20
     FostercareTweaks_Config.overwrites["uf_aura_size"] = 20
+    FostercareTweaks_Config.overwrites["uf_player_width"] = 200
+    FostercareTweaks_Config.overwrites["uf_player_height"] = 42
+    FostercareTweaks_Config.overwrites["uf_target_width"] = 200
+    FostercareTweaks_Config.overwrites["uf_target_height"] = 42
+    FostercareTweaks_Config.overwrites["uf_tot_width"] = 120
+    FostercareTweaks_Config.overwrites["uf_tot_height"] = 26
+    FostercareTweaks_Config.overwrites["uf_power_height"] = 10
+    FostercareTweaks_Config.overwrites["uf_font_name"] = 12
+    FostercareTweaks_Config.overwrites["uf_font_level"] = 11
+    FostercareTweaks_Config.overwrites["uf_font_health"] = 11
+    FostercareTweaks_Config.overwrites["uf_font_power"] = 11
 
     if FostercareTweaks.overwrites then
         FostercareTweaks.overwrites["uf_scale"] = 1.0
         FostercareTweaks.overwrites["uf_buff_size"] = 20
         FostercareTweaks.overwrites["uf_debuff_size"] = 20
         FostercareTweaks.overwrites["uf_aura_size"] = 20
+        FostercareTweaks.overwrites["uf_player_width"] = 200
+        FostercareTweaks.overwrites["uf_player_height"] = 42
+        FostercareTweaks.overwrites["uf_target_width"] = 200
+        FostercareTweaks.overwrites["uf_target_height"] = 42
+        FostercareTweaks.overwrites["uf_tot_width"] = 120
+        FostercareTweaks.overwrites["uf_tot_height"] = 26
+        FostercareTweaks.overwrites["uf_power_height"] = 10
+        FostercareTweaks.overwrites["uf_font_name"] = 12
+        FostercareTweaks.overwrites["uf_font_level"] = 11
+        FostercareTweaks.overwrites["uf_font_health"] = 11
+        FostercareTweaks.overwrites["uf_font_power"] = 11
     end
 
     for _, cb in ipairs(auraBorderChecks) do
@@ -739,6 +934,8 @@ resetUFDefaultsBtn:SetScript("OnClick", function()
     local UF = FostercareTweaks.UnitFrames
     if UF then
         if UF.ApplyScale then UF:ApplyScale(1.0) end
+        if UF.ApplyDimensions then UF:ApplyDimensions() end
+        if UF.ApplyFonts then UF:ApplyFonts() end
         if UF.Auras and UF.Auras.ApplyBuffSize and UF.Auras.ApplyDebuffSize then
             if UF.playerFrame and UF.playerFrame.auraContainer then
                 UF.Auras:ApplyBuffSize(UF.playerFrame.auraContainer, 20)
@@ -777,6 +974,9 @@ function unitPage:RefreshValues()
     modernTargetCB:SetChecked(UF:IsModernTarget() and true or nil)
     modernToTCB:SetChecked(UF:IsModernToT() and true or nil)
     modernComboCB:SetChecked(UF:IsModernComboPoints() and true or nil)
+    modernPvPCB:SetChecked(UF:IsShowPvP() and true or nil)
+    modernLevelCB:SetChecked(UF:IsShowLevel() and true or nil)
+    modernClassCB:SetChecked(UF:IsShowClass() and true or nil)
     stdPlayerCB:SetChecked(not UF:IsModernPlayer())
     stdTargetCB:SetChecked(not UF:IsModernTarget())
     stdToTCB:SetChecked(not UF:IsModernToT())
@@ -826,6 +1026,51 @@ function unitPage:RefreshValues()
     if ufScaleSlider.label then
         ufScaleSlider.label:SetText(T["Modern Frame Scale"] .. ": " .. string.format("%.2f", s) .. "x")
     end
+
+    local pw = UF:GetPlayerWidth()
+    ufPlayerWSlider:SetValue(pw)
+    if ufPlayerWSlider.label then ufPlayerWSlider.label:SetText("Player Width: " .. pw .. " px") end
+
+    local ph = UF:GetPlayerHeight()
+    ufPlayerHSlider:SetValue(ph)
+    if ufPlayerHSlider.label then ufPlayerHSlider.label:SetText("Player Height: " .. ph .. " px") end
+
+    local tw = UF:GetTargetWidth()
+    ufTargetWSlider:SetValue(tw)
+    if ufTargetWSlider.label then ufTargetWSlider.label:SetText("Target Width: " .. tw .. " px") end
+
+    local th = UF:GetTargetHeight()
+    ufTargetHSlider:SetValue(th)
+    if ufTargetHSlider.label then ufTargetHSlider.label:SetText("Target Height: " .. th .. " px") end
+
+    local totw = UF:GetToTWidth()
+    ufToTWSlider:SetValue(totw)
+    if ufToTWSlider.label then ufToTWSlider.label:SetText("ToT Width: " .. totw .. " px") end
+
+    local toth = UF:GetToTHeight()
+    ufToTHSlider:SetValue(toth)
+    if ufToTHSlider.label then ufToTHSlider.label:SetText("ToT Height: " .. toth .. " px") end
+
+    local pwh = UF:GetPowerHeight()
+    ufPowerHSlider:SetValue(pwh)
+    if ufPowerHSlider.label then ufPowerHSlider.label:SetText("Power Bar Height: " .. pwh .. " px") end
+
+    local fn = UF:GetFontNameSize()
+    ufFontNameSlider:SetValue(fn)
+    if ufFontNameSlider.label then ufFontNameSlider.label:SetText("Name Font Size: " .. fn .. " pt") end
+
+    local fl = UF:GetFontLevelSize()
+    ufFontLevelSlider:SetValue(fl)
+    if ufFontLevelSlider.label then ufFontLevelSlider.label:SetText("Level / Info Font Size: " .. fl .. " pt") end
+
+    local fh = UF:GetFontHealthSize()
+    ufFontHealthSlider:SetValue(fh)
+    if ufFontHealthSlider.label then ufFontHealthSlider.label:SetText("Health Font Size: " .. fh .. " pt") end
+
+    local fp = UF:GetFontPowerSize()
+    ufFontPowerSlider:SetValue(fp)
+    if ufFontPowerSlider.label then ufFontPowerSlider.label:SetText("Power Font Size: " .. fp .. " pt") end
+
     isUFUpdating = false
 end
 

@@ -45,6 +45,27 @@ FostercareTweaks:register({
     enabled = false,
 })
 
+FostercareTweaks:register({
+    title = T["Show PvP Emblem"],
+    description = T["Display faction PvP emblem on modern unit frames."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Target Level"],
+    description = T["Display target level and difficulty color on the modern target frame."],
+    category = T["Unit Frames"],
+    enabled = true,
+})
+
+FostercareTweaks:register({
+    title = T["Show Target Class"],
+    description = T["Display target class or creature type on the modern target frame."],
+    category = T["Unit Frames"],
+    enabled = false,
+})
+
 -- Backward compatibility aliases
 FostercareTweaks:register({
     title = T["Use Standard Player Frame"],
@@ -235,6 +256,223 @@ end
 
 function UF:IsStandardToT()
     return not UF:IsModernToT()
+end
+
+function UF:IsShowPvP()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show PvP Emblem"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowLevel()
+    if not FostercareTweaks_Config then return true end
+    local val = FostercareTweaks_Config[T["Show Target Level"]]
+    if val == nil then return true end
+    return val == 1
+end
+
+function UF:IsShowClass()
+    if not FostercareTweaks_Config then return false end
+    local val = FostercareTweaks_Config[T["Show Target Class"]]
+    if val == nil then return false end
+    return val == 1
+end
+
+function UF:GetPlayerWidth()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_player_width"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_player_width"])
+    end
+    if not val then return 200 end
+    if val < 140 then val = 140 end
+    if val > 350 then val = 350 end
+    return val
+end
+
+function UF:GetPlayerHeight()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_player_height"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_player_height"])
+    end
+    if not val then return 42 end
+    if val < 24 then val = 24 end
+    if val > 80 then val = 80 end
+    return val
+end
+
+function UF:GetTargetWidth()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_target_width"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_target_width"])
+    end
+    if not val then return 200 end
+    if val < 140 then val = 140 end
+    if val > 350 then val = 350 end
+    return val
+end
+
+function UF:GetTargetHeight()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_target_height"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_target_height"])
+    end
+    if not val then return 42 end
+    if val < 24 then val = 24 end
+    if val > 80 then val = 80 end
+    return val
+end
+
+function UF:GetToTWidth()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_tot_width"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_tot_width"])
+    end
+    if not val then return 120 end
+    if val < 80 then val = 80 end
+    if val > 220 then val = 220 end
+    return val
+end
+
+function UF:GetToTHeight()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_tot_height"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_tot_height"])
+    end
+    if not val then return 26 end
+    if val < 18 then val = 18 end
+    if val > 50 then val = 50 end
+    return val
+end
+
+function UF:GetPowerHeight()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_power_height"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_power_height"])
+    end
+    if not val then return 10 end
+    if val < 4 then val = 4 end
+    if val > 25 then val = 25 end
+    return val
+end
+
+function UF:GetFontNameSize()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_font_name"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_font_name"])
+    end
+    if not val then return 12 end
+    if val < 8 then val = 8 end
+    if val > 20 then val = 20 end
+    return val
+end
+
+function UF:GetFontLevelSize()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_font_level"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_font_level"])
+    end
+    if not val then return 11 end
+    if val < 8 then val = 8 end
+    if val > 20 then val = 20 end
+    return val
+end
+
+function UF:GetFontHealthSize()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_font_health"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_font_health"])
+    end
+    if not val then return 11 end
+    if val < 8 then val = 8 end
+    if val > 20 then val = 20 end
+    return val
+end
+
+function UF:GetFontPowerSize()
+    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_font_power"])
+    if not val and FostercareTweaks.overwrites then
+        val = tonumber(FostercareTweaks.overwrites["uf_font_power"])
+    end
+    if not val then return 11 end
+    if val < 8 then val = 8 end
+    if val > 20 then val = 20 end
+    return val
+end
+
+function UF.SetFontSize(fontString, size)
+    if not fontString or not size then return end
+    local fontFile, _, flags = fontString:GetFont()
+    if not fontFile or fontFile == "" then
+        fontFile = "Fonts\\FRIZQT__.TTF"
+    end
+    fontString:SetFont(fontFile, size, flags or "")
+end
+
+function UF:ApplyDimensions()
+    if UF.playerFrame then
+        local w = UF:GetPlayerWidth()
+        local h = UF:GetPlayerHeight()
+        UF.playerFrame:SetWidth(w)
+        UF.playerFrame:SetHeight(h)
+        UF:LayoutBars(UF.playerFrame)
+    end
+    if UF.targetFrame then
+        local w = UF:GetTargetWidth()
+        local h = UF:GetTargetHeight()
+        UF.targetFrame:SetWidth(w)
+        UF.targetFrame:SetHeight(h)
+        UF:LayoutBars(UF.targetFrame)
+    end
+    if UF.totFrame then
+        local w = UF:GetToTWidth()
+        local h = UF:GetToTHeight()
+        UF.totFrame:SetWidth(w)
+        UF.totFrame:SetHeight(h)
+        UF:LayoutBars(UF.totFrame)
+    end
+end
+
+function UF:ApplyFonts()
+    local nameSize = UF:GetFontNameSize()
+    local levelSize = UF:GetFontLevelSize()
+    local healthSize = UF:GetFontHealthSize()
+    local powerSize = UF:GetFontPowerSize()
+
+    if UF.playerFrame then
+        local hb = UF.playerFrame.healthBar
+        if hb then
+            if hb.nameText then UF.SetFontSize(hb.nameText, nameSize) end
+            if hb.levelText then UF.SetFontSize(hb.levelText, levelSize) end
+            if hb.healthText then UF.SetFontSize(hb.healthText, healthSize) end
+        end
+        local pb = UF.playerFrame.powerBar
+        if pb and pb.powerText then
+            UF.SetFontSize(pb.powerText, powerSize)
+        end
+    end
+
+    if UF.targetFrame then
+        local hb = UF.targetFrame.healthBar
+        if hb then
+            if hb.nameText then UF.SetFontSize(hb.nameText, nameSize) end
+            if hb.levelText then UF.SetFontSize(hb.levelText, levelSize) end
+            if hb.healthText then UF.SetFontSize(hb.healthText, healthSize) end
+        end
+        local pb = UF.targetFrame.powerBar
+        if pb then
+            if pb.leftText then UF.SetFontSize(pb.leftText, levelSize) end
+            if pb.powerText then UF.SetFontSize(pb.powerText, powerSize) end
+        end
+    end
+
+    if UF.totFrame then
+        local hb = UF.totFrame.healthBar
+        if hb then
+            if hb.nameText then UF.SetFontSize(hb.nameText, math.max(8, nameSize - 1)) end
+            if hb.healthText then UF.SetFontSize(hb.healthText, math.max(8, healthSize - 1)) end
+        end
+    end
 end
 
 function UF:IsImprovedStandardAuras()
@@ -645,8 +883,8 @@ end
 function UF:LayoutBars(frame)
     if not frame then return end
 
-    local totalW = frame:GetWidth() or 240
-    local totalH = frame:GetHeight() or 44
+    local totalW = frame:GetWidth() or 200
+    local totalH = frame:GetHeight() or 42
     local borderInset = 1
     local innerW = totalW - (borderInset * 2)
     local innerH = totalH - (borderInset * 2)
@@ -672,6 +910,25 @@ function UF:LayoutBars(frame)
             barXOffset = borderInset
             barW = innerW - portraitSize - 1
         end
+
+        if frame.comboFrame then
+            local pSize = frame.portrait:GetWidth() or portraitSize
+            if pSize and pSize >= 35 and frame.comboFrame.pips then
+                frame.comboFrame:SetWidth(pSize)
+                local pipSpacing = 1
+                local totalSpacing = (5 - 1) * pipSpacing
+                local availablePipW = pSize - 2 - totalSpacing
+                local pipW = math.floor(availablePipW / 5)
+                if pipW < 4 then pipW = 4 end
+                for i = 1, 5 do
+                    local pip = frame.comboFrame.pips[i]
+                    if pip then
+                        pip:SetWidth(pipW)
+                        pip:SetPoint("LEFT", frame.comboFrame, "LEFT", 1 + (i - 1) * (pipW + pipSpacing), 0)
+                    end
+                end
+            end
+        end
     end
 
     -- Stack health and power bars
@@ -680,8 +937,11 @@ function UF:LayoutBars(frame)
 
     if powerShown then
         local availH = innerH - separator
-        local healthH = math.floor(availH * 0.72 + 0.5)
-        local powerH = availH - healthH
+        local powerH = UF:GetPowerHeight()
+        if powerH > availH - 8 then
+            powerH = math.max(availH - 8, 4)
+        end
+        local healthH = availH - powerH
 
         frame.healthBar:ClearAllPoints()
         frame.healthBar:SetPoint("TOPLEFT", frame, "TOPLEFT", barXOffset, -borderInset)
@@ -952,6 +1212,10 @@ function UF:RestorePartyFrames()
 end
 
 function UF:ApplyConfiguration()
+    -- Dimensions & Fonts Live Application
+    if UF.ApplyDimensions then UF:ApplyDimensions() end
+    if UF.ApplyFonts then UF:ApplyFonts() end
+
     -- Group/Raid Frames lifecycle (independent toggle via groupframe_dimensions.enabled)
     local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
     local raidEnabled = groupDims and groupDims.enabled
@@ -967,6 +1231,10 @@ function UF:ApplyConfiguration()
     if UF:IsModernPlayer() then
         UF:SuppressPlayerFrame()
         if UF.EnablePlayerFrame then UF:EnablePlayerFrame() end
+        if UF.playerFrame and UF.playerFrame:IsShown() then
+            if UF.UpdatePlayerPvP then UF.UpdatePlayerPvP(UF.playerFrame) end
+            if UF.UpdatePlayerHealth then UF.UpdatePlayerHealth(UF.playerFrame) end
+        end
     else
         if UF.DisablePlayerFrame then UF:DisablePlayerFrame() end
         UF:RestorePlayerFrame()
@@ -976,8 +1244,11 @@ function UF:ApplyConfiguration()
     if UF:IsModernTarget() then
         UF:SuppressTargetFrame()
         if UF.EnableTargetFrame then UF:EnableTargetFrame() end
-        if UF.targetFrame and UF.UpdateComboPoints then
-            UF.UpdateComboPoints(UF.targetFrame)
+        if UF.targetFrame and UF.targetFrame:IsShown() then
+            if UF.UpdateTargetPvP then UF.UpdateTargetPvP(UF.targetFrame) end
+            if UF.UpdateTargetHealth then UF.UpdateTargetHealth(UF.targetFrame) end
+            if UF.UpdateComboPoints then UF.UpdateComboPoints(UF.targetFrame) end
+            if UF.UpdateRaidTarget then UF.UpdateRaidTarget(UF.targetFrame) end
         end
     else
         if UF.DisableTargetFrame then UF:DisableTargetFrame() end

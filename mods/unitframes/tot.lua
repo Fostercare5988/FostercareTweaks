@@ -93,11 +93,13 @@ local function UpdateAll(frame)
     UpdateHealth(frame)
     UpdatePower(frame)
     UF:LayoutBars(frame)
+    if UF.ApplyFonts then UF:ApplyFonts() end
 
     if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
         UF.Auras:UpdateContainer(frame.auraContainer)
     end
 end
+UF.UpdateToTAll = UpdateAll
 
 local function ToTFrame_OnClick()
     if FCTweaksUnitFrameUnlocker and FCTweaksUnitFrameUnlocker.movable then
@@ -250,8 +252,8 @@ end)
 function UF:EnableToTFrame()
     if not totFrame then
         totFrame = UF:CreateUnitFrame("targettarget", "FCTweaksToTFrame", UIParent)
-        totFrame:SetWidth(120)
-        totFrame:SetHeight(28)
+        totFrame:SetWidth(UF:GetToTWidth())
+        totFrame:SetHeight(UF:GetToTHeight())
         totFrame:SetScale(UF:GetScale())
 
         -- Position restoration or anchor to Target Frame
