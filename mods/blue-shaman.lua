@@ -36,13 +36,5 @@ module.enable = function(self)
             RAID_CLASS_COLORS["SHAMAN"] = { r = 0.14, g = 0.35, b = 1.00, colorStr = "ff2459ff" }
         end
     end
-
-    if not getmetatable(RAID_CLASS_COLORS) then
-        local defaultClassColor = { r = 0.6, g = 0.6, b = 0.6, colorStr = "ff999999" }
-        setmetatable(RAID_CLASS_COLORS, {
-            __index = function(tab, key)
-                return defaultClassColor
-            end
-        })
-    end
 end
+

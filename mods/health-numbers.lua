@@ -64,6 +64,9 @@ module.enable = function(self)
     PetFrameHealthBar.TextString:SetPoint("CENTER", PetFrameHealthBar, "CENTER", -2, 0)
     PetFrameManaBar.TextString:SetPoint("CENTER", PetFrameManaBar, "CENTER", -2, -2)
 
+    if PlayerFrameHealthBar and not PlayerFrameHealthBar.unit then PlayerFrameHealthBar.unit = "player" end
+    if PlayerFrameManaBar and not PlayerFrameManaBar.unit then PlayerFrameManaBar.unit = "player" end
+
     local targetPlayerBars = { TargetFrameHealthBar, TargetFrameManaBar, PlayerFrameHealthBar, PlayerFrameManaBar }
     for _, frame in ipairs(targetPlayerBars) do
         frame.TextString:SetFontObject("GameFontWhite")
@@ -88,7 +91,8 @@ module.enable = function(self)
         if not ownedBars[bar] then return end
 
         local str = bar.TextString
-        if str and bar.unit then
+        local unit = bar.unit or ((bar == PlayerFrameHealthBar or bar == PlayerFrameManaBar) and "player")
+        if str and unit then
             bar.lockShow = 42
             bar:Show()
 

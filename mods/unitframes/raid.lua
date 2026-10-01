@@ -391,7 +391,7 @@ local function RaidButton_OnClick()
             if menuFrame then
                 menuFrame.displayMode = "MENU"
                 menuFrame.initialize = function()
-                    local openMenu = (type(UIDROPDOWNMENU_OPEN_MENU) == "string" and getglobal(UIDROPDOWNMENU_OPEN_MENU)) or UIDROPDOWNMENU_OPEN_MENU or menuFrame
+                    local openMenu = (type(UIDROPDOWNMENU_OPEN_MENU) == "string" and _G[UIDROPDOWNMENU_OPEN_MENU]) or UIDROPDOWNMENU_OPEN_MENU or menuFrame
                     UnitPopup_ShowMenu(openMenu, "PARTY", unit, name, id)
                 end
                 ToggleDropDownMenu(1, nil, menuFrame, "cursor")

@@ -28,6 +28,12 @@ local function UpdatePortraits(frame)
     if not frame or not frame.unit or not frame.portrait then return end
 
     local _, class = UnitClass(frame.unit)
+    if not class or class == "" then class = UnitClass(frame.unit) end
+    if class and FostercareTweaks.NormalizeClass then
+        class = FostercareTweaks.NormalizeClass(class)
+    elseif class then
+        class = string.upper(class)
+    end
     class = UnitIsPlayer(frame.unit) and class or nil
 
     if frame.lastPortraitClass == class then return end

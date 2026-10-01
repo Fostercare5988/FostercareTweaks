@@ -1625,4 +1625,23 @@ class FrameTests(unittest.TestCase):
         assert(hpHeight + pwHeight <= 30)
         ''')
 
+    def test_blue_shaman_does_not_pollute_raid_class_colors_with_grey_fallback(self):
+        lua = runtime()
+        lua.execute(r'''
+        dofile("mods/blue-shaman.lua")
+        local mod = FostercareTweaks.mods["Blue Shaman Class Colors"]
+        assert(mod ~= nil)
+        mod:enable()
+
+        assert(RAID_CLASS_COLORS["SHAMAN"] ~= nil)
+        assert(RAID_CLASS_COLORS["SHAMAN"].r == 0.14)
+        assert(RAID_CLASS_COLORS["SHAMAN"].g == 0.35)
+        assert(RAID_CLASS_COLORS["SHAMAN"].b == 1.00)
+
+        -- RAID_CLASS_COLORS must return nil for unknown keys, NOT grey fallback
+        assert(RAID_CLASS_COLORS["UNKNOWN"] == nil)
+        assert(RAID_CLASS_COLORS[""] == nil)
+        assert(getmetatable(RAID_CLASS_COLORS) == nil)
+        ''')
+
 if __name__=='__main__': unittest.main(verbosity=2)
