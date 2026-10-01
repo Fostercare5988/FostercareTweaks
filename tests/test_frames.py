@@ -42,6 +42,8 @@ function methods:GetFrameLevel() return 1 end
 function methods:SetTexture(...) self.texture={...} end
 function methods:SetVertexColor(...) self.color={...} end
 function methods:GetVertexColor() return unpack(self.color or {1,1,1,1}) end
+function methods:SetStatusBarColor(...) self.statusBarColor={...} end
+function methods:GetStatusBarColor() return unpack(self.statusBarColor or {0,1,0,1}) end
 function methods:SetTextColor(...) self.textColor={...} end
 function methods:GetTextColor() return unpack(self.textColor or {1,1,1,1}) end
 function methods:SetSequence(v) self.sequence=v; self.sequenceCalls=(self.sequenceCalls or 0)+1 end
@@ -577,6 +579,86 @@ class FrameTests(unittest.TestCase):
         FCTweaksStdPlayerCB:SetChecked(true); fire(FCTweaksStdPlayerCB,"OnClick")
         assert(not FCTweaksModPlayerCB:GetChecked() and FostercareTweaks_Config["Modern Player Frame"]==0)
         assert(FostercareTweaksCancel:GetText()=="Close" and not FostercareTweaksOkay:IsShown())''')
+
+
+    def test_standard_health_bar_class_colors_and_no_name_tint(self):
+        lua=runtime()
+        lua.execute(r'''MAX_PARTY_MEMBERS=4
+            targetClass="ROGUE"; targetIsPlayer=true; targetExists=true
+            targetReaction=4; targetTapped=false
+            UnitClass=function(unit)
+                if unit=="target" then return targetClass,targetClass end
+                if unit=="party1" then return "Druid","DRUID" end
+                return "Rogue","ROGUE"
+            end
+            UnitIsPlayer=function(unit) return unit~="target" or targetIsPlayer end
+            UnitExists=function(unit) if unit=="target" then return targetExists end return true end
+            UnitReaction=function(u,p) return targetReaction end
+            UnitIsTapped=function(u) return targetTapped end
+            UnitIsTappedByPlayer=function(u) return false end
+            TargetFrameNameBackground=CreateFrame("Texture",nil,TargetFrame)
+            TargetFrameHealthBar=CreateFrame("StatusBar","TargetFrameHealthBar",TargetFrame)
+            TargetFrameHealthBar.unit="target"
+            PlayerFrameHealthBar=CreateFrame("StatusBar","PlayerFrameHealthBar",PlayerFrame)
+            PlayerFrameHealthBar.unit="player"
+            PartyMemberFrame1HealthBar=CreateFrame("StatusBar","PartyMemberFrame1HealthBar",UIParent)
+            PartyMemberFrame1HealthBar.unit="party1"
+            PartyMemberFrame1Name=CreateFrame("Font",nil,UIParent)
+            function TargetFrame_CheckFaction()
+                TargetFrameNameBackground:Show()
+                TargetFrameNameBackground:SetVertexColor(0,1,0,0.5)
+            end
+            function TargetFrame_Update()
+                TargetFrame_CheckFaction()
+            end
+            function PlayerFrame_Update() end
+            function PartyMemberFrame_UpdateMember() end
+            function HealthBar_OnValueChanged(val) end
+            TargetFrame_CheckFaction()
+        ''')
+        lua.execute('CLASSIC_API_VERSION=11515; SUPERWOW_VERSION=2; SlashCmdList={}; FostercareTweaks.mods={}')
+        lua.execute((ROOT/'Core.lua').read_text(encoding='utf-8'))
+        lua.execute((ROOT/'mods/unitframes/core.lua').read_text(encoding='utf-8'))
+        lua.execute((ROOT/'mods/unitframes-classcolor.lua').read_text(encoding='utf-8'))
+        lua.execute('''local m=FostercareTweaks.mods["Unit Frame Class Colors"]
+            assert(m~=nil)
+            FostercareTweaks:Initialize()
+            m:enable()
+            -- Player health bar is Rogue Yellow
+            local pr, pg, pb = PlayerFrameHealthBar:GetStatusBarColor()
+            assert(pr==1.00 and pb==0.41)
+            -- Target health bar is Rogue Yellow
+            local tr, tg, tb = TargetFrameHealthBar:GetStatusBarColor()
+            assert(tr==1.00 and tb==0.41)
+            -- Target name background is hidden (NO TINT!)
+            assert(not TargetFrameNameBackground:IsShown())
+            -- Player frame has no synthetic name background
+            assert(PlayerFrameNameBackground==nil)
+            -- Party 1 health bar and text are Druid Orange
+            local dr, dg, db = PartyMemberFrame1HealthBar:GetStatusBarColor()
+            assert(dr==1.00 and dg==0.49 and db==0.04)
+            assert(PartyMemberFrame1Name.textColor[1]==1.00 and PartyMemberFrame1Name.textColor[2]==0.49)
+            -- Target an NPC: reaction color is applied, NOT class color, and name background is hidden
+            targetIsPlayer=false; targetReaction=2
+            TargetFrame_Update()
+            local hr, hg, hb = TargetFrameHealthBar:GetStatusBarColor()
+            assert(hr==0.90 and hg==0.00)
+            assert(not TargetFrameNameBackground:IsShown())
+        ''')
+        lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
+        lua.execute('''FostercareTweaksSettingsGUI.SelectTab(2)
+            assert(FCTweaksClassColorCB:GetChecked())
+            FCTweaksClassColorCB:SetChecked(false); fire(FCTweaksClassColorCB,"OnClick")
+            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==0)
+            local r, g, b = PlayerFrameHealthBar:GetStatusBarColor()
+            assert(r==0 and g==1 and b==0)
+            assert(TargetFrameNameBackground:IsShown())
+            FCTweaksClassColorCB:SetChecked(true); fire(FCTweaksClassColorCB,"OnClick")
+            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==1)
+            local r2, g2, b2 = PlayerFrameHealthBar:GetStatusBarColor()
+            assert(r2==1.00 and b2==0.41)
+            assert(not TargetFrameNameBackground:IsShown())
+        ''')
 
 
 

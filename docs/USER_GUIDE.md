@@ -17,7 +17,7 @@ Detailed configuration, frame controls, and module reference for **FostercareTwe
 
 ### Frame Styles
 Configure your preferred style under `/ft uf`:
-- **Standard Blizzard Frames**: Retains the authentic Blizzard look with accurate health numbers and enhanced aura timers.
+- **Standard Blizzard Frames**: Retains the authentic Blizzard look with clean health-bar class coloring (no background tint), accurate health numbers, and enhanced aura timers.
 - **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Optional UnitXP SP3 supplies raw health readings; otherwise the frames use client unit telemetry.
 
 ### Aura Controls & Borders
