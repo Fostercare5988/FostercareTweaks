@@ -115,8 +115,14 @@ local function EnsureHooks()
 
     if HealthBar_OnValueChanged then
         FostercareTweaks.hooksecurefunc("HealthBar_OnValueChanged", function()
-            if this and this.unit then
-                UpdateHealthBarColor(this, this.unit)
+            local bar = this
+            if bar then
+                local unit = bar.unit or (bar.GetParent and bar:GetParent() and bar:GetParent().unit)
+                if bar == PlayerFrameHealthBar then unit = "player" end
+                if bar == TargetFrameHealthBar then unit = "target" end
+                if unit then
+                    UpdateHealthBarColor(bar, unit)
+                end
             end
         end)
     end
@@ -150,6 +156,8 @@ local function EnsureHooks()
 
     local worldRefresh = CreateFrame("Frame")
     worldRefresh:RegisterEvent("PLAYER_ENTERING_WORLD")
+    worldRefresh:RegisterEvent("PLAYER_TARGET_CHANGED")
+    worldRefresh:RegisterEvent("PARTY_MEMBERS_CHANGED")
     worldRefresh:RegisterEvent("UNIT_HEALTH")
     worldRefresh:RegisterEvent("UNIT_MAXHEALTH")
     worldRefresh:SetScript("OnEvent", function()
