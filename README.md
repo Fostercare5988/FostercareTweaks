@@ -52,7 +52,6 @@ A modular interface and quality-of-life add-on suite for World of Warcraft 1.12.
 
 ## Limitations & Notes
 
-- **Standard Frame Class Colors**: When using standard Blizzard frames, player and target name backgrounds use permanent class coloring. This design choice is always enabled.
 - **Sell Junk Queue**: Selling grey items operates via native merchant queue commands without capturing your cursor. Closing or walking away from the merchant cancels any remaining pending sales.
 - **Aura Durations**: Debuff and buff cooldown sweeps only appear when duration telemetry is available to the client.
 - **Reagent Counters**: Counts show how many casts your carried reagents support. Macro buttons need a spell identified by the client; re-save older macros if their spell is not identified.

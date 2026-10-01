@@ -203,7 +203,6 @@ class CoreTests(unittest.TestCase):
             FostercareTweaks_Cache={players={}}; enabled={}
         ''')
         lua.execute(source('Core.lua'))
-        lua.execute('FostercareTweaks.EnableStandardClassColors=function() end')
         return lua
 
     def chat_runtime(self, stored=None):

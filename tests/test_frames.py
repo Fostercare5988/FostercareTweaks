@@ -579,53 +579,6 @@ class FrameTests(unittest.TestCase):
         assert(FostercareTweaksCancel:GetText()=="Close" and not FostercareTweaksOkay:IsShown())''')
 
 
-    def test_standard_class_colors_ignore_old_off_setting_and_have_no_toggle(self):
-        lua=runtime()
-        lua.execute(r'''MAX_PARTY_MEMBERS=4
-            targetClass="ROGUE"; targetIsPlayer=true
-            -- A different addon has changed the shared palette to grey.
-            RAID_CLASS_COLORS=setmetatable({ROGUE={r=0.6,g=0.6,b=0.6}},
-                {__index=function() return {r=0.6,g=0.6,b=0.6} end})
-            UnitClass=function(unit)
-                if unit=="target" then return targetClass,targetClass end
-                return "Rogue","ROGUE"
-            end
-            UnitIsPlayer=function(unit) return unit~="target" or targetIsPlayer end
-            TargetFrameNameBackground=CreateFrame("Texture",nil,TargetFrame)
-            PartyMemberFrame1Name=CreateFrame("Font",nil,UIParent)
-            function TargetFrame_CheckFaction()
-                TargetFrameNameBackground:SetVertexColor(0,0,1,1)
-            end
-            function PartyMemberFrame_UpdateMember() end
-            TargetFrame_CheckFaction()
-            FostercareTweaks_Config["Unit Frame Class Colors"]=0
-        ''')
-        lua.execute('CLASSIC_API_VERSION=11515; SUPERWOW_VERSION=2; SlashCmdList={}; FostercareTweaks.mods={}')
-        lua.execute((ROOT/'Core.lua').read_text(encoding='utf-8'))
-        lua.execute((ROOT/'mods/unitframes-classcolor.lua').read_text(encoding='utf-8'))
-        lua.execute('''assert(FostercareTweaks.mods["Unit Frame Class Colors"]==nil)
-            FostercareTweaks:Initialize()
-            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==0)
-            assert(PlayerFrameNameBackground:IsShown())
-            assert(PlayerFrameNameBackground.color[1]==1 and PlayerFrameNameBackground.color[2]==0.96)
-            assert(TargetFrameNameBackground.color[1]==1 and TargetFrameNameBackground.color[3]==0.41)
-            assert(PartyMemberFrame1Name.textColor[1]==1)
-            targetClass="UNKNOWN"
-            TargetFrame_CheckFaction()
-            assert(TargetFrameNameBackground.color[3]==1 and TargetFrameNameBackground.color[1]==0)
-            targetClass="ROGUE"; targetIsPlayer=false
-            TargetFrame_CheckFaction()
-            assert(TargetFrameNameBackground.color[3]==1 and TargetFrameNameBackground.color[1]==0)
-            targetIsPlayer=true
-            TargetFrame_CheckFaction()
-            assert(TargetFrameNameBackground.color[1]==1)
-        ''')
-        lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
-        lua.execute('''FostercareTweaksSettingsGUI.SelectTab(2)
-            assert(FCTweaksClassColorCB==nil)
-            assert(FostercareTweaks_Config["Unit Frame Class Colors"]==0)
-            assert(PlayerFrameNameBackground:IsShown() and TargetFrameNameBackground.color[1]==1)
-        ''')
 
     def test_eight_buffs_wrap_at_smallest_frame_with_largest_icons(self):
         lua=runtime(); lua.execute('''raidCount=5; auras.raid1={buffs={}}

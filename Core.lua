@@ -112,8 +112,6 @@ function FostercareTweaks:Initialize()
         end
     end
 
-    -- Standard Blizzard frame class colors are permanent, independent of saved toggles.
-    self.EnableStandardClassColors()
 end
 
 -- Rule C12 / AP-26 Dual-Mode Event Signature
