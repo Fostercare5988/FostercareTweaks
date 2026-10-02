@@ -581,7 +581,7 @@ class FrameTests(unittest.TestCase):
         assert(FostercareTweaksCancel:GetText()=="Close" and not FostercareTweaksOkay:IsShown())''')
 
 
-    def test_standard_health_bar_class_colors_and_no_name_tint(self):
+    def test_standard_class_colors_in_name_background_and_green_health_bars(self):
         lua=runtime()
         lua.execute(r'''MAX_PARTY_MEMBERS=4
             targetClass="ROGUE"; targetIsPlayer=true; targetExists=true
@@ -624,40 +624,51 @@ class FrameTests(unittest.TestCase):
             assert(m~=nil)
             FostercareTweaks:Initialize()
             m:enable()
-            -- Player health bar is Rogue Yellow
+            -- Health bars remain standard Blizzard green
             local pr, pg, pb = PlayerFrameHealthBar:GetStatusBarColor()
-            assert(pr==1.00 and pb==0.41)
-            -- Target health bar is Rogue Yellow
+            assert(pr==0 and pg==1 and pb==0)
             local tr, tg, tb = TargetFrameHealthBar:GetStatusBarColor()
-            assert(tr==1.00 and tb==0.41)
-            -- Target name background is hidden (NO TINT!)
-            assert(not TargetFrameNameBackground:IsShown())
-            -- Player frame has no synthetic name background
-            assert(PlayerFrameNameBackground==nil)
-            -- Party 1 health bar and text are Druid Orange
+            assert(tr==0 and tg==1 and tb==0)
+            -- Player name background is Rogue Yellow
+            assert(PlayerFrameNameBackground~=nil and PlayerFrameNameBackground:IsShown())
+            local pnr, png, pnb = PlayerFrameNameBackground:GetVertexColor()
+            assert(pnr==1.00 and pnb==0.41)
+            -- Target name background is Rogue Yellow (target is player)
+            assert(TargetFrameNameBackground:IsShown())
+            local tnr, tng, tnb = TargetFrameNameBackground:GetVertexColor()
+            assert(tnr==1.00 and tnb==0.41)
+            -- Party 1 name is Druid Orange, health bar is green
             local dr, dg, db = PartyMemberFrame1HealthBar:GetStatusBarColor()
-            assert(dr==1.00 and dg==0.49 and db==0.04)
+            assert(dr==0 and dg==1 and db==0)
             assert(PartyMemberFrame1Name.textColor[1]==1.00 and PartyMemberFrame1Name.textColor[2]==0.49)
-            -- Target an NPC: reaction color is applied, NOT class color, and name background is hidden
+            -- Target an NPC: reaction color is applied on TargetFrameNameBackground, health bar stays green
             targetIsPlayer=false; targetReaction=2
+            TargetFrame_CheckFaction=function()
+                TargetFrameNameBackground:Show()
+                TargetFrameNameBackground:SetVertexColor(0.90, 0.00, 0.00, 1)
+            end
+            TargetFrame_Update=TargetFrame_CheckFaction
             TargetFrame_Update()
             local hr, hg, hb = TargetFrameHealthBar:GetStatusBarColor()
-            assert(hr==0.90 and hg==0.00)
-            assert(not TargetFrameNameBackground:IsShown())
+            assert(hr==0 and hg==1 and hb==0)
+            local bgr, bgg, bgb = TargetFrameNameBackground:GetVertexColor()
+            assert(bgr==0.90 and bgg==0.00)
+            assert(TargetFrameNameBackground:IsShown())
         ''')
         lua.execute((ROOT/'Options.lua').read_text(encoding='utf-8'))
         lua.execute('''FostercareTweaksSettingsGUI.SelectTab(2)
             assert(FCTweaksClassColorCB:GetChecked())
             FCTweaksClassColorCB:SetChecked(false); fire(FCTweaksClassColorCB,"OnClick")
             assert(FostercareTweaks_Config["Unit Frame Class Colors"]==0)
+            assert(not PlayerFrameNameBackground:IsShown())
             local r, g, b = PlayerFrameHealthBar:GetStatusBarColor()
             assert(r==0 and g==1 and b==0)
             assert(TargetFrameNameBackground:IsShown())
             FCTweaksClassColorCB:SetChecked(true); fire(FCTweaksClassColorCB,"OnClick")
             assert(FostercareTweaks_Config["Unit Frame Class Colors"]==1)
+            assert(PlayerFrameNameBackground:IsShown())
             local r2, g2, b2 = PlayerFrameHealthBar:GetStatusBarColor()
-            assert(r2==1.00 and b2==0.41)
-            assert(not TargetFrameNameBackground:IsShown())
+            assert(r2==0 and g2==1 and b2==0)
         ''')
 
 

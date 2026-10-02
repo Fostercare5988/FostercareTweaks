@@ -1,13 +1,15 @@
 if not FostercareTweaks then return end
 
 -- FostercareTweaks: mods/unitframes-classcolor.lua
--- Colors standard player, target, and party health bars by class without background tint.
+-- World of Warcraft 1.12.1 Enhanced Client
+-- Colors standard player and target name backgrounds by class.
+-- Health bars remain standard Blizzard green.
 
 local T = FostercareTweaks.T
 
 local module = FostercareTweaks:register({
     title = T["Unit Frame Class Colors"],
-    description = T["Class colors on standard player, target, and party health bars."],
+    description = T["Class colors on standard player and target name backgrounds."],
     category = T["Unit Frames"],
     enabled = true,
 })
@@ -41,71 +43,95 @@ local function GetClassColor(unit)
     return nil
 end
 
-local function UpdateHealthBarColor(statusbar, unit)
-    if not statusbar then return end
-    unit = unit or statusbar.unit
-    if not unit or not UnitExists(unit) then return end
+local ownsPlayerBackground = false
+local originalPartyColors = {}
 
+local function EnsurePlayerBackground()
+    if not PlayerFrameNameBackground and PlayerFrame then
+        PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BACKGROUND")
+        PlayerFrameNameBackground:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
+        PlayerFrameNameBackground:SetWidth(119)
+        PlayerFrameNameBackground:SetHeight(19)
+        PlayerFrameNameBackground:SetPoint("TOPLEFT", 106, -22)
+        ownsPlayerBackground = true
+    end
+end
+
+local function ColorPlayer()
     if not IsActive() then return end
-
-    if UnitIsPlayer(unit) then
-        local color = GetClassColor(unit)
-        if color then
-            statusbar:SetStatusBarColor(color.r, color.g, color.b, 1)
-        end
-    elseif unit == "target" then
-        if UnitIsTapped("target") and not UnitIsTappedByPlayer("target") then
-            statusbar:SetStatusBarColor(0.5, 0.5, 0.5, 1)
-        else
-            local reaction = UnitReaction("target", "player")
-            if reaction then
-                if reaction <= 2 then
-                    statusbar:SetStatusBarColor(0.90, 0.00, 0.00, 1)
-                elseif reaction == 3 then
-                    statusbar:SetStatusBarColor(0.90, 0.40, 0.00, 1)
-                elseif reaction == 4 then
-                    statusbar:SetStatusBarColor(0.93, 0.93, 0.00, 1)
-                else
-                    statusbar:SetStatusBarColor(0.20, 0.90, 0.20, 1)
-                end
-            end
+    local color = GetClassColor("player")
+    if color then
+        EnsurePlayerBackground()
+        if PlayerFrameNameBackground then
+            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+            PlayerFrameNameBackground:Show()
         end
     end
 end
 
-local function UpdatePartyMembers()
+local function ColorTarget()
+    if not IsActive() or not TargetFrameNameBackground then return end
+    if UnitExists("target") and UnitIsPlayer("target") then
+        local color = GetClassColor("target")
+        if color then
+            TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+            TargetFrameNameBackground:Show()
+        end
+    else
+        -- For NPCs (like Scarlet Myrmidon): Blizzard's native TargetFrame_CheckFaction
+        -- sets the reaction color (red/yellow/green). Ensure background is visible.
+        TargetFrameNameBackground:Show()
+    end
+end
+
+local function ColorParty()
     if not IsActive() then return end
     for id = 1, MAX_PARTY_MEMBERS do
         local name = _G["PartyMemberFrame" .. id .. "Name"]
-        local bar = _G["PartyMemberFrame" .. id .. "HealthBar"]
         local unit = "party" .. id
         if UnitExists(unit) then
             local color = GetClassColor(unit)
-            if color then
-                if name then name:SetTextColor(color.r, color.g, color.b, 1) end
-                if bar then bar:SetStatusBarColor(color.r, color.g, color.b, 1) end
+            if color and name then
+                if not originalPartyColors[name] then
+                    originalPartyColors[name] = { name:GetTextColor() }
+                end
+                name:SetTextColor(color.r, color.g, color.b, 1)
             end
         end
     end
 end
 
-local function SuppressTargetNameTint()
-    if not IsActive() then return end
-    if TargetFrameNameBackground then
-        TargetFrameNameBackground:Hide()
+local function RestoreParty()
+    for name, color in pairs(originalPartyColors) do
+        if name and name.SetTextColor then
+            name:SetTextColor(unpack(color))
+        end
+    end
+    originalPartyColors = {}
+end
+
+local function RestoreHealthBars()
+    -- Ensure health bars are native green, never class-tinted
+    if PlayerFrameHealthBar then
+        PlayerFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
+    end
+    if TargetFrameHealthBar then
+        TargetFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
+    end
+    for id = 1, MAX_PARTY_MEMBERS do
+        local bar = _G["PartyMemberFrame" .. id .. "HealthBar"]
+        if bar then
+            bar:SetStatusBarColor(0, 1, 0, 1)
+        end
     end
 end
 
 local function ApplyAll()
     if not IsActive() then return end
-    if PlayerFrameHealthBar then
-        UpdateHealthBarColor(PlayerFrameHealthBar, "player")
-    end
-    if TargetFrameHealthBar and UnitExists("target") then
-        UpdateHealthBarColor(TargetFrameHealthBar, "target")
-    end
-    SuppressTargetNameTint()
-    UpdatePartyMembers()
+    ColorPlayer()
+    ColorTarget()
+    ColorParty()
+    RestoreHealthBars()
 end
 
 local hooksInstalled = false
@@ -113,53 +139,26 @@ local function EnsureHooks()
     if hooksInstalled then return end
     hooksInstalled = true
 
-    if HealthBar_OnValueChanged then
-        FostercareTweaks.hooksecurefunc("HealthBar_OnValueChanged", function()
-            local bar = this
-            if bar then
-                local unit = bar.unit or (bar.GetParent and bar:GetParent() and bar:GetParent().unit)
-                if bar == PlayerFrameHealthBar then unit = "player" end
-                if bar == TargetFrameHealthBar then unit = "target" end
-                if unit then
-                    UpdateHealthBarColor(bar, unit)
-                end
-            end
-        end)
+    if TargetFrame_CheckFaction then
+        FostercareTweaks.hooksecurefunc("TargetFrame_CheckFaction", ColorTarget)
     end
 
     if TargetFrame_Update then
-        FostercareTweaks.hooksecurefunc("TargetFrame_Update", function()
-            if TargetFrameHealthBar and UnitExists("target") then
-                UpdateHealthBarColor(TargetFrameHealthBar, "target")
-            end
-            SuppressTargetNameTint()
-        end)
-    end
-
-    if TargetFrame_CheckFaction then
-        FostercareTweaks.hooksecurefunc("TargetFrame_CheckFaction", function()
-            SuppressTargetNameTint()
-        end)
+        FostercareTweaks.hooksecurefunc("TargetFrame_Update", ColorTarget)
     end
 
     if PlayerFrame_Update then
-        FostercareTweaks.hooksecurefunc("PlayerFrame_Update", function()
-            if PlayerFrameHealthBar then
-                UpdateHealthBarColor(PlayerFrameHealthBar, "player")
-            end
-        end)
+        FostercareTweaks.hooksecurefunc("PlayerFrame_Update", ColorPlayer)
     end
 
     if PartyMemberFrame_UpdateMember then
-        FostercareTweaks.hooksecurefunc("PartyMemberFrame_UpdateMember", UpdatePartyMembers)
+        FostercareTweaks.hooksecurefunc("PartyMemberFrame_UpdateMember", ColorParty)
     end
 
     local worldRefresh = CreateFrame("Frame")
     worldRefresh:RegisterEvent("PLAYER_ENTERING_WORLD")
     worldRefresh:RegisterEvent("PLAYER_TARGET_CHANGED")
     worldRefresh:RegisterEvent("PARTY_MEMBERS_CHANGED")
-    worldRefresh:RegisterEvent("UNIT_HEALTH")
-    worldRefresh:RegisterEvent("UNIT_MAXHEALTH")
     worldRefresh:SetScript("OnEvent", function()
         ApplyAll()
     end)
@@ -170,22 +169,17 @@ function module:apply()
         EnsureHooks()
         ApplyAll()
     else
-        if TargetFrameNameBackground and UnitExists("target") and TargetFrame_CheckFaction then
+        if PlayerFrameNameBackground and ownsPlayerBackground then
+            PlayerFrameNameBackground:Hide()
+        end
+        if UnitExists("target") and TargetFrame_CheckFaction then
             TargetFrame_CheckFaction()
         end
-        if PlayerFrameHealthBar then
-            PlayerFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
-        end
-        if TargetFrameHealthBar then
-            TargetFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
-        end
-        for id = 1, MAX_PARTY_MEMBERS do
-            local name = _G["PartyMemberFrame" .. id .. "Name"]
-            local bar = _G["PartyMemberFrame" .. id .. "HealthBar"]
-            if name then name:SetTextColor(1, 0.82, 0, 1) end
-            if bar then bar:SetStatusBarColor(0, 1, 0, 1) end
-        end
+        RestoreParty()
+        RestoreHealthBars()
     end
 end
 
-module.enable = module.apply
+module.enable = function(self)
+    self:apply()
+end
