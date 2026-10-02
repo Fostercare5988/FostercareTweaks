@@ -178,9 +178,10 @@ do
 
 local T = FostercareTweaks.T
 
+do
 local module = FostercareTweaks:register({
     title = T["WorldMap Class Colors"],
-    description = T["Show class colored circles on world and battlefield map."],
+    description = T["Show class colored circles and tooltips on world and battlefield map."],
     expansions = { ["vanilla"] = true, ["tbc"] = true },
     category = T["World & MiniMap"],
     enabled = true,
@@ -191,55 +192,109 @@ local function SetAllPointsOffset(frame, parent, offset)
     frame:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -offset, offset)
 end
 
--- Preallocate button name-to-unit mappings at load time to avoid runtime table churn
-local worldmapButtons = {}
-local battlefieldButtons = {}
-
-for i = 1, 4 do
-    worldmapButtons[string.format("WorldMapParty%d", i)] = string.format("party%d", i)
-    battlefieldButtons[string.format("BattlefieldMinimapParty%d", i)] = string.format("party%d", i)
-end
-for i = 1, 40 do
-    worldmapButtons[string.format("WorldMapRaid%d", i)] = string.format("raid%d", i)
-    battlefieldButtons[string.format("BattlefieldMinimapRaid%d", i)] = string.format("raid%d", i)
-end
-
 local myPartyNames = {}
 
-local function UpdateMapButtons(buttons)
-    for name, unitstr in pairs(buttons) do
-        local frame = _G[name]
-        if frame and UnitExists(unitstr) then
-            local icon = _G[name .. "Icon"]
-            if icon then icon:SetTexture(nil) end
-
-            if not frame.texture then
-                frame.texture = frame:CreateTexture(nil, "OVERLAY")
-                SetAllPointsOffset(frame.texture, frame, 12)
-            end
-
-            local uname = UnitName(unitstr)
-            local ingroup = uname and myPartyNames[uname]
-
-            if ingroup and frame.texture.ingroup ~= "PARTY" then
-                frame.texture:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\circleparty")
-                frame.texture.ingroup = "PARTY"
-            elseif not ingroup and frame.texture.ingroup ~= "RAID" then
-                frame.texture:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\circleraid")
-                frame.texture.ingroup = "RAID"
-            end
-
-            local _, class = UnitClass(unitstr)
-            if class and frame.texture.class ~= class then
-                local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-                if color then
-                    frame.texture:SetVertexColor(color.r, color.g, color.b)
-                else
-                    frame.texture:SetVertexColor(0.5, 1, 0.5)
-                end
-                frame.texture.class = class
+local function GetUnitClassToken(unit, name)
+    if unit and UnitExists(unit) then
+        local ok, c1, c2 = pcall(UnitClass, unit)
+        local raw = ok and ((type(c2) == "string" and c2 ~= "" and c2) or (type(c1) == "string" and c1 ~= "" and c1))
+        if raw then
+            local token = FostercareTweaks.NormalizeClass and FostercareTweaks.NormalizeClass(raw) or string.upper(raw)
+            if token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token] then
+                return token
             end
         end
+    end
+
+    -- In raid, GetRaidRosterInfo has authoritative fileName anywhere in the world
+    if unit and string.find(unit, "raid") then
+        local id = tonumber(string.match(unit, "(%d+)"))
+        if id and GetRaidRosterInfo then
+            local rName, _, _, _, _, fileName = GetRaidRosterInfo(id)
+            if fileName and RAID_CLASS_COLORS and RAID_CLASS_COLORS[fileName] then
+                return fileName
+            end
+        end
+    end
+
+    name = name or (unit and UnitExists(unit) and UnitName(unit))
+    if name and GetNumRaidMembers and GetNumRaidMembers() > 0 then
+        for i = 1, GetNumRaidMembers() do
+            local rName, _, _, _, _, fileName = GetRaidRosterInfo(i)
+            if rName == name and fileName and RAID_CLASS_COLORS and RAID_CLASS_COLORS[fileName] then
+                return fileName
+            end
+        end
+    end
+
+    if name and FostercareTweaks.GetUnitData then
+        local class = FostercareTweaks.GetUnitData(name)
+        if class then
+            local token = FostercareTweaks.NormalizeClass and FostercareTweaks.NormalizeClass(class) or string.upper(class)
+            if token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token] then
+                return token
+            end
+        end
+    end
+
+    return nil
+end
+
+local function UpdateButton(frame, defaultUnit)
+    if not frame then return end
+    if not frame:IsShown() then
+        if frame.texture then frame.texture:Hide() end
+        return
+    end
+
+    local unit = frame.unit or defaultUnit
+    local name = frame.name or (unit and UnitExists(unit) and UnitName(unit))
+    if not unit and not name then
+        if frame.texture then frame.texture:Hide() end
+        return
+    end
+
+    local icon = _G[frame:GetName() .. "Icon"]
+    if icon then icon:SetTexture(nil) end
+
+    if not frame.texture then
+        frame.texture = frame:CreateTexture(nil, "OVERLAY")
+        SetAllPointsOffset(frame.texture, frame, 12)
+    end
+    frame.texture:Show()
+
+    local ingroup = name and myPartyNames[name]
+    if ingroup and frame.texture.ingroup ~= "PARTY" then
+        frame.texture:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\circleparty")
+        frame.texture.ingroup = "PARTY"
+    elseif not ingroup and frame.texture.ingroup ~= "RAID" then
+        frame.texture:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\circleraid")
+        frame.texture.ingroup = "RAID"
+    end
+
+    local class = GetUnitClassToken(unit, name)
+    if class then
+        local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        if color then
+            frame.texture:SetVertexColor(color.r, color.g, color.b)
+        else
+            frame.texture:SetVertexColor(0.5, 1, 0.5)
+        end
+    else
+        frame.texture:SetVertexColor(0.5, 1, 0.5)
+    end
+end
+
+local function UpdateGroupButtons(prefix)
+    local maxParty = MAX_PARTY_MEMBERS or 4
+    for i = 1, maxParty do
+        local btn = _G[prefix .. "Party" .. i]
+        if btn then UpdateButton(btn, "party" .. i) end
+    end
+    local maxRaid = MAX_RAID_MEMBERS or 40
+    for i = 1, maxRaid do
+        local btn = _G[prefix .. "Raid" .. i]
+        if btn then UpdateButton(btn, nil) end
     end
 end
 
@@ -263,14 +318,68 @@ local function UpdateWorldMapColors()
     if playerName then myPartyNames[playerName] = true end
 
     if showWorld then
-        UpdateMapButtons(worldmapButtons)
+        UpdateGroupButtons("WorldMap")
     end
     if showBattlefield then
-        UpdateMapButtons(battlefieldButtons)
+        UpdateGroupButtons("BattlefieldMinimap")
+    end
+end
+
+local hooksInstalled = false
+local function EnsureTooltipHooks()
+    if hooksInstalled then return end
+    hooksInstalled = true
+
+    if WorldMapUnit_OnEnter then
+        FostercareTweaks.hooksecurefunc("WorldMapUnit_OnEnter", function()
+            if not WorldMapTooltip or not WorldMapTooltip:IsShown() then return end
+            local lines = {}
+            if WorldMapPlayer and WorldMapPlayer:IsVisible() and MouseIsOver(WorldMapPlayer) then
+                local pName = UnitName("player")
+                local pClass = GetUnitClassToken("player", pName)
+                local color = pClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[pClass]
+                local hex = color and FostercareTweaks.rgbhex and FostercareTweaks.rgbhex(color)
+                table.insert(lines, (hex or "") .. pName .. (hex and "|r" or ""))
+            end
+            local maxParty = MAX_PARTY_MEMBERS or 4
+            for i = 1, maxParty do
+                local btn = _G["WorldMapParty" .. i]
+                if btn and btn:IsVisible() and MouseIsOver(btn) then
+                    local u = btn.unit or ("party" .. i)
+                    local uName = UnitName(u)
+                    if uName then
+                        local uClass = GetUnitClassToken(u, uName)
+                        local color = uClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[uClass]
+                        local hex = color and FostercareTweaks.rgbhex and FostercareTweaks.rgbhex(color)
+                        table.insert(lines, (hex or "") .. uName .. (hex and "|r" or ""))
+                    end
+                end
+            end
+            local maxRaid = MAX_RAID_MEMBERS or 40
+            for i = 1, maxRaid do
+                local btn = _G["WorldMapRaid" .. i]
+                if btn and btn:IsVisible() and MouseIsOver(btn) then
+                    local u = btn.unit
+                    local uName = btn.name or (u and UnitName(u))
+                    if uName then
+                        local uClass = GetUnitClassToken(u, uName)
+                        local color = uClass and RAID_CLASS_COLORS and RAID_CLASS_COLORS[uClass]
+                        local hex = color and FostercareTweaks.rgbhex and FostercareTweaks.rgbhex(color)
+                        table.insert(lines, (hex or "") .. uName .. (hex and "|r" or ""))
+                    end
+                end
+            end
+            if #lines > 0 then
+                WorldMapTooltip:SetText(table.concat(lines, "\n"))
+                WorldMapTooltip:Show()
+            end
+        end)
     end
 end
 
 module.enable = function(self)
+    EnsureTooltipHooks()
     C_Timer.NewTicker(0.2, UpdateWorldMapColors)
+end
 end
 end

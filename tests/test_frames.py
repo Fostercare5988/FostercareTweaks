@@ -1655,4 +1655,112 @@ class FrameTests(unittest.TestCase):
         assert(getmetatable(RAID_CLASS_COLORS) == nil)
         ''')
 
+    def test_worldmap_raid_class_colors_dynamic_unit_and_tooltip(self):
+        lua = runtime()
+        lua.execute(r'''
+        FostercareTweaks.rgbhex = function(r, g, b, a)
+            local _r, _g, _b, _a
+            if type(r) == "table" then
+                _r, _g, _b, _a = r.r, r.g, r.b, (r.a or 1)
+            elseif tonumber(r) then
+                _r, _g, _b, _a = r, g, b, (a or 1)
+            end
+            if _r and _g and _b and _a then
+                return string.format("|c%02x%02x%02x%02x", math.floor(_a * 255), math.floor(_r * 255), math.floor(_g * 255), math.floor(_b * 255))
+            end
+            return ""
+        end
+        FostercareTweaks.NormalizeClass = function(c) return string.upper(c) end
+
+        RAID_CLASS_COLORS = {
+            WARLOCK = { r = 0.58, g = 0.51, b = 0.79 },
+            MAGE    = { r = 0.41, g = 0.80, b = 0.94 },
+            PRIEST  = { r = 1.00, g = 1.00, b = 1.00 },
+        }
+
+        WorldMapFrame = CreateFrame("Frame", "WorldMapFrame", UIParent)
+        WorldMapFrame:Show()
+        WorldMapTooltip = CreateFrame("Frame", "WorldMapTooltip", UIParent)
+        WorldMapPlayer = CreateFrame("Button", "WorldMapPlayer", WorldMapFrame)
+        WorldMapPlayer:Show()
+
+        for i = 1, 4 do
+            CreateFrame("Button", "WorldMapParty" .. i, WorldMapFrame):Hide()
+        end
+        for i = 1, 40 do
+            CreateFrame("Button", "WorldMapRaid" .. i, WorldMapFrame):Hide()
+        end
+
+        hovered = nil
+        function MouseIsOver(frame)
+            return frame == hovered
+        end
+
+        function WorldMapUnit_OnEnter() end
+
+        local roster = {
+            [1] = { name = "Alice", class = "Mage", token = "MAGE" },
+            [2] = { name = "Bess",  class = "Warlock", token = "WARLOCK" },
+        }
+        function GetNumRaidMembers() return 2 end
+        function GetRaidRosterInfo(i)
+            local e = roster[i]
+            if e then
+                return e.name, 0, 1, 60, e.class, e.token, "Stranglethorn Vale", true, false
+            end
+        end
+
+        function UnitClass(u)
+            if u == "raid1" then return "Mage", "MAGE"
+            elseif u == "raid2" then return "Warlock", "WARLOCK"
+            elseif u == "player" then return "Priest", "PRIEST"
+            end
+            return nil
+        end
+        function UnitName(u)
+            if u == "raid1" then return "Alice"
+            elseif u == "raid2" then return "Bess"
+            elseif u == "player" then return "Player"
+            end
+            return nil
+        end
+
+        dofile("mods/worldmap-window.lua")
+        local mod = FostercareTweaks.mods["WorldMap Class Colors"]
+        assert(mod ~= nil)
+        mod:enable()
+
+        -- Simulate Blizzard assigning Bess (raid2) to WorldMapRaid1
+        local btn = WorldMapRaid1
+        btn.unit = "raid2"
+        btn.name = "Bess"
+        btn:Show()
+
+        assert(#timers > 0)
+        local ticker = timers[#timers]
+        ticker.callback()
+
+        -- Verify WorldMapRaid1 is Warlock purple, NOT Mage blue
+        assert(btn.texture ~= nil)
+        assert(btn.texture:IsShown())
+        local r, g, b = btn.texture:GetVertexColor()
+        assert(math.abs(r - 0.58) < 0.01)
+        assert(math.abs(g - 0.51) < 0.01)
+        assert(math.abs(b - 0.79) < 0.01)
+
+        -- Hover WorldMapRaid1 and verify tooltip class colors
+        hovered = btn
+        WorldMapTooltip:Show()
+        WorldMapUnit_OnEnter()
+        local text = WorldMapTooltip:GetText()
+        assert(text ~= nil)
+        assert(string.find(text, "Bess") ~= nil)
+        assert(string.find(text, "|cff9381c9Bess|r") ~= nil or string.find(text, "|cff9482c9Bess|r") ~= nil or string.find(text, "Bess|r") ~= nil)
+
+        -- When hidden, texture is hidden
+        btn:Hide()
+        ticker.callback()
+        assert(not btn.texture:IsShown())
+        ''')
+
 if __name__=='__main__': unittest.main(verbosity=2)
