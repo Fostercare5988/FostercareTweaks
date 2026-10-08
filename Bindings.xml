@@ -1,0 +1,86 @@
+<Bindings>
+    <Binding name="FCTWEAKSEXTRA1" runOnUp="true" header="FCTWEAKSACTIONBARS">FCTweaks_ExtraBinding(1, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down");</Binding>
+    <Binding name="FCTWEAKSEXTRA2_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA2_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 2);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA3_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 3);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA4_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 4);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA5_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 5);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA6_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 6);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_1" runOnUp="true">FCTweaks_ExtraBinding(1, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_2" runOnUp="true">FCTweaks_ExtraBinding(2, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_3" runOnUp="true">FCTweaks_ExtraBinding(3, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_4" runOnUp="true">FCTweaks_ExtraBinding(4, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_5" runOnUp="true">FCTweaks_ExtraBinding(5, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_6" runOnUp="true">FCTweaks_ExtraBinding(6, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_7" runOnUp="true">FCTweaks_ExtraBinding(7, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_8" runOnUp="true">FCTweaks_ExtraBinding(8, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_9" runOnUp="true">FCTweaks_ExtraBinding(9, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_10" runOnUp="true">FCTweaks_ExtraBinding(10, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_11" runOnUp="true">FCTweaks_ExtraBinding(11, keystate == "down", 7);</Binding>
+    <Binding name="FCTWEAKSEXTRA7_12" runOnUp="true">FCTweaks_ExtraBinding(12, keystate == "down", 7);</Binding>
+</Bindings>

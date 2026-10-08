@@ -1,0 +1,66 @@
+## X-Website: https://github.com/Fostercare5988
+## X-Maintainer: Fostercare5988
+## Interface: 11200
+## X-ClassicAPI-Min-Version: 1.15.15
+## Title: FostercareTweaks
+## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.15.15+ and SuperWoW 2.2+; NamPower v4.6.2+ is optional.
+## OptionalDeps: GearRack, AutoBG, AtlasLoot
+## Author: Fostercare5988
+## Version: 1.0.0
+## DefaultState: enabled
+## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
+
+# Core Architecture
+Core.lua
+Helpers.lua
+Options.lua
+
+# Action Bar Modules
+mods\actionbar-float.lua
+mods\actionbar-reagents.lua
+mods\cooldown-numbers.lua
+mods\reduced-actionbar.lua
+ExtraActions.lua
+ActionBars.lua
+ActionBarOptions.lua
+
+# Unit Frame Modules
+mods\move-unitframes.lua
+mods\standard-player-auras.lua
+mods\unitframes\core.lua
+mods\unitframes\auras.lua
+mods\unitframes\player.lua
+mods\unitframes\target.lua
+mods\unitframes\tot.lua
+mods\unitframes\raid.lua
+mods\health-numbers.lua
+mods\unitframes-classcolor.lua
+mods\unitframes-classportrait.lua
+mods\target-castbar.lua
+mods\target-debufftimer.lua
+mods\unitframe-energytick.lua
+mods\raid-target-marks.lua
+
+# Nameplate Modules
+mods\nameplate-scale.lua
+mods\nameplate-classcolor.lua
+mods\nameplate-castbar.lua
+
+# World & MiniMap Modules
+mods\worldmap-window.lua
+mods\minimap-tweaks.lua
+
+# Bags & Item Modules
+mods\vendor-values.lua
+mods\sell-junk.lua
+mods\item-colors.lua
+mods\equip-compare.lua
+
+# Chat & Social Modules
+mods\chat-tweaks.lua
+mods\social-colors.lua
+
+# General & Gameplay Modules
+mods\gameplay.lua
+mods\blue-shaman.lua
+mods\custom.lua

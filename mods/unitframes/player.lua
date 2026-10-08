@@ -1,0 +1,369 @@
+local FT = FostercareTweaks
+if not FT then return end
+
+-- FostercareTweaks: mods/unitframes/player.lua
+-- World of Warcraft 1.12.1 Enhanced Client
+-- Modern Unit Frames Subsystem: Player Frame
+
+local UF = FT.UnitFrames
+if not UF then return end
+
+local playerFrame = nil
+local playerClass = nil
+
+local function UpdateHealth(frame)
+    if not frame or not frame:IsShown() then return end
+
+    local cur, max = UF.GetUnitHealthValues("player")
+    frame.healthBar:SetMinMaxValues(0, max)
+    frame.healthBar:SetValue(cur)
+
+    -- Class color health bar
+    local c = UF.ClassColors[playerClass]
+    if c then
+        frame.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+    else
+        frame.healthBar:SetStatusBarColor(0.2, 0.8, 0.2, 1)
+    end
+
+    -- Health text
+    if UnitIsDeadOrGhost("player") then
+        frame.healthBar.healthText:SetText(UnitIsGhost("player") and "Ghost" or "Dead")
+    else
+        frame.healthBar.healthText:SetText(UF.FormatHealthText and UF.FormatHealthText(cur, max) or "")
+    end
+
+    -- Level Badge on Portrait
+    local level = UnitLevel("player") or 0
+    local showLevel = (not UF.IsShowLevel) or UF:IsShowLevel()
+    if showLevel and level > 0 and frame.levelBadge then
+        frame.levelBadge:Show()
+        if frame.levelBadge.SetLevel then
+            frame.levelBadge:SetLevel(tostring(level), 1, 0.82, 0)
+        else
+            frame.levelBadge.text:SetText(tostring(level))
+            frame.levelBadge.text:SetTextColor(1, 0.82, 0, 1)
+        end
+        frame.levelBadge.text:Show()
+    else
+        if frame.levelBadge then
+            frame.levelBadge:Hide()
+            if frame.levelBadge.text then frame.levelBadge.text:Hide() end
+        end
+    end
+
+    local className = UnitClass("player")
+    frame.powerBar.leftText:SetText(UF:IsShowClass() and (className or "") or "")
+    -- Name text on Health Bar
+    local name = UnitName("player") or "Player"
+    local showName = (not UF.IsShowName) or UF:IsShowName()
+    if showName then
+        frame.healthBar.nameText:SetText(name)
+        frame.healthBar.nameText:Show()
+    else
+        frame.healthBar.nameText:SetText("")
+        frame.healthBar.nameText:Hide()
+    end
+    UF:LayoutText(frame)
+end
+UF.UpdatePlayerHealth = UpdateHealth
+
+local function UpdatePower(frame)
+    if not frame or not frame:IsShown() then return end
+
+    local powerType = UnitPowerType("player") or 0
+    local cur = UnitMana("player") or 0
+    local max = UnitManaMax("player") or 0
+
+    frame.powerBar:SetMinMaxValues(0, max)
+    frame.powerBar:SetValue(cur)
+
+    local c = UF.PowerColors[powerType] or UF.PowerColors[0]
+    frame.powerBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+
+    if max > 0 then
+        frame.powerBar.powerText:SetText(UF.FormatPowerText and UF.FormatPowerText(cur, max, powerType) or "")
+    else
+        frame.powerBar.powerText:SetText("")
+    end
+    UF:LayoutText(frame)
+end
+UF.UpdatePlayerPower = UpdatePower
+
+local function UpdatePortrait(frame)
+    if not frame or not frame:IsShown() or not frame.portrait then return end
+    SetPortraitTexture(frame.portrait.tex, "player")
+    frame.portrait.tex:SetTexCoord(0.14, 0.86, 0.14, 0.86)
+end
+
+local function UpdatePvP(frame)
+    if not frame or not frame.pvpIcon then return end
+    if not UnitExists("player") or not frame:IsShown() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    if UF.IsShowPvP and not UF:IsShowPvP() then
+        frame.pvpIcon:Hide()
+        return
+    end
+    local factionGroup = UnitFactionGroup and UnitFactionGroup("player")
+    if UnitIsPVPFreeForAll and UnitIsPVPFreeForAll("player") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-FFA")
+        frame.pvpIcon:Show()
+    elseif factionGroup and UnitIsPVP and UnitIsPVP("player") and (factionGroup == "Alliance" or factionGroup == "Horde") then
+        frame.pvpIcon:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. factionGroup)
+        frame.pvpIcon:Show()
+    else
+        frame.pvpIcon:Hide()
+    end
+end
+UF.UpdatePlayerPvP = UpdatePvP
+
+local function UpdateStatusIcons(frame)
+    if not frame or not frame:IsShown() then return end
+
+    -- Combat
+    if UnitAffectingCombat("player") then
+        frame.combatIcon:Show()
+    else
+        frame.combatIcon:Hide()
+    end
+
+    -- Resting
+    if IsResting() then
+        frame.restIcon:Show()
+    else
+        frame.restIcon:Hide()
+    end
+
+    -- Party Leader
+    if UnitIsPartyLeader("player") then
+        frame.leaderIcon:Show()
+    else
+        frame.leaderIcon:Hide()
+    end
+end
+
+local function UpdateAll(frame)
+    if not frame then return end
+    if not playerClass then
+        local _, cls = UnitClass("player")
+        playerClass = cls
+    end
+
+    UpdatePortrait(frame)
+    UpdateHealth(frame)
+    UpdatePower(frame)
+    UpdatePvP(frame)
+    UpdateStatusIcons(frame)
+    UF:LayoutBars(frame)
+    if UF.ApplyFonts then UF:ApplyFonts() end
+    if frame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+        UF.Auras:UpdateContainer(frame.auraContainer)
+    end
+end
+
+local function PlayerFrame_OnEvent(_, ev, a1)
+
+    if ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
+        if a1 == "player" then UpdateHealth(playerFrame) end
+    elseif ev == "UNIT_MANA" or ev == "UNIT_RAGE" or ev == "UNIT_ENERGY" or ev == "UNIT_FOCUS" or
+           ev == "UNIT_MAXMANA" or ev == "UNIT_MAXRAGE" or ev == "UNIT_MAXENERGY" or ev == "UNIT_DISPLAYPOWER" then
+        if a1 == "player" then UpdatePower(playerFrame) end
+    elseif ev == "PLAYER_REGEN_DISABLED" or ev == "PLAYER_REGEN_ENABLED" or ev == "PLAYER_UPDATE_RESTING" or ev == "PARTY_LEADER_CHANGED" then
+        UpdateStatusIcons(playerFrame)
+    elseif ev == "PLAYER_FLAGS_CHANGED" then
+        UpdatePvP(playerFrame)
+    elseif ev == "UNIT_FACTION" then
+        if a1 == "player" then UpdatePvP(playerFrame) end
+    elseif ev == "UNIT_LEVEL" then
+        if a1 == "player" then UpdateHealth(playerFrame) end
+    elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
+        if a1 == "player" then UpdatePortrait(playerFrame) end
+    elseif ev == "PLAYER_AURAS_CHANGED" or (ev == "UNIT_AURA" and a1 == "player") then
+        if playerFrame and playerFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+            UF.Auras:UpdateContainer(playerFrame.auraContainer)
+        end
+    elseif ev == "PLAYER_ENTERING_WORLD" then
+        UpdateAll(playerFrame)
+    end
+end
+
+function UF:EnablePlayerFrame()
+    if not playerFrame then
+        playerFrame = UF:CreateUnitFrame("player", "FCTweaksPlayerFrame", UIParent)
+        playerFrame:SetWidth(UF:GetPlayerWidth())
+        playerFrame:SetHeight(UF:GetPlayerHeight())
+        playerFrame:SetScale(UF:GetScale())
+
+        -- Position restoration or default
+        playerFrame:ClearAllPoints()
+        local savedPos = FostercareTweaks_Config and FostercareTweaks_Config.unitframe_positions and FostercareTweaks_Config.unitframe_positions["player"]
+        if savedPos and savedPos.point and savedPos.relPoint and savedPos.x and savedPos.y then
+            playerFrame:SetPoint(savedPos.point, UIParent, savedPos.relPoint, savedPos.x, savedPos.y)
+        else
+            playerFrame:SetPoint("BOTTOM", UIParent, "BOTTOM", -175, 140)
+        end
+
+        -- Portrait (Left)
+        local portrait = CreateFrame("Frame", nil, playerFrame)
+        portrait:SetBackdrop(UF.backdrop)
+        portrait:SetBackdropColor(0, 0, 0, 0.9)
+        portrait:SetBackdropBorderColor(0, 0, 0, 1)
+
+        portrait.tex = portrait:CreateTexture(nil, "ARTWORK")
+        portrait.tex:SetPoint("TOPLEFT", portrait, "TOPLEFT", 1, -1)
+        portrait.tex:SetPoint("BOTTOMRIGHT", portrait, "BOTTOMRIGHT", -1, 1)
+
+        playerFrame.portrait = portrait
+        playerFrame.portraitSide = "left"
+
+        -- Level Badge (anchored to portrait bottom-left corner like Standard Frame)
+        local levelBadge = CreateFrame("Frame", "FCTweaksPlayerLevelBadge", portrait)
+        levelBadge:SetWidth(22)
+        levelBadge:SetHeight(18)
+        levelBadge:SetFrameLevel(portrait:GetFrameLevel() + 3)
+        levelBadge:SetBackdrop(UF.backdrop)
+        levelBadge:SetBackdropColor(0.08, 0.08, 0.08, 0.95)
+        levelBadge:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
+        levelBadge:SetPoint("CENTER", portrait, "BOTTOMLEFT", 4, 4)
+
+        local levelText = levelBadge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        levelText:SetPoint("CENTER", levelBadge, "CENTER", 0, 0)
+        levelText:SetJustifyH("CENTER")
+        levelText:SetShadowColor(0, 0, 0, 1)
+        levelText:SetShadowOffset(1, -1)
+        levelBadge.text = levelText
+
+        function levelBadge:SetLevel(str, r, g, b)
+            self.text:SetText(str)
+            self.text:SetTextColor(r, g, b, 1)
+        end
+
+        playerFrame.levelBadge = levelBadge
+
+        -- PvP Emblem (prominent circular badge on portrait top-left like Standard Frame)
+        local pvpIcon = portrait:CreateTexture(nil, "OVERLAY")
+        pvpIcon:SetWidth(40)
+        pvpIcon:SetHeight(40)
+        pvpIcon:SetPoint("CENTER", portrait, "TOPLEFT", 4, -4)
+        pvpIcon:Hide()
+        playerFrame.pvpIcon = pvpIcon
+
+        -- Health Bar
+        local hb = UF:CreateBar("FCTweaksPlayerHealthBar", playerFrame)
+        hb.levelText = levelText
+
+        hb.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hb.nameText:SetPoint("LEFT", hb, "LEFT", 4, 0)
+        hb.nameText:SetJustifyH("LEFT")
+        hb.nameText:SetShadowColor(0, 0, 0, 1)
+        hb.nameText:SetShadowOffset(0.8, -0.8)
+
+        hb.healthText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hb.healthText:SetPoint("RIGHT", hb, "RIGHT", -4, 0)
+        hb.healthText:SetJustifyH("RIGHT")
+        hb.healthText:SetShadowColor(0, 0, 0, 1)
+        hb.healthText:SetShadowOffset(0.8, -0.8)
+
+        playerFrame.healthBar = hb
+
+        -- Power Bar
+        local pb = UF:CreateBar("FCTweaksPlayerPowerBar", playerFrame)
+        pb.powerText = pb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        pb.powerText:SetPoint("RIGHT", pb, "RIGHT", -4, 0)
+        pb.powerText:SetJustifyH("RIGHT")
+        pb.powerText:SetShadowColor(0, 0, 0, 1)
+        pb.powerText:SetShadowOffset(1, -1)
+
+        pb.leftText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        pb.leftText:SetJustifyH("LEFT")
+        pb.leftText:SetShadowColor(0, 0, 0, 1)
+        pb.leftText:SetShadowOffset(1, -1)
+        playerFrame.powerBar = pb
+
+        -- Status Indicators
+        playerFrame.combatIcon = playerFrame:CreateTexture(nil, "OVERLAY")
+        playerFrame.combatIcon:SetTexture("Interface\\CharacterFrame\\UI-StateIcon")
+        playerFrame.combatIcon:SetTexCoord(0.5, 1.0, 0.0, 0.48)
+        playerFrame.combatIcon:SetWidth(16)
+        playerFrame.combatIcon:SetHeight(16)
+        playerFrame.combatIcon:SetPoint("CENTER", portrait, "BOTTOMRIGHT", -2, 2)
+        playerFrame.combatIcon:Hide()
+
+        playerFrame.restIcon = playerFrame:CreateTexture(nil, "OVERLAY")
+        playerFrame.restIcon:SetTexture("Interface\\CharacterFrame\\UI-StateIcon")
+        playerFrame.restIcon:SetTexCoord(0.0, 0.5, 0.0, 0.42)
+        playerFrame.restIcon:SetWidth(16)
+        playerFrame.restIcon:SetHeight(16)
+        playerFrame.restIcon:SetPoint("TOPRIGHT", portrait, "TOPRIGHT", -2, 2)
+        playerFrame.restIcon:Hide()
+
+        playerFrame.leaderIcon = playerFrame:CreateTexture(nil, "OVERLAY")
+        playerFrame.leaderIcon:SetTexture("Interface\\GroupFrame\\UI-Group-LeaderIcon")
+        playerFrame.leaderIcon:SetWidth(14)
+        playerFrame.leaderIcon:SetHeight(14)
+        playerFrame.leaderIcon:SetPoint("TOP", portrait, "TOP", 0, 4)
+        playerFrame.leaderIcon:Hide()
+
+        -- Aura Container (up to 32 buffs and 48 harmful auras)
+        if UF.Auras and UF.Auras.CreateAuraContainer then
+            playerFrame.auraContainer = UF.Auras:CreateAuraContainer(playerFrame, "player", 32, 48, {
+                moveKey = "modern_player",
+                size = 20,
+                spacing = 3,
+                perRow = 8,
+                buffAnchor = "TOP",
+                debuffAnchor = "BOTTOM",
+            })
+        end
+
+        UF.playerFrame = playerFrame
+    end
+
+    -- Event Registration
+    playerFrame:RegisterEvent("UNIT_HEALTH")
+    playerFrame:RegisterEvent("UNIT_MAXHEALTH")
+    playerFrame:RegisterEvent("UNIT_MANA")
+    playerFrame:RegisterEvent("UNIT_RAGE")
+    playerFrame:RegisterEvent("UNIT_ENERGY")
+    playerFrame:RegisterEvent("UNIT_FOCUS")
+    playerFrame:RegisterEvent("UNIT_MAXMANA")
+    playerFrame:RegisterEvent("UNIT_MAXRAGE")
+    playerFrame:RegisterEvent("UNIT_MAXENERGY")
+    playerFrame:RegisterEvent("UNIT_DISPLAYPOWER")
+    playerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    playerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    playerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+    playerFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
+    playerFrame:RegisterEvent("UNIT_FACTION")
+    playerFrame:RegisterEvent("UNIT_LEVEL")
+    playerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
+    playerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
+    playerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
+    playerFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
+    playerFrame:RegisterEvent("UNIT_AURA")
+    playerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    FT.SetEventHandler(playerFrame, PlayerFrame_OnEvent)
+
+    playerFrame.enabled = true
+    playerFrame:SetWidth(UF:GetPlayerWidth())
+    playerFrame:SetHeight(UF:GetPlayerHeight())
+    playerFrame:Show()
+    UpdateAll(playerFrame)
+end
+
+function UF:DisablePlayerFrame()
+    if playerFrame then
+        playerFrame.enabled = false
+        playerFrame:Hide()
+        playerFrame:UnregisterAllEvents()
+        if UF.Auras and UF.Auras.ResetContainer then UF.Auras:ResetContainer(playerFrame.auraContainer) end
+        if playerFrame.pvpIcon then
+            playerFrame.pvpIcon:Hide()
+        end
+        if playerFrame.levelBadge then
+            playerFrame.levelBadge:Hide()
+        end
+    end
+end
