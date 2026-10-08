@@ -491,7 +491,7 @@ function FT.GetUnitHealthValues(unit)
     return UnitHealth(unit) or 0, UnitHealthMax(unit) or 0
 end
 
--- One palette for all four settings pages. These styles touch addon-owned UI
+-- One palette for all settings pages. These styles touch addon-owned UI
 -- only; native font objects and gameplay frames keep their original colors.
 local Theme = {
     background = { 19 / 255, 25 / 255, 32 / 255 }, -- #131920: window

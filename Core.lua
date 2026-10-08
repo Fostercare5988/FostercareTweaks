@@ -123,6 +123,11 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
             FostercareTweaksSettingsGUI:Show()
             FostercareTweaksSettingsGUI.SelectTab(4)
         end
+    elseif cmd[1] == "nameplates" or cmd[1] == "plates" then
+        if FostercareTweaksSettingsGUI then
+            FostercareTweaksSettingsGUI:Show()
+            FostercareTweaksSettingsGUI.SelectTab(5)
+        end
     elseif cmd[1] == "uf" or cmd[1] == "unitframes" or cmd[1] == "unitframe" then
         if FostercareTweaksSettingsGUI then
             FostercareTweaksSettingsGUI:Show()

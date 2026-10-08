@@ -42,7 +42,7 @@ local function UpdatePlate(plate, unit)
     local icon = plate.fctRaidMark
     if not icon then return end
     local valid = unit and C_NamePlate.GetNamePlateForUnit(unit) == plate
-    local index = valid and GetRaidTargetIndex(unit)
+    local index = valid and GetRaidTargetIndex(UnitGUID(unit))
     if index and index >= 1 and index <= 8 then
         SetRaidTargetIconTexture(icon, index)
         icon:Show()
@@ -60,12 +60,16 @@ local function UpdatePlate(plate, unit)
     if plate.raidicon then plate.raidicon:SetAlpha(0) end
 end
 
-function FT:RefreshRaidMarks()
+function FT.RefreshNameplateRaidMarks()
+    for plate in pairs(plates) do UpdatePlate(plate, FT.GetNameplateUnit(plate)) end
+end
+
+function FT:RefreshRaidMarks(includeRaid)
     local UF = self.UnitFrames
     if UF and UF.targetFrame then self.LayoutRaidMark(UF.targetFrame, UF.targetFrame.raidIcon) end
     if TargetRaidTargetIcon and TargetFrame and TargetPortrait then self.LayoutRaidMark(TargetFrame, TargetRaidTargetIcon, true) end
-    if UF and UF.UpdateAllRaidFrames then UF:UpdateAllRaidFrames() end
-    for plate in pairs(plates) do UpdatePlate(plate, FT.GetNameplateUnit(plate)) end
+    if includeRaid ~= false and UF and UF.RefreshRaidMarks then UF:RefreshRaidMarks() end
+    self.RefreshNameplateRaidMarks()
 end
 
 module.enable = function(self)
@@ -80,6 +84,8 @@ module.enable = function(self)
             if plate.fctRaidMark then return end
             plates[plate] = true
             plate.fctRaidMark = plate:CreateTexture(nil, "OVERLAY")
+            -- Native SetRaidTargetIconTexture sets atlas coordinates only.
+            plate.fctRaidMark:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
             plate.fctRaidMark:Hide()
             UpdatePlate(plate, FT.GetNameplateUnit(plate))
         end
@@ -103,7 +109,9 @@ module.enable = function(self)
             -- The engine may already have removed the old binding; check every
             -- owned plate against the authoritative registry, including reuse.
             for plate in pairs(plates) do UpdatePlate(plate, FT.GetNameplateUnit(plate)) end
-        else FT:RefreshRaidMarks() end
+        -- The raid owner handles mark and world events itself. Scale/settings
+        -- changes need its layout, never another full health/power/aura scan.
+        else FT:RefreshRaidMarks(ev == "UI_SCALE_CHANGED") end
     end)
     FT:RefreshRaidMarks()
 end

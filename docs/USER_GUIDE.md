@@ -2,10 +2,19 @@
 
 Configuration and controls for **FostercareTweaks 1.0.0**.
 
-Open `/ft` for one settings window with four pages: **General**, **Unit Frames**,
-**Raid Frames** and **Action Bars**. Charcoal sections, white labels and teal
+Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
+**Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
 selection marks distinguish controls and the active page. `/ft uf`, `/ft raid`
-and `/ft bars` open the corresponding page directly.
+and `/ft bars` open the corresponding page directly. `/ft nameplates` opens the new nameplate page.
+
+### Nameplates
+
+- **Plate size** adjusts the existing appearance from 0.5–2x relative to your UI scale. Keep **Adjust plate size** enabled; changes to this enable switch, class colors or castbars need **Reload UI**.
+- **Raid target marks** have their own size and above-name placement. Otherwise marks sit beside the health bar. Configure **Clear Raid Target Marks** through **Unit Frames**.
+- **Enemy cooldowns** require NamPower 4.6.2+. Icons show the latest observed enemy-player abilities first, with a sweep and an estimated `~` timer. Set 1–8 visible icons, 14–40 px size, minimum base cooldown and extra space above the name. Castbars remain below the plate.
+- Base cooldowns come from the current client's spell data, including custom spells with that data. Talents, reset abilities, delayed cooldown starts and server-side rules can change the actual timer. An expired icon does not prove readiness. Item-only cooldowns, pets and unobserved abilities are not tracked.
+- Observations survive a plate leaving view until their estimated expiry. World transitions clear them. The tracker uses no saved enemy database or sound alerts.
+- **Reset size and icons** restores only this page's layout values. Other frames and enable choices are kept. ShaguPlates keeps ownership of its plates.
 
 ---
 
@@ -26,7 +35,7 @@ Configure your preferred style under `/ft uf`:
 - **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Health uses native SuperWoW values.
 - Each **Modern Player / Target / Target's Target** checkbox selects that frame's style; unchecked uses Blizzard. Existing dimensions, scale, power-bar height and fonts apply live. Fonts shrink to their available lane; names truncate before covering health. Tall, narrow frames limit portrait width. Power numbers hide below an 8 px bar height.
 - Choose name, class/creature type and level visibility independently. Health and power offer **Smart**, **Current**, **Percent** and **Hidden**. Smart omits an unnecessary maximum and uses current energy/rage; Percent remains a percentage for every resource. Level badges use native difficulty colors; unknown-level bosses use the native skull.
-- **Raid Target Marks** controls unit-frame and nameplate sizes separately. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column; native nameplate marks sit beside the health bar or above the name. ShaguPlates retains its own presentation.
+- **Raid Target Marks** controls unit-frame marks; nameplate mark controls live under **Nameplates**. **Clear Raid Target Marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column; native nameplate marks sit beside the health bar or above the name. ShaguPlates retains its own presentation.
 - **Enemy Castbars** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows; cast events update state while the bar animates smoothly.
 
 ### Aura Controls & Borders

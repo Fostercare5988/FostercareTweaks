@@ -252,13 +252,13 @@ local function ShowRaidAura(btn, badge, a, size, x, y)
     badge:Show()
 end
 
-local function UpdateButtonAuras(btn)
+-- Mark/leader changes only alter the space available to already-read auras.
+-- Keep layout separate from authoritative aura reads and HoT selection.
+local function LayoutButtonAuras(btn)
     if not btn.unit or not btn:IsShown() then return end
     local enabled, count, size, all = UF:GetRaidBuffSettings()
     local dsize, dcount, spacing = UF:GetRaidAuraLayout()
-    local btotal, hot = ReadRaidAuras(btn, "buff", enabled or UF:IsRaidShowHoT())
-    local dtotal = ReadRaidAuras(btn, "debuff", UF:IsRaidShowDebuffs())
-    if hot and UF:IsRaidShowHoT() then btn.hotSquare.icon:SetTexture(hot); btn.hotSquare:Show() else btn.hotSquare:Hide() end
+    local btotal, dtotal = #btn.buffCandidates, #btn.debuffCandidates
     local bn = enabled and math.min(btotal, all and btotal or count) or 0
     local dn = math.min(dtotal, dcount)
     -- Keep two readable 8 px text rows whenever height permits, including
@@ -294,6 +294,15 @@ local function UpdateButtonAuras(btn)
     if btn.auraOverflowCount > 0 then btn.auraOverflow:Show() else btn.auraOverflow:Hide() end
     btn.auraStripHeight = strip
     LayoutRaidText(btn, strip)
+end
+
+local function UpdateButtonAuras(btn)
+    if not btn.unit or not btn:IsShown() then return end
+    local enabled = UF:GetRaidBuffSettings()
+    local _, hot = ReadRaidAuras(btn, "buff", enabled or UF:IsRaidShowHoT())
+    ReadRaidAuras(btn, "debuff", UF:IsRaidShowDebuffs())
+    if hot and UF:IsRaidShowHoT() then btn.hotSquare.icon:SetTexture(hot); btn.hotSquare:Show() else btn.hotSquare:Hide() end
+    LayoutButtonAuras(btn)
 end
 
 local function UpdateButtonAggro(btn, nativeFallback, targetTargetGUID)
@@ -707,7 +716,7 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
     end
 
     UF:SuppressPartyFrames()
-    UF:EnableRaidFrames()
+    UF:EnableRaidFrames(true)
     local colSpacingX = spacingX
     raidFrame:SetScale(scale)
     local powerH = math.max(3, math.floor(height * 0.12))
@@ -877,7 +886,7 @@ local function RaidFrame_OnEvent(_, ev, a1)
     elseif ev == "RAID_TARGET_UPDATE" or ev == "PARTY_LEADER_CHANGED" then
         for _, btn in pairs(unitToButton) do
             UpdateButtonIndicators(btn)
-            UpdateButtonAuras(btn)
+            LayoutButtonAuras(btn)
         end
     elseif a1 and unitToButton[a1] then
         local btn = unitToButton[a1]
@@ -1019,6 +1028,18 @@ function UF:RefreshRaidAuraBorders()
     end
 end
 
+function UF:RefreshRaidMarks()
+    if not raidFrame or not raidFrame:IsShown() then return end
+    for _, group in pairs(groups) do
+        for _, btn in ipairs(group.buttons) do
+            if btn.unit and btn:IsShown() then
+                UpdateButtonIndicators(btn)
+                LayoutButtonAuras(btn)
+            end
+        end
+    end
+end
+
 function UF:UpdateAllRaidFrames()
     if not raidFrame or not raidFrame:IsShown() then return end
     if testMode then
@@ -1076,7 +1097,7 @@ end
 -- 10. Subsystem Lifecycle & Event Registration
 --------------------------------------------------------------------------------
 
-function UF:EnableRaidFrames()
+function UF:EnableRaidFrames(deferRoster)
     local dims = UF:GetGroupDimensions()
     if not dims.enabled then
         if raidFrame then raidFrame:Hide() end
@@ -1103,7 +1124,8 @@ function UF:EnableRaidFrames()
     raidFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     FT.SetEventHandler(raidFrame, RaidFrame_OnEvent)
 
-    UF:UpdateGroupRoster()
+    -- Dimension edits must size the buttons before refreshing the roster once.
+    if not deferRoster then UF:UpdateGroupRoster() end
 end
 
 function UF:DisableRaidFrames()

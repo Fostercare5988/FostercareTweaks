@@ -45,6 +45,8 @@ mods\raid-target-marks.lua
 mods\nameplate-scale.lua
 mods\nameplate-classcolor.lua
 mods\nameplate-castbar.lua
+mods\nameplate-cooldowns.lua
+NameplateOptions.lua
 
 # World & MiniMap Modules
 mods\worldmap-window.lua

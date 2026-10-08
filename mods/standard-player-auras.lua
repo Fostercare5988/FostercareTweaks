@@ -37,8 +37,14 @@ local function StyleAuraIcon(button, weaponEnchant, force)
         -- the displayed hand changes, inventory changes, or settings change.
         if force or button.fctAuraSlot ~= slot then
             local quality = GetInventoryItemQuality("player", slot)
+            button.fctAuraPendingItem = nil
+            if quality and quality < 0 then
+                local id = FT.GetItemIDFromLink(GetInventoryItemLink("player", slot))
+                quality = id and C_Item.GetItemQualityByID(id)
+                if not quality or quality < 0 then button.fctAuraPendingItem = id end
+            end
             local r, g, b = 0.5, 0.5, 0.5
-            if quality then r, g, b = GetItemQualityColor(quality) end
+            if quality and quality >= 0 then r, g, b = GetItemQualityColor(quality) end
             button.fctAuraBorder:SetBackdropBorderColor(r, g, b, 1)
             button.fctAuraSlot = slot
         end
@@ -151,8 +157,16 @@ module.enable = function()
     FT.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
     local inventory = CreateFrame("Frame", nil, UIParent)
     inventory:RegisterEvent("UNIT_INVENTORY_CHANGED")
-    FT.SetEventHandler(inventory, function(_, ev, unit)
-        if unit == "player" then StyleWeaponEnchants(true) end
+    inventory:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    FT.SetEventHandler(inventory, function(_, ev, unitOrItem)
+        if ev == "UNIT_INVENTORY_CHANGED" and unitOrItem == "player" then
+            StyleWeaponEnchants(true)
+        elseif ev == "GET_ITEM_INFO_RECEIVED" then
+            for _, button in ipairs(areas[3].buttons) do
+                -- Re-read the current hand: the pending item may have moved.
+                if button.fctAuraPendingItem == unitOrItem then StyleAuraIcon(button, true, true) end
+            end
+        end
     end)
     FT.ApplyStandardAuraSettings()
 end

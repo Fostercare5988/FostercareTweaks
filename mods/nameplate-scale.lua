@@ -7,9 +7,10 @@ if not FT then return end
 
 local module = FT:register({
     title = "Nameplate Scale",
-    description = "Makes all nameplates honor the UI-Scale setting.",
+    description = "Adjustable nameplate size, relative to the UI scale.",
     category = "Nameplates",
     enabled = true,
+    config = { nameplate_scale = 1 },
 })
 
 module.enable = function(self)
@@ -47,6 +48,7 @@ module.enable = function(self)
 
         local rawScale = UIParent:GetScale() or 1
         local scale = (rawScale > 0.2 and rawScale <= 2.0) and rawScale or 1
+        scale = scale * FT.GetNumber("nameplate_scale", 1, 0.5, 2)
 
         local origW = plate.fctOrigW or 110
         local origH = plate.fctOrigH or 14
@@ -128,7 +130,7 @@ module.enable = function(self)
     -- frame-rate polling is needed for a settings value.
     local scaleWatcher = CreateFrame("Frame")
     scaleWatcher:RegisterEvent("UI_SCALE_CHANGED")
-    FT.SetEventHandler(scaleWatcher, function()
+    FT.RefreshNameplateScale = function()
         if C_NamePlate and C_NamePlate.GetNamePlates then
             local plates = C_NamePlate.GetNamePlates()
             if plates then
@@ -139,5 +141,7 @@ module.enable = function(self)
                 end
             end
         end
-    end)
+    end
+    FT.SetEventHandler(scaleWatcher, FT.RefreshNameplateScale)
+    FT.RefreshNameplateScale()
 end

@@ -42,8 +42,13 @@ local inspect_slots = {
 
 module.enable = function()
     local neutral = { r = 0.5, g = 0.5, b = 0.46 }
+    local function KnownQuality(quality)
+        -- Native item APIs use -1 for unknown/special handling; it is truthy.
+        if type(quality) == "number" and quality >= 0 then return quality end
+    end
     local function Style(button, quality, bank)
         if not button then return end
+        quality = KnownQuality(quality)
         local border = button.FCTweaks_border or button.ShaguTweaks_border or AddBorder(button, 3, neutral)
         button.FCTweaks_border = border
         if bank and quality and quality < 2 then quality = nil end
@@ -56,12 +61,14 @@ module.enable = function()
     end
     local function LinkQuality(link)
         local id = FT.GetItemIDFromLink(link)
-        return id and C_Item.GetItemQualityByID(id)
+        return id and KnownQuality(C_Item.GetItemQualityByID(id))
     end
     local function RefreshPaperdoll()
         if not CharacterFrame or not CharacterFrame:IsShown() then return end
         for id, slot in pairs(paperdoll_slots) do
-            Style(_G["Character" .. slot], GetInventoryItemQuality("player", id))
+            local quality = KnownQuality(GetInventoryItemQuality("player", id))
+            if not quality then quality = LinkQuality(GetInventoryItemLink("player", id)) end
+            Style(_G["Character" .. slot], quality)
         end
     end
     local function RefreshInspect()
@@ -76,7 +83,8 @@ module.enable = function()
             local button = _G[frame:GetName() .. "Item" .. slot]
             if button and button:IsShown() then
                 local info = C_Container.GetContainerItemInfo(frame:GetID(), button:GetID())
-                local quality = info and (info.quality or C_Item.GetItemQualityByID(info.itemID))
+                local quality = info and (KnownQuality(info.quality) or
+                    (info.itemID and KnownQuality(C_Item.GetItemQualityByID(info.itemID))))
                 Style(button, quality)
             end
         end

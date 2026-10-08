@@ -19,6 +19,7 @@ AdvancedSettingsGUI = settings -- backward-compatibility alias
 settings:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
 settings:SetWidth(max_width)
 settings:SetMovable(true)
+settings:SetClampedToScreen(true)
 settings:EnableMouse(true)
 settings:RegisterForDrag("LeftButton")
 settings:SetScript("OnDragStart", function() this:StartMoving() end)
@@ -133,12 +134,15 @@ end)
 settings.tabs = {}
 
 local function EnsureWindowHeight()
-    local frameHeight = math.min(UIParent:GetHeight() / UIParent:GetScale() * 0.75, 600)
-    if frameHeight < 520 then frameHeight = 520 end
-    settings:SetHeight(frameHeight)
+    -- UIParent already reports UI-coordinate bounds. Every page scrolls;
+    -- leave room for the window's controls on shorter/scaled viewports.
+    local frameHeight = math.min(600, math.max(240, UIParent:GetHeight() - 40))
+    if settings:GetHeight() ~= frameHeight then settings:SetHeight(frameHeight) end
 end
+settings:RegisterEvent("UI_SCALE_CHANGED")
+FT.SetEventHandler(settings, EnsureWindowHeight)
 
-local pageNames = { "scrollframe", "unitPage", "raidPage", "actionPage" }
+local pageNames = { "scrollframe", "unitPage", "raidPage", "actionPage", "nameplatePage" }
 
 local function SelectTab(tabId)
     EnsureWindowHeight()
@@ -172,7 +176,7 @@ settings.SelectTab = SelectTab
 
 local function CreateTabButton(id, titleText)
     local tab = CreateFrame("Button", "FCTweaksTab" .. id, settings, "UIPanelButtonTemplate")
-    tab:SetWidth(110)
+    tab:SetWidth(96)
     tab:SetHeight(22)
     tab.id = id
     tab:SetText(titleText)
@@ -199,7 +203,9 @@ tab3:SetPoint("LEFT", tab2, "RIGHT", 4, 0)
 
 local tab4 = CreateTabButton(4, "Action Bars")
 tab4:SetPoint("LEFT", tab3, "RIGHT", 4, 0)
-settings.tabs = { tab1, tab2, tab3, tab4 }
+local tab5 = CreateTabButton(5, "Nameplates")
+tab5:SetPoint("LEFT", tab4, "RIGHT", 4, 0)
+settings.tabs = { tab1, tab2, tab3, tab4, tab5 }
 
 local function CreateCheckButton(name, labelText, tooltipText, parent, x, y, buttonText)
     local cb = CreateFrame("CheckButton", name, parent, "OptionsCheckButtonTemplate")
@@ -399,17 +405,16 @@ if fmtPwHideBtn:GetFontString() then fmtPwHideBtn:GetFontString():SetFontObject(
 
 local modernNameCB = CreateCheckButton("FCTweaksModernNameCB", "Show Unit Name", "Display unit name on modern unit frames.", formatBox, 16, -98)
 
-local markBox = CreateSectionBox(unitContainer, "Raid Target Marks", 148)
+local markBox = CreateSectionBox(unitContainer, "Raid Target Marks", 180)
 markBox:SetPoint("TOPLEFT", formatBox, "BOTTOMLEFT", 0, -14)
 markBox:SetPoint("TOPRIGHT", formatBox, "BOTTOMRIGHT", 0, -14)
-local markSizeSlider = CreateSlider("FCTweaksMarkSizeSlider", "Unit Frame Mark Size", 12, 36, 1, " px", markBox, 16, -32, 196)
-local plateMarkSizeSlider = CreateSlider("FCTweaksPlateMarkSizeSlider", "Nameplate Mark Size", 12, 32, 1, " px", markBox, 236, -32, 196)
-local markOutsideCB = CreateCheckButton("FCTweaksMarkOutsideCB", "Marks Beside Portraits", "Place unit frame marks outside the portrait. Raid marks keep a reserved column inside member frames.", markBox, 16, -62)
-local plateMarkAboveCB = CreateCheckButton("FCTweaksPlateMarkAboveCB", "Marks Above Nameplates", "Place marks above the name. Otherwise they sit beside the health bar. ShaguPlates keeps its own marks.", markBox, 236, -62)
+local markEnabledCB = CreateCheckButton("FCTweaksMarkEnabledCB", "Clear Raid Target Marks", "Use larger marks on native nameplates and standard target frames. Enable changes need Reload UI.", markBox, 16, -24)
+local markSizeSlider = CreateSlider("FCTweaksMarkSizeSlider", "Unit Frame Mark Size", 12, 36, 1, " px", markBox, 16, -72, 416)
+local markOutsideCB = CreateCheckButton("FCTweaksMarkOutsideCB", "Marks Beside Portraits", "Place unit frame marks outside the portrait. Raid marks keep a reserved column inside member frames.", markBox, 16, -104)
 local markHint = Theme.Font(markBox, "OVERLAY", "GameFontHighlightSmall")
-markHint:SetPoint("TOPLEFT", markBox, "TOPLEFT", 24, -104)
+markHint:SetPoint("TOPLEFT", markBox, "TOPLEFT", 24, -140)
 markHint:SetWidth(400); markHint:SetJustifyH("LEFT")
-markHint:SetText("Marks fit portrait space; fonts fit each lane. Smart text shows maximum values when useful. Power text hides below 8 px bar height.")
+markHint:SetText("Size and placement apply live. Enable changes need Reload UI below. Nameplate size and placement are on the Nameplates page.")
 
 local sharedBox = CreateSectionBox(unitContainer, "Shared Frame Features", 188)
 sharedBox:SetPoint("TOPLEFT", markBox, "BOTTOMLEFT", 0, -14)
@@ -564,21 +569,13 @@ local function ApplyMarkSettings(self)
         local value = math.floor(control:GetValue() + 0.5)
         FT.SetOverride("raidmark_size", value)
         control.label:SetText("Unit Frame Mark Size: " .. value .. " px")
-    elseif control == plateMarkSizeSlider then
-        local value = math.floor(control:GetValue() + 0.5)
-        FT.SetOverride("nameplate_raidmark_size", value)
-        control.label:SetText("Nameplate Mark Size: " .. value .. " px")
     elseif control == markOutsideCB then
         FT.SetOverride("raidmark_position", control:GetChecked() and "outside" or "portrait")
-    elseif control == plateMarkAboveCB then
-        FT.SetOverride("nameplate_raidmark_position", control:GetChecked() and "above" or "left")
     end
     if FT.RefreshRaidMarks then FT:RefreshRaidMarks() end
 end
 markSizeSlider:SetScript("OnValueChanged", ApplyMarkSettings)
-plateMarkSizeSlider:SetScript("OnValueChanged", ApplyMarkSettings)
 markOutsideCB:SetScript("OnClick", ApplyMarkSettings)
-plateMarkAboveCB:SetScript("OnClick", ApplyMarkSettings)
 local function ApplyArmorSettings(self)
     if isUFUpdating then return end
     local control = self or this
@@ -595,6 +592,7 @@ end
 armorDebuffCB:SetScript("OnClick", ApplyArmorSettings)
 armorScaleSlider:SetScript("OnValueChanged", ApplyArmorSettings)
 local unitChecks = {
+    { markEnabledCB, "Clear Raid Target Marks" },
     { modernPlayerCB, "Modern Player Frame" },
     { modernTargetCB, "Modern Target Frame" },
     { modernToTCB, "Modern Target's Target" },
@@ -630,7 +628,7 @@ local function OnUnitCheckboxClicked(self)
     local value = control:GetChecked() and 1 or 0
     FostercareTweaks_Config[key], current_config[key] = value, value
     local UF = FT.UnitFrames
-    if UF then UF:ApplyConfiguration() end
+    if UF and key ~= "Clear Raid Target Marks" then UF:ApplyConfiguration() end
     local classColor = FT.mods["Unit Frame Class Colors"]
     if key == "Unit Frame Class Colors" and classColor and classColor.apply then classColor:apply() end
 end
@@ -638,7 +636,6 @@ for _, entry in ipairs(unitChecks) do
     entry[1].setting = entry[2]
     entry[1]:SetScript("OnClick", OnUnitCheckboxClicked)
 end
-
 buffSizeSlider:SetScript("OnValueChanged", function()
     if isUFUpdating then return end
     local val = math.floor(this:GetValue() + 0.5)
@@ -791,7 +788,6 @@ local unitDefaultOverrides = {
     uf_font_name = 12, uf_font_level = 11, uf_font_health = 11, uf_font_power = 11,
     uf_health_format = "smart", uf_power_format = "smart", uf_armor_debuff_scale = 1.5,
     raidmark_size = 22, raidmark_position = "portrait",
-    nameplate_raidmark_size = 20, nameplate_raidmark_position = "left",
     energytick_contrast = 1, energytick_flash = 1, energytick_width = 3,
 }
 local uncheckedDefaults = {
@@ -851,6 +847,7 @@ function unitPage:RefreshValues()
     improvedStandardAurasCB:SetChecked(UF:IsImprovedStandardAuras() and true or nil)
 
     local cfg = FostercareTweaks_Config or {}
+    markEnabledCB:SetChecked(FT.IsEnabled("Clear Raid Target Marks", true))
     for _, cb in ipairs(nativeAuraChecks) do cb:SetChecked(cfg[cb.setting] ~= 0) end
     for _, cb in ipairs(auraBorderChecks) do
         local value = cfg[cb.setting]
@@ -888,12 +885,9 @@ function unitPage:RefreshValues()
     armorScaleSlider.label:SetText("Armor Debuff Size: " .. string.format("%.2f", armorScale) .. "x")
     local values = cfg.overwrites or {}
     local markSize = math.max(12, math.min(36, tonumber(values.raidmark_size) or 22))
-    local plateSize = math.max(12, math.min(32, tonumber(values.nameplate_raidmark_size) or 20))
-    markSizeSlider:SetValue(markSize); plateMarkSizeSlider:SetValue(plateSize)
+    markSizeSlider:SetValue(markSize)
     markSizeSlider.label:SetText("Unit Frame Mark Size: " .. markSize .. " px")
-    plateMarkSizeSlider.label:SetText("Nameplate Mark Size: " .. plateSize .. " px")
     markOutsideCB:SetChecked(values.raidmark_position == "outside")
-    plateMarkAboveCB:SetChecked(values.nameplate_raidmark_position == "above")
 
     local bsize = UF:GetBuffSize()
     buffSizeSlider:SetValue(bsize)
@@ -1305,9 +1299,7 @@ function raidPage:RefreshValues()
 end
 
 settings.load = function(self)
-    local frameHeight = math.min(UIParent:GetHeight() / UIParent:GetScale() * 0.75, 600)
-    if frameHeight < 520 then frameHeight = 520 end
-    settings:SetHeight(frameHeight)
+    EnsureWindowHeight()
 
     local scrollW = settings.scrollframe:GetWidth()
     if not scrollW or scrollW <= 0 then
@@ -1325,7 +1317,7 @@ settings.load = function(self)
     local gui = {}
     for title, module in pairs(FT.mods) do
         local category = module.category or "General"
-        if category ~= "Unit Frames" then
+        if category ~= "Unit Frames" and category ~= "Nameplates" then
             gui[category] = gui[category] or {}
             gui[category][title] = module
         end
@@ -1494,7 +1486,7 @@ end
 
 function settings:defaults()
     for title, mod in pairs(FT.mods) do
-        if mod.category ~= "Unit Frames" then
+        if mod.category ~= "Unit Frames" and mod.category ~= "Nameplates" then
             current_config[title] = mod.enabled and 1 or 0
         end
     end
@@ -1505,7 +1497,7 @@ settings:SetScript("OnShow", function()
     current_config = {}
     if FostercareTweaks_Config and FT.mods then
         for title, mod in pairs(FT.mods) do
-            current_config[title] = FostercareTweaks_Config[title]
+            if mod.category ~= "Nameplates" then current_config[title] = FostercareTweaks_Config[title] end
         end
     end
     SelectTab(settings.currentTab or 1)
