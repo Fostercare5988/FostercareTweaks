@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.0.0"
+FT.version = "1.1.0"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -57,6 +57,7 @@ function FT:Initialize()
     EnsureSavedTables()
 
     if self.MigrateFrameSettings then self.MigrateFrameSettings() end
+    if self.MigrateNameplateSettings then self.MigrateNameplateSettings() end
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.

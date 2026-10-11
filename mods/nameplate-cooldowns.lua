@@ -7,7 +7,7 @@ local module = FT:register({
     title = "Enemy Nameplate Cooldowns", category = "Nameplates", enabled = true,
     description = "Estimated cooldowns after enemy players use abilities. Requires NamPower 4.6.2+.",
     config = { nameplate_cd_size = 22, nameplate_cd_count = 5,
-        nameplate_cd_minimum = 5, nameplate_cd_offset = 8 },
+        nameplate_cd_minimum = 5, nameplate_cd_offset = 8, nameplate_cd_target = 0 },
 })
 local CD = { states = {}, count = 0 }
 FT.NameplateCooldowns = CD
@@ -78,10 +78,11 @@ local function Icon(row, index)
     return icon
 end
 
-local function Draw(plate, guid, now)
+local function Draw(plate, guid, now, validated)
     local state = CD.states[guid]
     local row = plate.fctEnemyCooldowns
-    if not state or not plate:IsShown() or C_NamePlate.GetNamePlateForUnit(guid) ~= plate
+    if not state or not plate:IsShown() or (not validated and C_NamePlate.GetNamePlateForUnit(guid) ~= plate)
+        or (FT.GetOverride("nameplate_cd_target", 0) == 1 and guid ~= UnitGUID("target"))
         or not UnitIsPlayer(guid) or not UnitCanAttack("player", guid) then
         HideRow(plate); return
     end
@@ -111,7 +112,7 @@ local function Draw(plate, guid, now)
             local remaining = math.ceil(entry.ends - now)
             local text = "~" .. (remaining >= 60 and (math.ceil(remaining / 60) .. "m") or tostring(remaining))
             if icon.lastText ~= text then icon.lastText = text; icon.text:SetText(text) end
-            icon:Show()
+            if not icon:IsShown() then icon:Show() end
         end
     end
     if count == 0 then HideRow(plate); return end
@@ -125,11 +126,12 @@ local function Draw(plate, guid, now)
     if row.width ~= width or row.size ~= size or row.offset ~= offset then
         row.width, row.size, row.offset = width, size, offset
         row:SetWidth(width); row:SetHeight(size)
-        row:ClearAllPoints()
-        -- Castbars remain below the health bar; raid marks stay below this row.
-        row:SetPoint("BOTTOM", plate.name or plate, "TOP", 0, offset + 36)
+        if not FT.Nameplates then
+            row:ClearAllPoints(); row:SetPoint("BOTTOM", plate.name or plate, "TOP", 0, offset + 6)
+        end
     end
-    row:Show()
+    if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end
+    if not row:IsShown() then row:Show() end
 end
 
 local function Tick()
@@ -145,7 +147,7 @@ local function Tick()
             visible[guid] = nil
             -- A recycled plate may already display its new unit's icons.
             if plate.fctEnemyCooldowns and plate.fctEnemyCooldowns.guid == guid then HideRow(plate) end
-        else Draw(plate, guid, now) end
+        else Draw(plate, guid, now, true) end
     end
     if CD.count == 0 and ticker then ticker:Cancel(); ticker = nil end
 end
@@ -190,7 +192,7 @@ function CD:Observe(unit, id)
 end
 
 function CD:ApplyConfiguration()
-    self.enabled = FT.IsEnabled(module.title, true) and self:IsAvailable() and not ShaguPlates
+    self.enabled = FT.IsEnabled(module.title, true) and self:IsAvailable() and FT.OwnsNameplates()
     if not driver then driver = CreateFrame("Frame", "FCTweaksEnemyCooldownEvents", UIParent) end
     driver:UnregisterAllEvents()
     if not self.enabled then
@@ -200,11 +202,15 @@ function CD:ApplyConfiguration()
         return
     end
     visible = visible or {}
-    for _, ev in ipairs({ "UNIT_CASTEVENT", "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "PLAYER_ENTERING_WORLD" }) do
+    for _, ev in ipairs({ "UNIT_CASTEVENT", "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "PLAYER_ENTERING_WORLD",
+        "PLAYER_TARGET_CHANGED", "ADDON_LOADED" }) do
         driver:RegisterEvent(ev)
     end
     FT.SetEventHandler(driver, function(_, ev, unit, target, kind, id)
-        if ev == "UNIT_CASTEVENT" then
+        if ev == "ADDON_LOADED" then
+            if not FT.OwnsNameplates() then CD:ApplyConfiguration() end
+        elseif ev == "PLAYER_TARGET_CHANGED" then CD:Refresh()
+        elseif ev == "UNIT_CASTEVENT" then
             if kind == "CAST" or kind == "CHANNEL" then CD:Observe(unit, id) end
         elseif ev == "NAME_PLATE_UNIT_ADDED" then
             local guid = unit and UnitGUID(unit)
@@ -228,7 +234,9 @@ function CD:ApplyConfiguration()
     end)
     if not initialized then
         initialized = true
-        table.insert(FT.libnameplate.OnShow, function(plate) HideRow(plate) end)
+        table.insert(FT.libnameplate.OnShow, function(plate)
+            if plate.fctEnemyCooldowns and plate.fctEnemyCooldowns.guid ~= plate.fctUnitGUID then HideRow(plate) end
+        end)
     end
     for _, guid in ipairs(C_NamePlate.GetNamePlateGUIDs()) do
         local plate = C_NamePlate.GetNamePlateForUnit(guid)

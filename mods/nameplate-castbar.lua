@@ -12,8 +12,17 @@ local module = FT:register({
     enabled = true,
 })
 
+local initialized, active
 module.enable = function(self)
-    if ShaguPlates then return end
+    active = FT.IsEnabled(module.title) and FT.OwnsNameplates()
+    for plate in pairs(FT.libnameplate.plates) do
+        if plate.fctCastbar then
+            plate.fctCastbar.nextQuery = nil
+            if not active then plate.fctCastbar:Hide() end
+        end
+    end
+    if initialized then return end
+    initialized = true
 
     local backdrop = {
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -23,17 +32,19 @@ module.enable = function(self)
 
     local function create_castbar(plate)
         plate.castbar = CreateFrame("StatusBar", nil, plate)
+        plate.fctCastbar = plate.castbar
+        plate.castbar:EnableMouse(false)
         plate.castbar:SetPoint("BOTTOM", plate, "BOTTOM", 8, -11)
         plate.castbar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
         plate.castbar:SetStatusBarColor(1, 0.8, 0, 1)
         plate.castbar:SetWidth(math.max(12, plate:GetWidth() - 22))
         plate.castbar:SetHeight(10)
         FT.HookScript(plate, "OnSizeChanged", function()
-            local width = math.max(12, plate:GetWidth() - 22)
-            if plate.castbar:GetWidth() ~= width then plate.castbar:SetWidth(width) end
+            if FT.LayoutNameplateCastbar then FT.LayoutNameplateCastbar(plate) end
         end)
 
         plate.castbar.texture = CreateFrame("Frame", nil, plate.castbar)
+        plate.castbar.texture:EnableMouse(false)
         plate.castbar.texture:SetPoint("RIGHT", plate.castbar, "LEFT", 0, 0)
         plate.castbar.texture:SetHeight(18)
         plate.castbar.texture:SetWidth(18)
@@ -56,6 +67,7 @@ module.enable = function(self)
         plate.castbar.spark:SetBlendMode("ADD")
 
         plate.castbar.backdrop = CreateFrame("Frame", nil, plate.castbar)
+        plate.castbar.backdrop:EnableMouse(false)
         plate.castbar.backdrop:SetFrameLevel(plate.castbar:GetFrameLevel())
         plate.castbar.backdrop:SetPoint("TOPLEFT", plate.castbar, "TOPLEFT", -3, 3)
         plate.castbar.backdrop:SetPoint("BOTTOMRIGHT", plate.castbar, "BOTTOMRIGHT", 3, -3)
@@ -68,25 +80,30 @@ module.enable = function(self)
         plate.castbar.text:SetFont(font, size - 3, "THINOUTLINE")
 
         plate.castbar:Hide()
+        if FT.LayoutNameplateCastbar then FT.LayoutNameplateCastbar(plate) end
+        if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end
     end
 
     local libnameplate = FT.libnameplate
 
-    -- OnShow frame cleanup: eliminates recycled ghost casts from prior units
-    table.insert(libnameplate.OnShow, function(plate)
-        if plate.castbar then
-            plate.castbar:Hide()
-            plate.castbar.lastSpell = nil
-            plate.castbar.lastMax = nil
-            plate.castbar.lastTexture = nil
-            plate.castbar.lastSparkX = nil
-            plate.castbar.lastInterruptible = nil
-            plate.castbar.castUnit = nil
-            plate.castbar.nextQuery = nil
+    -- Lifecycle cleanup touches only our castbar, even if another addon
+    -- subsequently uses the shared native plate.castbar field.
+    local function Reset(plate)
+        local cb = plate.fctCastbar
+        if cb then
+            cb:Hide()
+            cb.lastSpell, cb.lastMax, cb.lastTexture, cb.lastSparkX = nil, nil, nil, nil
+            cb.lastInterruptible, cb.castUnit, cb.nextQuery = nil, nil, nil
         end
+    end
+    table.insert(libnameplate.OnShow, function(plate)
+        if plate.fctCastbar and plate.fctCastbar.castUnit ~= plate.fctUnitGUID then Reset(plate) end
     end)
+    table.insert(libnameplate.OnAdded, Reset)
+    table.insert(libnameplate.OnRemoved, Reset)
 
-    table.insert(libnameplate.OnUpdate, function(plate)
+    table.insert(libnameplate.OnUpdate, function(plate, unit, now)
+        if not active then return end
         if not plate.castbar then create_castbar(plate) end
 
         if not plate:IsShown() then
@@ -101,9 +118,7 @@ module.enable = function(self)
             return
         end
 
-        local unit = FT.GetNameplateUnit(plate)
         local cb = plate.castbar
-        local now = GetTime()
         -- Events invalidate immediately; bounded reconciliation covers remote
         -- casts whose event telemetry may be incomplete. Animation stays smooth.
         if unit ~= cb.castUnit or not cb.nextQuery or now >= cb.nextQuery then
@@ -117,7 +132,7 @@ module.enable = function(self)
                     isChannel = cast ~= nil
                 end
             end
-            cb.castUnit, cb.nextQuery = unit, now + 0.1
+            cb.castUnit, cb.nextQuery = unit, now + (cast and 0.1 or 0.2)
             cb.cast, cb.castTexture, cb.startTime, cb.endTime = cast, texture, startTime, endTime
             cb.notInterruptible, cb.isChannel = notInterruptible, isChannel
         end
@@ -186,11 +201,6 @@ module.enable = function(self)
                 end
             end
 
-            local alpha = plate:GetAlpha()
-            if plate.castbar.lastAlpha ~= alpha then
-                plate.castbar.lastAlpha = alpha
-                plate.castbar:SetAlpha(alpha)
-            end
         else
             if plate.castbar:IsShown() then
                 plate.castbar:Hide()
@@ -210,7 +220,7 @@ module.enable = function(self)
         events:RegisterEvent(ev)
     end
     FT.SetEventHandler(events, function(_, ev, unit)
-        if not unit then return end
+        if not active or not FT.OwnsNameplates() or not unit then return end
         local plate = C_NamePlate.GetNamePlateForUnit(unit)
         if plate and plate.castbar then plate.castbar.nextQuery = nil end
     end)

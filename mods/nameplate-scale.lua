@@ -1,147 +1,106 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- FostercareTweaks: mods/nameplate-scale.lua
--- Applies nameplate geometry on lifecycle and UI scale events.
-
-
 local module = FT:register({
-    title = "Nameplate Scale",
-    description = "Adjustable nameplate size, relative to the UI scale.",
-    category = "Nameplates",
-    enabled = true,
-    config = { nameplate_scale = 1 },
+    title = "Nameplate Scale", category = "Nameplates", enabled = true,
+    description = "Adjust native nameplate size and castbar proportions.",
+    config = { nameplate_scale = 1, nameplate_follow_ui = 0, nameplate_name_scale = 1,
+        nameplate_cast_height = 10, nameplate_cast_gap = 3 },
 })
 
+local function Dimensions(object, width, height)
+    if not object then return end
+    width, height = math.max(1, math.floor(width + 0.5)), math.max(1, math.floor(height + 0.5))
+    if object:GetWidth() ~= width then object:SetWidth(width) end
+    if object:GetHeight() ~= height then object:SetHeight(height) end
+end
+
+local function Capture(plate)
+    if not plate.fctOrigW then
+        plate.fctOrigW, plate.fctOrigH = plate:GetWidth(), plate:GetHeight()
+        if plate.fctOrigW <= 20 then plate.fctOrigW, plate.fctOrigH = 110, 14 end
+        for _, entry in ipairs({ {"healthbar", "fctHb", 110, 14}, {"border", "fctBorder", 128, 16},
+            {"glow", "fctGlow", 128, 16}, {"levelicon", "fctLevel", 11, 11}, {"dragon", "fctDragon", 128, 64} }) do
+            local object, prefix = plate[entry[1]], entry[2]
+            local w, h = object and object:GetWidth(), object and object:GetHeight()
+            plate[prefix .. "OrigW"] = w and w > 0 and w or entry[3]
+            plate[prefix .. "OrigH"] = h and h > 0 and h or entry[4]
+        end
+        plate.fctNameOrigScale = plate.name and plate.name:GetScale() or 1
+        plate.fctLevelOrigScale = plate.level and plate.level:GetScale() or 1
+    end
+end
+
+function FT.LayoutNameplateCastbar(plate)
+    local cb = plate.fctCastbar
+    if not cb or not FT.OwnsNameplates() then return end
+    local scale = plate.fctVisualScale or 1
+    local height = FT.GetNumber("nameplate_cast_height", 10, 6, 18) * scale
+    local gap = FT.GetNumber("nameplate_cast_gap", 3, 0, 16) * scale
+    Dimensions(cb, (plate.healthbar or plate):GetWidth() - 22 * scale, height)
+    local anchor = plate.healthbar or plate
+    local p, a, r, x, y = cb:GetPoint(1)
+    if p ~= "TOP" or a ~= anchor or r ~= "BOTTOM" or x ~= 8 * scale or y ~= -gap then
+        cb:ClearAllPoints(); cb:SetPoint("TOP", anchor, "BOTTOM", 8 * scale, -gap)
+    end
+    Dimensions(cb.texture, height + 8 * scale, height + 8 * scale)
+    Dimensions(cb.texture.icon, height + 2 * scale, height + 2 * scale)
+    Dimensions(cb.spark, 20 * scale, 20 * scale)
+    local font, oldSize, flags = cb.text:GetFont()
+    local size = math.max(7, math.floor(9 * scale + 0.5))
+    if oldSize ~= size or flags ~= "OUTLINE" then cb.text:SetFont(font, size, "OUTLINE") end
+end
+
+local function Apply(plate, restore)
+    if not plate or (not FT.OwnsNameplates() and not restore) then return end
+    Capture(plate)
+    local enabled = not restore and FT.IsEnabled(module.title)
+    local scale, nameScale = 1, 1
+    if enabled then
+        scale = FT.GetNumber("nameplate_scale", 1, 0.1, 4)
+        if FT.GetOverride("nameplate_follow_ui", 0) == 1 then
+            scale = scale * FT.ClampNumber(UIParent:GetScale(), 1, 0.2, 2)
+        end
+        if plate.fctIsTarget then scale = scale * FT.GetNumber("nameplate_target_scale", 1.1, 1, 1.5) end
+        nameScale = FT.GetNumber("nameplate_name_scale", 1, 0.75, 1.5)
+    end
+    plate.fctVisualScale, plate.fctScaleOwned = scale, enabled
+    -- Check every owned component at lifecycle/settings boundaries. Native
+    -- projection may reset a child while leaving the root width unchanged.
+    Dimensions(plate, plate.fctOrigW * scale, plate.fctOrigH * scale)
+    Dimensions(plate.healthbar, plate.fctHbOrigW * scale, plate.fctHbOrigH * scale)
+    Dimensions(plate.border, plate.fctBorderOrigW * scale, plate.fctBorderOrigH * scale)
+    Dimensions(plate.glow, plate.fctGlowOrigW * scale, plate.fctGlowOrigH * scale)
+    Dimensions(plate.levelicon, plate.fctLevelOrigW * scale, plate.fctLevelOrigH * scale)
+    Dimensions(plate.dragon, plate.fctDragonOrigW * scale, plate.fctDragonOrigH * scale)
+    if plate.name and plate.name:GetScale() ~= plate.fctNameOrigScale * scale * nameScale then
+        plate.name:SetScale(plate.fctNameOrigScale * scale * nameScale)
+    end
+    if plate.level and plate.level:GetScale() ~= plate.fctLevelOrigScale * scale then
+        plate.level:SetScale(plate.fctLevelOrigScale * scale)
+    end
+    FT.LayoutNameplateCastbar(plate)
+    if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end
+end
+
+FT.ApplyNameplateScale = Apply
+function FT.RestoreNameplateScale(plate)
+    if plate.fctScaleOwned then Apply(plate, true) end
+end
+function FT.RefreshNameplateScale()
+    for plate in pairs(FT.libnameplate.plates) do
+        if plate:IsShown() then Apply(plate) end
+    end
+end
+
 module.enable = function(self)
-    if ShaguPlates then return end
-
-    local libnameplate = FT.libnameplate
-
-    local function CaptureBaselines(plate)
-        if not plate then return end
-
-        if not plate.fctOrigW and plate.GetWidth and plate:GetWidth() > 20 then
-            plate.fctOrigW = plate:GetWidth()
-            plate.fctOrigH = plate:GetHeight()
-        end
-
-        if plate.healthbar and not plate.fctHbOrigW and plate.healthbar.GetWidth and plate.healthbar:GetWidth() > 20 then
-            plate.fctHbOrigW = plate.healthbar:GetWidth()
-            plate.fctHbOrigH = plate.healthbar:GetHeight()
-        end
-
-        if plate.border and not plate.fctBorderOrigW and plate.border.GetWidth and plate.border:GetWidth() > 20 then
-            plate.fctBorderOrigW = plate.border:GetWidth()
-            plate.fctBorderOrigH = plate.border:GetHeight()
-        end
-
-        if plate.glow and not plate.fctGlowOrigW and plate.glow.GetWidth and plate.glow:GetWidth() > 20 then
-            plate.fctGlowOrigW = plate.glow:GetWidth()
-            plate.fctGlowOrigH = plate.glow:GetHeight()
-        end
+    if not self.initialized then
+        self.initialized = true
+        table.insert(FT.libnameplate.OnInit, function(plate) Apply(plate) end)
+        table.insert(FT.libnameplate.OnShow, function(plate) Apply(plate) end)
+        local watcher = CreateFrame("Frame")
+        watcher:RegisterEvent("UI_SCALE_CHANGED")
+        FT.SetEventHandler(watcher, FT.RefreshNameplateScale)
     end
-
-    local function ApplyScale(plate)
-        if not plate then return end
-        CaptureBaselines(plate)
-
-        local rawScale = UIParent:GetScale() or 1
-        local scale = (rawScale > 0.2 and rawScale <= 2.0) and rawScale or 1
-        scale = scale * FT.GetNumber("nameplate_scale", 1, 0.5, 2)
-
-        local origW = plate.fctOrigW or 110
-        local origH = plate.fctOrigH or 14
-        local hbW = plate.fctHbOrigW or 110
-        local hbH = plate.fctHbOrigH or 14
-        local bW = plate.fctBorderOrigW or 128
-        local bH = plate.fctBorderOrigH or 16
-        local gW = plate.fctGlowOrigW or 128
-        local gH = plate.fctGlowOrigH or 16
-
-        local targetPlateW = math.floor(origW * scale + 0.5)
-        local targetPlateH = math.floor(origH * scale + 0.5)
-        local targetHbW = math.floor(hbW * scale + 0.5)
-        local targetHbH = math.floor(hbH * scale + 0.5)
-        local targetBW = math.floor(bW * scale + 0.5)
-        local targetBH = math.floor(bH * scale + 0.5)
-        local targetGW = math.floor(gW * scale + 0.5)
-        local targetGH = math.floor(gH * scale + 0.5)
-
-        if plate.fctLastAppliedScale == scale and plate:GetWidth() == targetPlateW then
-            return
-        end
-        plate.fctLastAppliedScale = scale
-
-        plate:SetWidth(targetPlateW)
-        plate:SetHeight(targetPlateH)
-
-        -- Do not ClearAllPoints or re-center healthbar/border:
-        -- preserve native C++ anchor offsets to maintain vertical separation from name text.
-        if plate.healthbar then
-            plate.healthbar:SetWidth(targetHbW)
-            plate.healthbar:SetHeight(targetHbH)
-        end
-
-        if plate.border then
-            plate.border:SetWidth(targetBW)
-            plate.border:SetHeight(targetBH)
-        end
-
-        if plate.glow then
-            plate.glow:SetWidth(targetGW)
-            plate.glow:SetHeight(targetGH)
-        end
-
-        if plate.name and plate.name.SetScale then
-            plate.name:SetScale(scale)
-        end
-
-        if plate.level and plate.level.SetScale then
-            plate.level:SetScale(scale)
-        end
-
-        if plate.levelicon then
-            local iconSize = math.max(8, math.floor(11 * scale + 0.5))
-            plate.levelicon:SetWidth(iconSize)
-            plate.levelicon:SetHeight(iconSize)
-        end
-
-        if plate.dragon then
-            local dW = math.floor(128 * scale + 0.5)
-            local dH = math.floor(64 * scale + 0.5)
-            plate.dragon:SetWidth(dW)
-            plate.dragon:SetHeight(dH)
-        end
-    end
-
-    table.insert(libnameplate.OnInit, function(plate)
-        if not plate then return end
-        CaptureBaselines(plate)
-        ApplyScale(plate)
-    end)
-
-    table.insert(libnameplate.OnShow, function(plate)
-        if not plate then return end
-        ApplyScale(plate)
-    end)
-
-    -- UI scale changes and plate lifecycle events own geometry; no per-plate
-    -- frame-rate polling is needed for a settings value.
-    local scaleWatcher = CreateFrame("Frame")
-    scaleWatcher:RegisterEvent("UI_SCALE_CHANGED")
-    FT.RefreshNameplateScale = function()
-        if C_NamePlate and C_NamePlate.GetNamePlates then
-            local plates = C_NamePlate.GetNamePlates()
-            if plates then
-                for _, p in ipairs(plates) do
-                    if p:IsShown() then
-                        ApplyScale(p)
-                    end
-                end
-            end
-        end
-    end
-    FT.SetEventHandler(scaleWatcher, FT.RefreshNameplateScale)
     FT.RefreshNameplateScale()
 end

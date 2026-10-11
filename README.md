@@ -9,7 +9,8 @@ Warcraft 1.12.1.
 - Seven optional extra rows, with individual visibility and key bindings.
 - Optional modern player, target, target-of-target and raid frames.
 - Aura timers, enemy castbars, resource tick estimates and raid markers.
-- Adjustable nameplate size, raid marks and observed enemy-player cooldown estimates.
+- Blizzard-style nameplates with adjustable size, native raid marks, target emphasis,
+  health text, your debuffs, crowd control, combo points and enemy cooldown estimates.
 - Item quality borders, equipment comparisons, vendor values and a sell-junk button.
 - Windowed world map, square minimap, chat history, timestamps and clickable URLs.
 
@@ -20,9 +21,10 @@ NamPower 4.6.2+ enables enemy nameplate cooldown estimates and improves resource
 
 ## Installation
 
-Download `FostercareTweaks-1.0.0.zip` from
-[Releases](https://github.com/Fostercare5988/FostercareTweaks/releases/latest)
-and extract `FostercareTweaks` into `Interface/AddOns`. Enable it in the game's
+Download the current code using **Code → Download ZIP** on
+[GitHub](https://github.com/Fostercare5988/FostercareTweaks), or choose a packaged build from
+[Releases](https://github.com/Fostercare5988/FostercareTweaks/releases/latest).
+Extract and rename the addon folder to `FostercareTweaks` inside `Interface/AddOns`. Enable it in the game's
 AddOns list and launch through your DLL loader.
 
 The folder must contain `Interface/AddOns/FostercareTweaks/FostercareTweaks.toc`.
@@ -34,10 +36,18 @@ Open **`/ft`** for five pages: **General**, **Unit Frames**, **Raid Frames**,
 the controls easier to distinguish. `/ft uf`, `/ft raid` and `/ft bars` open
 the matching page directly. **`/ft nameplates`** opens nameplate settings.
 
-In **Nameplates**, set plate size, mark size/position and cooldown icon size,
-count, minimum duration and spacing. Existing nameplate enable choices are kept;
-changes to plate-size support, class colors or castbar enable switches need Reload UI.
-Cooldown estimates toggle immediately. ShaguPlates retains ownership when loaded.
+In **Nameplates**, use the live preview to adjust plate size independently of global
+UI scale, name text, target enlargement, opacity and castbar proportions. Move native
+raid marks left, right or above the name. Enable health text, your debuffs, one crowd-control
+effect, optional enemy buffs, combo points and an optional **Targeting you** label.
+All controls and module toggles apply immediately. Existing size settings migrate
+once to preserve their base appearance; other enable choices are kept.
+BlizzNameplatesPlus and ShaguPlates retain ownership when loaded.
+
+Health and aura changes use batched unit events. Aura countdowns run at 5 Hz only
+while timed rows are visible; resolved classes are cached and idle casts reconcile
+at 5 Hz. Cast animation and native color/mark/opacity repair remain smooth at render
+rate. Native clicks and mouseover stay intact.
 
 Under **Unit Frames**, **Clear Raid Target Marks** enables mark support after
 Reload UI; mark size and placement apply live. All five pages scroll, and the

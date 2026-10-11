@@ -415,7 +415,14 @@ local libnameplate = CreateFrame("Frame", "FCTweaksLibNameplate", UIParent)
 libnameplate.OnInit = {}
 libnameplate.OnShow = {}
 libnameplate.OnUpdate = {}
+libnameplate.OnAdded = {}
+libnameplate.OnRemoved = {}
 local plateRegistry = {}
+libnameplate.plates = plateRegistry
+
+function FT.OwnsNameplates()
+    return not ShaguPlates and not BNP
+end
 
 local function InitPlate(plate, unit)
     if not plate or plateRegistry[plate] then
@@ -438,7 +445,10 @@ local function InitPlate(plate, unit)
     end
 
     FT.HookScript(plate, "OnUpdate", function(self)
-        for _, callback in ipairs(libnameplate.OnUpdate) do callback(self) end
+        if not FT.OwnsNameplates() or #libnameplate.OnUpdate == 0 then return end
+        -- Validate a pooled frame once for all render consumers, not once per feature.
+        local unit, now = FT.GetNameplateUnit(self), GetTime()
+        for _, callback in ipairs(libnameplate.OnUpdate) do callback(self, unit, now) end
     end)
     FT.HookScript(plate, "OnShow", function(self)
         for _, callback in ipairs(libnameplate.OnShow) do callback(self) end
@@ -469,12 +479,16 @@ FT.SetEventHandler(libnameplate, function(_, ev, a1)
         local plate = C_NamePlate.GetNamePlateForUnit(unit)
         if plate then
             InitPlate(plate, unit)
+            if plateRegistry[plate] then
+                for _, callback in ipairs(libnameplate.OnAdded) do callback(plate, plate.fctUnitGUID) end
+            end
         end
     elseif ev == "NAME_PLATE_UNIT_REMOVED" and a1 then
         local unit = a1
         local plate = C_NamePlate.GetNamePlateForUnit(unit)
         if plate and plate.fctUnitGUID == UnitGUID(unit) then
             plate.fctUnitGUID = nil
+            for _, callback in ipairs(libnameplate.OnRemoved) do callback(plate) end
         end
     elseif ev == "PLAYER_ENTERING_WORLD" then
         for _, guid in ipairs(C_NamePlate.GetNamePlateGUIDs()) do
