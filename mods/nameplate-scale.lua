@@ -27,14 +27,26 @@ local function Capture(plate)
             plate[prefix .. "OrigH"] = h and h > 0 and h or entry[4]
         end
     end
-    if plate.name and not plate.fctNameOrigSize then
-        local _, size = plate.name:GetFont()
-        plate.fctNameOrigSize = size
+end
+
+-- Keep the engine's name/level font objects intact. A noninteractive Frame
+-- supplies the text scale; native text, colors, visibility and anchors stay
+-- authoritative. Restore parentage before the Lua UI is torn down.
+local function ScaleText(plate, text, key, scale, enabled)
+    if not text then return end
+    local wrapper = plate[key]
+    if not enabled then
+        if wrapper and text:GetParent() == wrapper then text:SetParent(wrapper.originalParent) end
+        return
     end
-    if plate.level and not plate.fctLevelOrigSize then
-        local _, size = plate.level:GetFont()
-        plate.fctLevelOrigSize = size
+    if not wrapper then
+        wrapper = CreateFrame("Frame", nil, plate)
+        wrapper:EnableMouse(false); wrapper:SetAllPoints(plate)
+        wrapper.originalParent = text:GetParent()
+        plate[key] = wrapper
     end
+    if wrapper:GetScale() ~= scale then wrapper:SetScale(scale) end
+    if text:GetParent() ~= wrapper then text:SetParent(wrapper) end
 end
 
 function FT.LayoutNameplateCastbar(plate)
@@ -79,12 +91,8 @@ local function Apply(plate, restore)
     Dimensions(plate.glow, plate.fctGlowOrigW * scale, plate.fctGlowOrigH * scale)
     Dimensions(plate.levelicon, plate.fctLevelOrigW * scale, plate.fctLevelOrigH * scale)
     Dimensions(plate.dragon, plate.fctDragonOrigW * scale, plate.fctDragonOrigH * scale)
-    if plate.fctNameOrigSize then
-        FT.SetNameplateFontSize(plate.name, plate.fctNameOrigSize * scale * nameScale)
-    end
-    if plate.fctLevelOrigSize then
-        FT.SetNameplateFontSize(plate.level, plate.fctLevelOrigSize * scale)
-    end
+    ScaleText(plate, plate.name, "fctNameWrapper", scale * nameScale, enabled)
+    ScaleText(plate, plate.level, "fctLevelWrapper", scale, enabled)
     FT.LayoutNameplateCastbar(plate)
     if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end
 end

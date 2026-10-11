@@ -79,7 +79,8 @@ function FT.GetNumber(key, default, minimum, maximum)
 end
 
 -- Native 1.12 FontStrings have no Frame GetScale/SetScale methods.
--- Preserve their font and flags, and avoid rewriting unchanged sizes.
+-- Use this only for addon-owned labels. Engine-owned name/level text scales
+-- through Frames; preserve its font objects throughout their native lifetime.
 function FT.SetNameplateFontSize(text, size)
     if not text then return end
     local font, current, flags = text:GetFont()
@@ -411,6 +412,8 @@ end)
 
 -- Nameplate lifecycle and verified GUID bindings.
 local NAMEPLATE_OBJECTORDER = { "border", "glow", "name", "level", "levelicon", "raidicon", "dragon" }
+local NAMEPLATE_TEXTUREORDER = { "border", "glow", "levelicon", "raidicon", "dragon" }
+local NAMEPLATE_FONTORDER = { "name", "level" }
 
 local function IsNamePlate(frame)
     if not frame or frame:GetObjectType() ~= "Button" then return false end
@@ -430,7 +433,7 @@ local plateRegistry = {}
 libnameplate.plates = plateRegistry
 
 function FT.OwnsNameplates()
-    return not ShaguPlates and not BNP
+    return not libnameplate.stopping and not ShaguPlates and not BNP
 end
 
 local function InitPlate(plate, unit)
@@ -442,12 +445,20 @@ local function InitPlate(plate, unit)
 
     if unit then plate.fctUnitGUID = UnitGUID(unit) end
     plate.healthbar = plate:GetChildren()
-    FT.ForEachRegion(plate, function(region, regIdx)
-        local key = NAMEPLATE_OBJECTORDER[regIdx]
-        if key then
-            plate[key] = region
+    plate.fctNativeRegions = {}
+    local textures, fonts = 0, 0
+    -- Text parenting can move the two FontStrings to the end of GetRegions
+    -- on reload. Preserve native order within each widget type instead.
+    FT.ForEachRegion(plate, function(region)
+        local key, kind = nil, region:GetObjectType()
+        if kind == "Texture" then
+            textures = textures + 1; key = NAMEPLATE_TEXTUREORDER[textures]
+        elseif kind == "FontString" then
+            fonts = fonts + 1; key = NAMEPLATE_FONTORDER[fonts]
         end
+        if key then plate[key] = region end
     end)
+    for i, key in ipairs(NAMEPLATE_OBJECTORDER) do plate.fctNativeRegions[i] = plate[key] end
 
     for _, func in ipairs(libnameplate.OnInit) do
         func(plate)
@@ -460,6 +471,7 @@ local function InitPlate(plate, unit)
         for _, callback in ipairs(libnameplate.OnUpdate) do callback(self, unit, now) end
     end)
     FT.HookScript(plate, "OnShow", function(self)
+        if libnameplate.stopping then return end
         for _, callback in ipairs(libnameplate.OnShow) do callback(self) end
     end)
 
@@ -479,8 +491,49 @@ libnameplate:RegisterEvent("NAME_PLATE_CREATED")
 libnameplate:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 libnameplate:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 libnameplate:RegisterEvent("PLAYER_ENTERING_WORLD")
+libnameplate:RegisterEvent("PLAYER_LOGOUT")
+
+local function ShutdownNameplates()
+    libnameplate.stopping = true
+    libnameplate:UnregisterAllEvents()
+    if FT.Nameplates then FT.Nameplates:Shutdown() end
+    if FT.NameplateCooldowns then FT.NameplateCooldowns:ApplyConfiguration() end
+    for plate in pairs(plateRegistry) do
+        if FT.RestoreNameplateScale then FT.RestoreNameplateScale(plate) end
+        -- Engine-created plates can outlive the Lua UI. Unlink only our
+        -- regions/frames before reload frees their font/layout resources.
+        for _, key in ipairs({ "fctNameWrapper", "fctLevelWrapper", "fctHealth",
+            "fctAuras", "fctCombo", "fctTargetGlow", "fctTargeting",
+            "fctCastbar", "fctEnemyCooldowns" }) do
+            local object = plate[key]
+            if object then
+                object:Hide(); object:ClearAllPoints(); object:SetParent(UIParent)
+            end
+        end
+        -- Reparenting appends regions to their parent's list. Put the seven
+        -- native regions back in their original order for post-reload readers.
+        -- Leave a foreign owner's region parents alone.
+        if plate.fctNameWrapper then
+            local regions, ours, reordered = plate.fctNativeRegions, true, false
+            for _, region in ipairs(regions) do
+                if region:GetParent() ~= plate then ours = false; break end
+            end
+            if ours then
+                FT.ForEachRegion(plate, function(region, i)
+                    if regions[i] and regions[i] ~= region then reordered = true end
+                end)
+                if reordered then
+                    for _, region in ipairs(regions) do region:SetParent(UIParent) end
+                    for _, region in ipairs(regions) do region:SetParent(plate) end
+                end
+            end
+        end
+    end
+end
 
 FT.SetEventHandler(libnameplate, function(_, ev, a1)
+    if ev == "PLAYER_LOGOUT" then ShutdownNameplates(); return end
+    if libnameplate.stopping then return end
     if ev == "NAME_PLATE_CREATED" and a1 then
         InitPlate(a1)
     elseif ev == "NAME_PLATE_UNIT_ADDED" and a1 then

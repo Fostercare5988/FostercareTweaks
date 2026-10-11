@@ -4,7 +4,7 @@ if not FT then return end
 -- Native plate/input ownership stays intact. Health and auras use coalesced
 -- events; render callbacks repair native visuals and animate/reconcile casts.
 local defaults = { nameplate_marks = 1, nameplate_raidmark_size = 20,
-    nameplate_raidmark_position = "left", nameplate_target_glow = 1,
+    nameplate_raidmark_position = "left", nameplate_target_glow = 0,
     nameplate_target_scale = 1.1, nameplate_other_alpha = 0.8,
     nameplate_health = 1, nameplate_health_target = 1, nameplate_own_auras = 1,
     nameplate_cc = 1, nameplate_enemy_buffs = 0, nameplate_aura_size = 20,
@@ -358,10 +358,24 @@ local function Render(plate, unit)
     if selected and NP.settings.glow and not glow then
         glow = plate:CreateTexture(nil, "BORDER")
         glow:SetTexture("Interface\\Tooltips\\Nameplate-Glow")
+        -- This stock glow uses a black background; additive blending keeps
+        -- that background transparent instead of covering the name/bar.
+        glow:SetBlendMode("ADD")
         glow:SetVertexColor(1, 0.8, 0.3, 0.7); glow:SetAllPoints(plate.border or plate.healthbar)
         plate.fctTargetGlow = glow
     end
     if glow then Visible(glow, selected and NP.settings.glow) end
+end
+
+function NP:Shutdown()
+    self.active = false
+    if driver then driver:UnregisterAllEvents() end
+    if ticker then ticker:Cancel(); ticker = nil end
+    self.pending, self.timed = {}, {}
+    for plate in pairs(lib.plates) do
+        Clear(plate); self:LayoutMark(plate, true)
+    end
+    self.targetPlate, self.targetGUID = nil, nil
 end
 
 function NP:ApplyConfiguration()
@@ -370,7 +384,7 @@ function NP:ApplyConfiguration()
     s.marks = self.active and FT.GetOverride("nameplate_marks", 1) == 1
     s.markSize = FT.GetNumber("nameplate_raidmark_size", 20, 12, 40)
     s.markPosition = FT.GetOverride("nameplate_raidmark_position", "left")
-    s.glow = FT.GetOverride("nameplate_target_glow", 1) == 1
+    s.glow = FT.GetOverride("nameplate_target_glow", 0) == 1
     s.otherAlpha = FT.GetNumber("nameplate_other_alpha", 0.8, 0.2, 1)
     s.health = math.floor(FT.GetNumber("nameplate_health", 1, 0, 3))
     s.healthTarget = FT.GetOverride("nameplate_health_target", 1) == 1

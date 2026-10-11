@@ -96,6 +96,7 @@ local combo = bar:CreateFontString(nil, "OVERLAY"); combo:SetFont(STANDARD_TEXT_
 combo:SetTextColor(1, 0.75, 0.15); combo:SetText("* * *")
 local previewGlow = bar:CreateTexture(nil, "BORDER")
 previewGlow:SetTexture("Interface\\Tooltips\\Nameplate-Glow"); previewGlow:SetAllPoints(border)
+previewGlow:SetBlendMode("ADD")
 previewGlow:SetVertexColor(1, 0.8, 0.3, 0.7)
 y = y - 220
 Text("Size and target emphasis", "heading")
@@ -107,7 +108,7 @@ Check("nameplate_follow_ui", "Multiply plate size by global UI scale", 0)
 Slider("nameplate_name_scale", "Name text size", 0.75, 1.5, 0.05, 1, "x")
 Slider("nameplate_target_scale", "Extra target size", 1, 1.5, 0.05, 1.1, "x")
 Slider("nameplate_other_alpha", "Other plates' opacity with a target", 0.2, 1, 0.05, 0.8, "")
-Check("nameplate_target_glow", "Warm highlight on your target", 1)
+Check("nameplate_target_glow", "Warm highlight on your target", 0)
 Text("Marked units retain at least 90% opacity. Native clicks and mouseover remain intact.", "hint", 34)
 Text("Raid target marks", "heading")
 Check("nameplate_marks", "Adjust native raid marks", 1)
@@ -183,7 +184,7 @@ function page:RefreshPreview()
     cast:SetWidth(88); cast:SetHeight(FT.GetNumber("nameplate_cast_height", 10, 6, 18))
     cast:ClearAllPoints(); cast:SetPoint("TOP", bar, "BOTTOM", 8, -FT.GetNumber("nameplate_cast_gap", 3, 0, 16))
     if FT.IsEnabled("Nameplate Castbar") then cast:Show() else cast:Hide() end
-    if detail and FT.GetOverride("nameplate_target_glow", 1) == 1 then previewGlow:Show() else previewGlow:Hide() end
+    if detail and FT.GetOverride("nameplate_target_glow", 0) == 1 then previewGlow:Show() else previewGlow:Hide() end
 end
 function page:RefreshValues()
     refreshing = true
