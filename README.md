@@ -59,6 +59,13 @@ Key Bindings window.
 independent spell and item actions through ClassicAPI. These six rows accept
 spells and items; keep macros on native bars. New rows start hidden.
 
+The updated **ActionBarProfiles** addon can save and restore actions in all
+seven extra rows. `/abp save <name>` includes hidden and empty rows; `/abp load
+<name>` restores actions while keeping layouts, visibility and bindings. Save
+older ActionBarProfiles profiles again to include Extra Rows 2–7. Both addons
+need this integration. Finish extra-row drags and release extra-row keys before
+loading; missing player spells or items stop the load before native bars change.
+
 Hold **Shift + Ctrl** to move supported unit frames and aura containers.
 Use **`/ft testraid`** to preview the raid layout.
 

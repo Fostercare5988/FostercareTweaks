@@ -31,6 +31,130 @@ local function ValidID(value)
         and value < 2147483648 and value == math.floor(value)
 end
 
+-- Optional profile consumers use this contract instead of editing our settings.
+-- Version 1 contains every custom row, including empty and uncreated rows.
+EA.ProfileVersion = 1
+
+local function CopyProfile(profile, available)
+    if type(profile) ~= "table" or profile.version ~= 1 or type(profile.rows) ~= "table" then
+        return nil, "Extra-row profile version or format is unsupported."
+    end
+    for key in pairs(profile) do
+        if key ~= "version" and key ~= "rows" then return nil, "Extra-row profile contains unsupported data." end
+    end
+    for row in pairs(profile.rows) do
+        if type(row) ~= "number" or row < 2 or row > 7 or row ~= math.floor(row) then
+            return nil, "Extra-row profile contains an unsupported row."
+        end
+    end
+    local copy = { version = 1, rows = {} }
+    for row = 2, 7 do
+        local actions = profile.rows[row]
+        if type(actions) ~= "table" then return nil, "Extra-row profile is missing a row." end
+        copy.rows[row] = {}
+        for slot, action in pairs(actions) do
+            if type(slot) ~= "number" or slot < 1 or slot > 12 or slot ~= math.floor(slot)
+                or type(action) ~= "table" or not ValidID(action.id)
+                or (action.kind ~= "spell" and action.kind ~= "item") then
+                return nil, "Extra Row " .. row .. " contains an unsupported action."
+            end
+            for key in pairs(action) do
+                if key ~= "kind" and key ~= "id" then return nil, "Extra-row action contains unsupported data." end
+            end
+            if available then
+                if action.kind == "spell" then
+                    local bookSlot, book = FindSpellBookSlotByID(action.id)
+                    if not bookSlot or book ~= "spell" or not GetSpellName(bookSlot, book)
+                        or C_Spell.IsSpellPassive(action.id) then
+                        return nil, "Extra Row " .. row .. ", button " .. slot .. ": player spell is unavailable."
+                    end
+                elseif C_Item.GetItemCount(action.id, false, true) == 0 then
+                    return nil, "Extra Row " .. row .. ", button " .. slot .. ": item is unavailable."
+                end
+            end
+            copy.rows[row][slot] = { kind = action.kind, id = action.id }
+        end
+    end
+    return copy
+end
+
+function EA:GetProfile()
+    if type(FostercareTweaks_Config) ~= "table" or not FT.ActionBars then
+        return nil, "FostercareTweaks action bars are not ready."
+    end
+    local config = FostercareTweaks_Config.actionbars
+    if config ~= nil and type(config) ~= "table" then return nil, "Action-bar settings are invalid." end
+    local bars = config and config.bars
+    if bars ~= nil and type(bars) ~= "table" then return nil, "Action-bar settings are invalid." end
+    local profile = { version = 1, rows = {} }
+    for row = 2, 7 do
+        local settings = bars and bars["extra" .. row]
+        if settings ~= nil and type(settings) ~= "table" then return nil, "Extra-row settings are invalid." end
+        profile.rows[row] = settings and settings.actions or {}
+        if settings and settings.actions ~= nil and type(settings.actions) ~= "table" then
+            return nil, "Extra-row actions are invalid."
+        end
+    end
+    return CopyProfile(profile, false)
+end
+
+function EA:ValidateProfile(profile)
+    if self.profileLoading or self.drag then return nil, "Finish the extra-row action drag or load first." end
+    if UnitAffectingCombat("player") then return nil, "Leave combat before loading extra rows." end
+    if GetCursorInfo() ~= nil or CursorHasItem() or CursorHasSpell() or CursorHasMoney() then
+        return nil, "Clear your cursor before loading extra rows."
+    end
+    local current, reason = self:GetProfile()
+    if not current then return nil, reason end
+    for _, bar in pairs(FT.ActionBars.bars) do
+        if bar.definition.custom then
+            for _, button in ipairs(bar.buttons) do
+                if button.fctPressed then return nil, "Release extra-row key bindings before loading." end
+            end
+        end
+    end
+    return CopyProfile(profile, true)
+end
+
+function EA:ApplyProfile(profile)
+    local copy, reason = self:ValidateProfile(profile)
+    if not copy then return false, reason end
+    local current = self:GetProfile()
+    local changed = false
+    for row = 2, 7 do
+        for slot = 1, 12 do
+            local before, after = current.rows[row][slot], copy.rows[row][slot]
+            if (before == nil) ~= (after == nil)
+                or (before and after and (before.kind ~= after.kind or before.id ~= after.id)) then changed = true end
+        end
+    end
+    if not changed then return true end
+    local settings, previous = {}, {}
+    for row = 2, 7 do
+        settings[row] = FT.ActionBars:GetSettings("extra" .. row)
+        previous[row] = settings[row].actions
+    end
+    local function refresh()
+        for _, bar in pairs(FT.ActionBars.bars) do
+            if bar.definition.custom then EA:RefreshBar(bar, true) end
+        end
+    end
+    self.profileLoading = true
+    local ok, err = pcall(function()
+        for row = 2, 7 do settings[row].actions = copy.rows[row] end
+        refresh()
+    end)
+    if not ok then
+        for row = 2, 7 do settings[row].actions = previous[row] end
+        local restored = pcall(refresh)
+        self.profileLoading = nil
+        return false, "Extra-row refresh failed; previous actions were restored. "
+            .. (restored and "" or "Reload UI to refresh the buttons. ") .. tostring(err)
+    end
+    self.profileLoading = nil
+    return true
+end
+
 local function Descriptor(button)
     local action = Actions(button.fctBar)[button:GetID()]
     if type(action) ~= "table" then return nil end
