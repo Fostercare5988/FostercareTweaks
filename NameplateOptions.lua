@@ -159,7 +159,8 @@ function page:RefreshPreview()
         if detail then size = size * FT.GetNumber("nameplate_target_scale", 1.1, 1, 1.5) end
     end
     preview:SetScale(math.min(2.5, size))
-    name:SetScale(FT.IsEnabled("Nameplate Scale") and FT.GetNumber("nameplate_name_scale", 1, 0.75, 1.5) or 1)
+    local nameScale = FT.IsEnabled("Nameplate Scale") and FT.GetNumber("nameplate_name_scale", 1, 0.75, 1.5) or 1
+    FT.SetNameplateFontSize(name, 10 * nameScale)
     local color = FT.IsEnabled("Nameplate Class Colors") and RAID_CLASS_COLORS.MAGE or {r=1,g=0,b=0}
     bar:SetStatusBarColor(color.r, color.g, color.b)
     local mode = detail and FT.GetNumber("nameplate_health", 1, 0, 3) or 0

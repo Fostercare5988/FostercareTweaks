@@ -26,8 +26,14 @@ local function Capture(plate)
             plate[prefix .. "OrigW"] = w and w > 0 and w or entry[3]
             plate[prefix .. "OrigH"] = h and h > 0 and h or entry[4]
         end
-        plate.fctNameOrigScale = plate.name and plate.name:GetScale() or 1
-        plate.fctLevelOrigScale = plate.level and plate.level:GetScale() or 1
+    end
+    if plate.name and not plate.fctNameOrigSize then
+        local _, size = plate.name:GetFont()
+        plate.fctNameOrigSize = size
+    end
+    if plate.level and not plate.fctLevelOrigSize then
+        local _, size = plate.level:GetFont()
+        plate.fctLevelOrigSize = size
     end
 end
 
@@ -73,11 +79,11 @@ local function Apply(plate, restore)
     Dimensions(plate.glow, plate.fctGlowOrigW * scale, plate.fctGlowOrigH * scale)
     Dimensions(plate.levelicon, plate.fctLevelOrigW * scale, plate.fctLevelOrigH * scale)
     Dimensions(plate.dragon, plate.fctDragonOrigW * scale, plate.fctDragonOrigH * scale)
-    if plate.name and plate.name:GetScale() ~= plate.fctNameOrigScale * scale * nameScale then
-        plate.name:SetScale(plate.fctNameOrigScale * scale * nameScale)
+    if plate.fctNameOrigSize then
+        FT.SetNameplateFontSize(plate.name, plate.fctNameOrigSize * scale * nameScale)
     end
-    if plate.level and plate.level:GetScale() ~= plate.fctLevelOrigScale * scale then
-        plate.level:SetScale(plate.fctLevelOrigScale * scale)
+    if plate.fctLevelOrigSize then
+        FT.SetNameplateFontSize(plate.level, plate.fctLevelOrigSize * scale)
     end
     FT.LayoutNameplateCastbar(plate)
     if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end

@@ -116,9 +116,7 @@ function NP:TopSpace(plate)
 end
 
 function NP:LayoutExtras(plate)
-    if plate.fctHealth and plate.fctHealth:GetScale() ~= (plate.fctVisualScale or 1) then
-        plate.fctHealth:SetScale(plate.fctVisualScale or 1)
-    end
+    FT.SetNameplateFontSize(plate.fctHealth, math.max(7, 9 * (plate.fctVisualScale or 1)))
     if plate.fctTargeting then
         local anchor = plate.castbar or plate.healthbar
         if plate.fctTargeting.fctAnchor ~= anchor then
@@ -165,7 +163,7 @@ function NP:Health(plate, unit)
     local percent = math.floor(math.max(0, math.min(1, hp / maximum)) * 100 + 0.5) .. "%"
     local mode = self.settings.health
     Text(label, mode == 1 and percent or (mode == 2 and FormatHP(hp) or FormatHP(hp) .. "  " .. percent))
-    if label:GetScale() ~= (plate.fctVisualScale or 1) then label:SetScale(plate.fctVisualScale or 1) end
+    FT.SetNameplateFontSize(label, math.max(7, 9 * (plate.fctVisualScale or 1)))
     Visible(label, true)
 end
 

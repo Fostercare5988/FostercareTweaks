@@ -78,6 +78,15 @@ function FT.GetNumber(key, default, minimum, maximum)
     return FT.ClampNumber(FT.GetOverride(key), default, minimum, maximum)
 end
 
+-- Native 1.12 FontStrings have no Frame GetScale/SetScale methods.
+-- Preserve their font and flags, and avoid rewriting unchanged sizes.
+function FT.SetNameplateFontSize(text, size)
+    if not text then return end
+    local font, current, flags = text:GetFont()
+    size = math.max(1, math.floor(size + 0.5))
+    if font and current ~= size then text:SetFont(font, size, flags) end
+end
+
 function FT.SetOverride(key, value)
     FostercareTweaks_Config.overwrites[key] = value
     FT.overwrites = FT.overwrites or {}

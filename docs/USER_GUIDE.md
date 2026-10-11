@@ -1,6 +1,6 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.1.0**.
+Configuration and controls for **FostercareTweaks 1.1.1**.
 
 Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
 **Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
