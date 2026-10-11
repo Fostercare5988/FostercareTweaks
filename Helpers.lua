@@ -80,7 +80,7 @@ end
 
 -- Native 1.12 FontStrings have no Frame GetScale/SetScale methods.
 -- Use this only for addon-owned labels. Engine-owned name/level text scales
--- through Frames; preserve its font objects throughout their native lifetime.
+-- independently in the native renderer; preserve both font and parent ownership.
 function FT.SetNameplateFontSize(text, size)
     if not text then return end
     local font, current, flags = text:GetFont()
@@ -412,8 +412,6 @@ end)
 
 -- Nameplate lifecycle and verified GUID bindings.
 local NAMEPLATE_OBJECTORDER = { "border", "glow", "name", "level", "levelicon", "raidicon", "dragon" }
-local NAMEPLATE_TEXTUREORDER = { "border", "glow", "levelicon", "raidicon", "dragon" }
-local NAMEPLATE_FONTORDER = { "name", "level" }
 
 local function IsNamePlate(frame)
     if not frame or frame:GetObjectType() ~= "Button" then return false end
@@ -445,20 +443,10 @@ local function InitPlate(plate, unit)
 
     if unit then plate.fctUnitGUID = UnitGUID(unit) end
     plate.healthbar = plate:GetChildren()
-    plate.fctNativeRegions = {}
-    local textures, fonts = 0, 0
-    -- Text parenting can move the two FontStrings to the end of GetRegions
-    -- on reload. Preserve native order within each widget type instead.
-    FT.ForEachRegion(plate, function(region)
-        local key, kind = nil, region:GetObjectType()
-        if kind == "Texture" then
-            textures = textures + 1; key = NAMEPLATE_TEXTUREORDER[textures]
-        elseif kind == "FontString" then
-            fonts = fonts + 1; key = NAMEPLATE_FONTORDER[fonts]
-        end
+    FT.ForEachRegion(plate, function(region, index)
+        local key = NAMEPLATE_OBJECTORDER[index]
         if key then plate[key] = region end
     end)
-    for i, key in ipairs(NAMEPLATE_OBJECTORDER) do plate.fctNativeRegions[i] = plate[key] end
 
     for _, func in ipairs(libnameplate.OnInit) do
         func(plate)
@@ -502,30 +490,12 @@ local function ShutdownNameplates()
         if FT.RestoreNameplateScale then FT.RestoreNameplateScale(plate) end
         -- Engine-created plates can outlive the Lua UI. Unlink only our
         -- regions/frames before reload frees their font/layout resources.
-        for _, key in ipairs({ "fctNameWrapper", "fctLevelWrapper", "fctHealth",
+        for _, key in ipairs({ "fctHealth",
             "fctAuras", "fctCombo", "fctTargetGlow", "fctTargeting",
             "fctCastbar", "fctEnemyCooldowns" }) do
             local object = plate[key]
             if object then
                 object:Hide(); object:ClearAllPoints(); object:SetParent(UIParent)
-            end
-        end
-        -- Reparenting appends regions to their parent's list. Put the seven
-        -- native regions back in their original order for post-reload readers.
-        -- Leave a foreign owner's region parents alone.
-        if plate.fctNameWrapper then
-            local regions, ours, reordered = plate.fctNativeRegions, true, false
-            for _, region in ipairs(regions) do
-                if region:GetParent() ~= plate then ours = false; break end
-            end
-            if ours then
-                FT.ForEachRegion(plate, function(region, i)
-                    if regions[i] and regions[i] ~= region then reordered = true end
-                end)
-                if reordered then
-                    for _, region in ipairs(regions) do region:SetParent(UIParent) end
-                    for _, region in ipairs(regions) do region:SetParent(plate) end
-                end
             end
         end
     end

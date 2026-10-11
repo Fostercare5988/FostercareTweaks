@@ -105,7 +105,7 @@ Check("Nameplate Details", "Target emphasis, marks and details", 1, "Nameplate D
 Check("Nameplate Class Colors", "Class colors for players", 1, "Nameplate Class Colors")
 Slider("nameplate_scale", "Plate size", 0.1, 4, 0.05, 1, "x")
 Check("nameplate_follow_ui", "Multiply plate size by global UI scale", 0)
-Slider("nameplate_name_scale", "Name text size", 0.75, 1.5, 0.05, 1, "x")
+Text("Names and levels keep their original font size and native ownership.", "hint", 30)
 Slider("nameplate_target_scale", "Extra target size", 1, 1.5, 0.05, 1.1, "x")
 Slider("nameplate_other_alpha", "Other plates' opacity with a target", 0.2, 1, 0.05, 0.8, "")
 Check("nameplate_target_glow", "Warm highlight on your target", 0)
@@ -160,8 +160,7 @@ function page:RefreshPreview()
         if detail then size = size * FT.GetNumber("nameplate_target_scale", 1.1, 1, 1.5) end
     end
     preview:SetScale(math.min(2.5, size))
-    local nameScale = FT.IsEnabled("Nameplate Scale") and FT.GetNumber("nameplate_name_scale", 1, 0.75, 1.5) or 1
-    FT.SetNameplateFontSize(name, 10 * nameScale)
+    FT.SetNameplateFontSize(name, 10 / math.min(2.5, size))
     local color = FT.IsEnabled("Nameplate Class Colors") and RAID_CLASS_COLORS.MAGE or {r=1,g=0,b=0}
     bar:SetStatusBarColor(color.r, color.g, color.b)
     local mode = detail and FT.GetNumber("nameplate_health", 1, 0, 3) or 0

@@ -4,7 +4,7 @@ if not FT then return end
 local module = FT:register({
     title = "Nameplate Scale", category = "Nameplates", enabled = true,
     description = "Adjust native nameplate size and castbar proportions.",
-    config = { nameplate_scale = 1, nameplate_follow_ui = 0, nameplate_name_scale = 1,
+    config = { nameplate_scale = 1, nameplate_follow_ui = 0,
         nameplate_cast_height = 10, nameplate_cast_gap = 3 },
 })
 
@@ -27,26 +27,6 @@ local function Capture(plate)
             plate[prefix .. "OrigH"] = h and h > 0 and h or entry[4]
         end
     end
-end
-
--- Keep the engine's name/level font objects intact. A noninteractive Frame
--- supplies the text scale; native text, colors, visibility and anchors stay
--- authoritative. Restore parentage before the Lua UI is torn down.
-local function ScaleText(plate, text, key, scale, enabled)
-    if not text then return end
-    local wrapper = plate[key]
-    if not enabled then
-        if wrapper and text:GetParent() == wrapper then text:SetParent(wrapper.originalParent) end
-        return
-    end
-    if not wrapper then
-        wrapper = CreateFrame("Frame", nil, plate)
-        wrapper:EnableMouse(false); wrapper:SetAllPoints(plate)
-        wrapper.originalParent = text:GetParent()
-        plate[key] = wrapper
-    end
-    if wrapper:GetScale() ~= scale then wrapper:SetScale(scale) end
-    if text:GetParent() ~= wrapper then text:SetParent(wrapper) end
 end
 
 function FT.LayoutNameplateCastbar(plate)
@@ -73,14 +53,13 @@ local function Apply(plate, restore)
     if not plate or (not FT.OwnsNameplates() and not restore) then return end
     Capture(plate)
     local enabled = not restore and FT.IsEnabled(module.title)
-    local scale, nameScale = 1, 1
+    local scale = 1
     if enabled then
         scale = FT.GetNumber("nameplate_scale", 1, 0.1, 4)
         if FT.GetOverride("nameplate_follow_ui", 0) == 1 then
             scale = scale * FT.ClampNumber(UIParent:GetScale(), 1, 0.2, 2)
         end
         if plate.fctIsTarget then scale = scale * FT.GetNumber("nameplate_target_scale", 1.1, 1, 1.5) end
-        nameScale = FT.GetNumber("nameplate_name_scale", 1, 0.75, 1.5)
     end
     plate.fctVisualScale, plate.fctScaleOwned = scale, enabled
     -- Check every owned component at lifecycle/settings boundaries. Native
@@ -91,8 +70,8 @@ local function Apply(plate, restore)
     Dimensions(plate.glow, plate.fctGlowOrigW * scale, plate.fctGlowOrigH * scale)
     Dimensions(plate.levelicon, plate.fctLevelOrigW * scale, plate.fctLevelOrigH * scale)
     Dimensions(plate.dragon, plate.fctDragonOrigW * scale, plate.fctDragonOrigH * scale)
-    ScaleText(plate, plate.name, "fctNameWrapper", scale * nameScale, enabled)
-    ScaleText(plate, plate.level, "fctLevelWrapper", scale, enabled)
+    -- Engine-created name/level regions retain their original parent, font,
+    -- scale and anchors. Do not insert them into Lua-owned scaling frames.
     FT.LayoutNameplateCastbar(plate)
     if FT.Nameplates then FT.Nameplates:LayoutExtras(plate) end
 end
