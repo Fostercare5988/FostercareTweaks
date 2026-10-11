@@ -118,7 +118,7 @@ end
 function NP:LayoutExtras(plate)
     FT.SetNameplateFontSize(plate.fctHealth, math.max(7, 9 * (plate.fctVisualScale or 1)))
     if plate.fctTargeting then
-        local anchor = plate.castbar or plate.healthbar
+        local anchor = plate.fctCastbar or plate.healthbar
         if plate.fctTargeting.fctAnchor ~= anchor then
             plate.fctTargeting.fctAnchor = anchor
             plate.fctTargeting:ClearAllPoints()

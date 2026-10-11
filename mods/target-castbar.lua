@@ -229,22 +229,11 @@ local function UpdateCast()
 end
 
 module.enable = function(self)
-    if self.frame then return end
-    FT.RefreshTargetCastbar = UpdateCast
+    if self.frame then self:apply(); return end
+    FT.RefreshTargetCastbar = function() self:apply() end
     FT.LayoutTargetCastbar = UpdateAnchor
     local eventFrame = CreateFrame("Frame", "FCTweaksTargetCastbarEvents", UIParent)
     self.frame = eventFrame
-    eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-    eventFrame:RegisterEvent("UNIT_CASTEVENT")
 
     FT.SetEventHandler(eventFrame, function(_, ev, a1, a2, a3, a4, a5)
         if not ev then return end
@@ -281,6 +270,34 @@ module.enable = function(self)
         end)
     end
 
+    self:apply()
+end
+
+-- Switching this view off removes its subscriptions and animation immediately.
+-- The plate view has an independent owner and setting.
+module.apply = function(self)
+    if not self.frame then
+        if FT.IsEnabled(self.title) then self:enable() end
+        return
+    end
+    local active = FT.IsEnabled(self.title)
+    if self.listening ~= active then
+        self.listening = active
+        self.frame:UnregisterAllEvents()
+        if active then
+            self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
+            self.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_START")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_STOP")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+            self.frame:RegisterEvent("UNIT_CASTEVENT")
+        end
+    end
     UpdateCast()
 end
 end

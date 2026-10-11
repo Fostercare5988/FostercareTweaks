@@ -35,14 +35,21 @@ Open **`/ft`** for five pages: **General**, **Unit Frames**, **Raid Frames**,
 **Action Bars** and **Nameplates**. White labels, charcoal sections and teal selection marks make
 the controls easier to distinguish. `/ft uf`, `/ft raid` and `/ft bars` open
 the matching page directly. **`/ft nameplates`** opens nameplate settings.
+General has fixed section headings. Unit Frames and Raid Frames have focused
+section buttons. General changes use **Apply**; the other pages save each change
+immediately. Changes requiring a reload show an explicit **Reload UI** button.
 
 In **Nameplates**, use the live preview to adjust plate size independently of global
-UI scale, name text, target enlargement, opacity and castbar proportions. Move native
+UI scale, target enlargement, opacity and castbar proportions. Names and levels keep
+their original font size and native parent. Move native
 raid marks left, right or above the name. Enable health text, your debuffs, one crowd-control
 effect, optional enemy buffs, combo points and an optional **Targeting you** label.
 All controls and module toggles apply immediately. Existing size settings migrate
 once to preserve their base appearance; other enable choices are kept.
 BlizzNameplatesPlus and ShaguPlates retain ownership when loaded.
+
+The target-frame castbar and nameplate castbars are separate views within this
+addon. Keep either or both enabled; their controls identify the view they affect.
 
 Health and aura changes use batched unit events. Aura countdowns run at 5 Hz only
 while timed rows are visible; resolved classes are cached and idle casts reconcile

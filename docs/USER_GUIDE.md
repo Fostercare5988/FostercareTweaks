@@ -1,11 +1,24 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.1.3**.
+Configuration and controls for **FostercareTweaks 1.2.0**.
 
 Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
 **Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
 selection marks distinguish controls and the active page. `/ft uf`, `/ft raid`
-and `/ft bars` open the corresponding page directly. `/ft nameplates` opens the new nameplate page.
+and `/ft bars` open the corresponding page directly. `/ft nameplates` opens nameplate settings.
+
+General uses fixed headings with no collapse arrows. Its switches are staged until
+**Apply**; **Cancel** discards those staged changes. The other pages save each
+change immediately. Changes requiring a reload display **Reload UI**, which you
+click when ready. Apply and page resets never reload the UI automatically.
+
+**Unit Frames** has six sections: **Frame style**, **Standard frames**, **Modern
+layout**, **Unit auras**, **Combat details** and **Blizzard auras**. Start with
+Frame style, then adjust the matching layout or appearance. Unit auras belong to
+player/target frames; Blizzard auras are the original top-right icons.
+
+**Raid Frames** has **Layout**, **Indicators** and **Auras**. One grid serves both
+parties and raids. Each control updates its own setting and keeps unrelated choices.
 
 ### Nameplates
 
@@ -29,7 +42,7 @@ and `/ft bars` open the corresponding page directly. `/ft nameplates` opens the 
 - **Unlocking Drag Handles**: Hold **Shift + Ctrl** to reveal movement handles and the alignment grid on supported frames (Player, Target, Target-of-Target, Raid frames, and individual aura clusters).
 - **Repositioning**: While holding **Shift + Ctrl**, click and drag the frame or aura container to your desired location.
 - **Saving Positions**: Positions are automatically persisted per character upon releasing the drag handle.
-- **Resetting Positions**: Type `/ft resetuf` or click **Reset Frame Positions** in `/ft` to restore default screen coordinates.
+- **Resetting Positions**: Under Unit Frames > Frame style, **Reset Frame Positions** clears saved coordinates; click **Reload UI** when ready to restore defaults. `/ft resetuf` explicitly resets and reloads immediately.
 
 ---
 
@@ -41,17 +54,17 @@ Configure your preferred style under `/ft uf`:
 - **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Health uses native SuperWoW values.
 - Each **Modern Player / Target / Target's Target** checkbox selects that frame's style; unchecked uses Blizzard. Existing dimensions, scale, power-bar height and fonts apply live. Fonts shrink to their available lane; names truncate before covering health. Tall, narrow frames limit portrait width. Power numbers hide below an 8 px bar height.
 - Choose name, class/creature type and level visibility independently. Health and power offer **Smart**, **Current**, **Percent** and **Hidden**. Smart omits an unnecessary maximum and uses current energy/rage; Percent remains a percentage for every resource. Level badges use native difficulty colors; unknown-level bosses use the native skull.
-- **Raid Target Marks** controls unit-frame marks; nameplate mark controls live under **Nameplates**. **Clear Raid Target Marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column; native nameplate marks sit beside the health bar or above the name. ShaguPlates retains its own presentation.
-- **Enemy Castbars** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows; cast events update state while the bar animates smoothly.
+- Under **Combat details**, **Adjust unit-frame raid marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column. Nameplate marks have separate controls under **Nameplates**.
+- **Target-frame castbar** under **Combat details** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows. **Nameplate castbars** on the Nameplates page controls the second view. Both are provided by FostercareTweaks and can stay enabled together. Disabling either stops its cast-event subscriptions; the target view also stops its animation immediately.
 
 ### Aura Controls & Borders
-- **Aura Border Toggles**: Under `/ft` > **Unit Frames** > **Blizzard & Frame Aura Borders**, toggle borders for Buffs, Debuffs, and Weapon Enchants independently:
+- **Aura Border Toggles**: Under `/ft` > **Unit Frames** > **Blizzard auras**, toggle borders for Buffs, Debuffs, and Weapon Enchants independently:
   - Buff & Debuff borders default to off.
   - Weapon enchant borders default to on, colored by the equipped weapon's item quality.
   - Debuff borders show dispel type colors (Magic blue, Curse purple, Disease orange, Poison green) when enabled.
-- **Top-Right Blizzard Auras**: Independently toggle visibility for the standard top-right buff icons, debuff icons, and weapon enchant icons under `/ft` > **Unit Frames** > **Top-right Blizzard Auras**.
+- **Top-Right Blizzard Auras**: Independently toggle visibility for the standard top-right buff icons, debuff icons, and weapon enchant icons under `/ft` > **Unit Frames** > **Blizzard auras**.
 - **Target Debuff Filtering**: The option **Only Show My Debuffs on Target** filters out other players' debuffs when player attribution is known.
-- **Larger Armor Debuffs** optionally enlarges Sunder Armor, Faerie Fire (including Feral) and Expose Armor by 1.25–2x, default 1.5x. Verified ranks and deployed NPC/custom variants share this behavior. Mixed-size rows wrap within the target width and preserve native aura order, stacks, tooltips, timers and your own-debuff filter. Standard frames need **Improved Standard Auras** for this layout.
+- **Larger Armor Debuffs** optionally enlarges Sunder Armor, Faerie Fire (including Feral) and Expose Armor by 1.25–2x, default 1.5x. Verified ranks and deployed NPC/custom variants share this behavior. Mixed-size rows wrap within the target width and preserve native aura order, stacks, tooltips, timers and your own-debuff filter. Standard frames need **Enhanced standard-frame auras** for this layout.
 - Sweeps and duration text are independent for buffs and debuffs. Missing timing stays unknown; the addon does not invent durations.
 
 ### Raid Grid
@@ -59,7 +72,7 @@ Configure your preferred style under `/ft uf`:
 - **Group Labels**: Show or hide G1–G8 / Party. Hidden labels reclaim the header space, including in previews and after roster updates.
 - **Aura Indicators**: Buffs and debuffs share one strip inside each member frame. Set separate sizes/counts and a shared gap. Default requests are four 10 px buffs, three 11 px debuffs and a 2 px gap. Icons shrink vertically on small frames; the minimum-height layout is a dense overview. Use larger member frames for readable stack and timer detail.
 - **Priority & Overflow**: Debuffs with a dispel type come before other debuffs. Buff priority is recognized HoTs/shields, player/pet buffs, then other buffs; ties keep native aura order. Capacity gives debuffs priority while reserving a buff when both fit. The strip draws buffs, then debuffs. `+N` counts eligible icons that did not fit; nothing extends into another member frame.
-- **Show All Buffs** considers every available buff and includes overflow in `+N`. Turning it off restores your saved 1–8 buff limit. Count limits intentionally exclude lower-priority candidates. Individual icons retain tooltips, stacks, available durations and the member frame's click actions.
+- **Consider every buff** considers every available buff and includes overflow in `+N`. Turning it off restores your saved 1–8 buff limit. Count limits intentionally exclude lower-priority candidates. Individual icons retain tooltips, stacks, available durations and the member frame's click actions.
 - Small stacked indicators show stacks and the sweep; remaining seconds move into the tooltip to avoid overlapping labels. Larger indicators can show both labels.
 - **Preview**: Type `/ft testraid` to display a 40-player mock raid frame to test your layout and positioning.
 - **Aggro Indicator**: The red corner updates while the group frame is visible.
