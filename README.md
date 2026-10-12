@@ -44,7 +44,12 @@ UI scale, target enlargement, opacity and castbar proportions. Names and levels 
 their original font size and native parent. Move native
 raid marks left, right or above the name. Enable health text, your debuffs, one crowd-control
 effect, optional enemy buffs, combo points and an optional **Targeting you** label.
-All controls and module toggles apply immediately. Existing size settings migrate
+**Use FostercareTweaks nameplate features** switches all of this addon's nameplate
+features on or off after restarting the game. Off leaves ordinary Blizzard plates
+and the independent target-frame castbar available, without this addon's plate
+hooks, cast queries or nameplate feature events. Your individual choices are kept;
+the nameplate reset button does not change this switch.
+Other controls and module toggles apply immediately while enabled. Existing size settings migrate
 once to preserve their base appearance; other enable choices are kept.
 BlizzNameplatesPlus and ShaguPlates retain ownership when loaded.
 

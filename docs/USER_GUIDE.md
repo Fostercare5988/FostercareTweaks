@@ -1,6 +1,6 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.2.0**.
+Configuration and controls for **FostercareTweaks 1.2.1**.
 
 Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
 **Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
@@ -22,7 +22,14 @@ parties and raids. Each control updates its own setting and keeps unrelated choi
 
 ### Nameplates
 
-- All controls and module switches apply live. The target preview uses sample values and caps its displayed scale at 2.5x so it fits the window.
+**Use FostercareTweaks nameplate features** is the master switch. Restart the game
+after changing it. Turning it off keeps ordinary Blizzard nameplates and your
+independent target-frame castbar, and bypasses this addon's plate hooks, cast
+queries and nameplate feature events. Individual feature choices are preserved;
+**Reset nameplate settings** does not change the master switch. The remaining
+settings apply live while the features are enabled.
+
+- Feature controls and individual module switches apply live while enabled. The target preview uses sample values and caps its displayed scale at 2.5x so it fits the window.
 - **Plate size** spans 0.1–4x independently of global UI scale. Optionally multiply by UI scale and enlarge the selected target by up to 1.5x. Existing base sizes migrate once. Scaling includes the health bar, border, level decorations and castbar. Names and level text retain their stock size and native parent; native targeting remains intact.
 - **Target emphasis** enlarges the selected plate and offers adjustable opacity for other units. The optional warm highlight is off by default to preserve the stock bar and border. Marked units retain at least 90% opacity. Disable **Target emphasis, marks and details** for plain native visuals while retaining independent scale, class-color, castbar and cooldown modules.
 - **Raid target marks** use the game's native icon and visibility. Set 12–40 px size and left, right or above-name placement. Disabling adjustment restores native placement, without hiding marks. Nameplate marks are independent of **Clear Raid Target Marks** under **Unit Frames**.

@@ -6,7 +6,7 @@
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.15.15+ and SuperWoW 2.2+; NamPower v4.6.2+ is optional.
 ## OptionalDeps: GearRack, AutoBG, AtlasLoot, BlizzNameplatesPlus, ShaguPlates
 ## Author: Fostercare5988
-## Version: 1.2.0
+## Version: 1.2.1
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 

@@ -413,6 +413,10 @@ end)
 -- Nameplate lifecycle and verified GUID bindings.
 local NAMEPLATE_OBJECTORDER = { "border", "glow", "name", "level", "levelicon", "raidicon", "dragon" }
 
+-- Snapshot the master choice before plate discovery. Changing it requires a
+-- restart so disabling never leaves a partly initialized plate subsystem.
+FT.nameplatesEnabled = FostercareTweaks_Config.nameplatesEnabled ~= 0
+
 local function IsNamePlate(frame)
     if not frame or frame:GetObjectType() ~= "Button" then return false end
     local regions = frame:GetRegions()
@@ -431,7 +435,7 @@ local plateRegistry = {}
 libnameplate.plates = plateRegistry
 
 function FT.OwnsNameplates()
-    return not libnameplate.stopping and not ShaguPlates and not BNP
+    return FT.nameplatesEnabled and not libnameplate.stopping and not ShaguPlates and not BNP
 end
 
 local function InitPlate(plate, unit)
@@ -475,11 +479,13 @@ FT.GetNameplateUnit = function(plate)
     plate.fctUnitGUID = nil
 end
 
-libnameplate:RegisterEvent("NAME_PLATE_CREATED")
-libnameplate:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-libnameplate:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-libnameplate:RegisterEvent("PLAYER_ENTERING_WORLD")
-libnameplate:RegisterEvent("PLAYER_LOGOUT")
+if FT.nameplatesEnabled then
+    libnameplate:RegisterEvent("NAME_PLATE_CREATED")
+    libnameplate:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+    libnameplate:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+    libnameplate:RegisterEvent("PLAYER_ENTERING_WORLD")
+    libnameplate:RegisterEvent("PLAYER_LOGOUT")
+end
 
 local function ShutdownNameplates()
     libnameplate.stopping = true
@@ -503,7 +509,7 @@ end
 
 FT.SetEventHandler(libnameplate, function(_, ev, a1)
     if ev == "PLAYER_LOGOUT" then ShutdownNameplates(); return end
-    if libnameplate.stopping then return end
+    if libnameplate.stopping or not FT.nameplatesEnabled then return end
     if ev == "NAME_PLATE_CREATED" and a1 then
         InitPlate(a1)
     elseif ev == "NAME_PLATE_UNIT_ADDED" and a1 then

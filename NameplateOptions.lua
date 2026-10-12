@@ -34,7 +34,8 @@ local function Check(key, title, fallback, moduleTitle)
         local value = button:GetChecked() and 1 or 0
         if moduleTitle then
             FostercareTweaks_Config[moduleTitle] = value
-            local mod = FT.mods[moduleTitle]; if mod and mod.enable then mod:enable() end
+            local mod = FT.mods[moduleTitle]
+            if FT.nameplatesEnabled and mod and mod.enable then mod:enable() end
         else FT.SetOverride(key, value) end
         Apply(); page:RefreshValues()
     end)
@@ -71,8 +72,20 @@ local function Choice(key, title, values, labels, fallback)
 end
 
 Text("Nameplates", "heading")
-Text("Keep the Blizzard look. Every control below applies immediately.", "hint", 30)
+local master = CreateFrame("CheckButton", "FCTweaksNameplatesEnabled", content, "OptionsCheckButtonTemplate")
+master:SetWidth(24); master:SetHeight(24); master:SetPoint("TOPLEFT", content, "TOPLEFT", 16, y)
+Theme.CheckButton(master)
+local masterLabel = _G[master:GetName() .. "Text"]
+masterLabel:SetText("Use FostercareTweaks nameplate features")
+masterLabel:SetFontObject("GameFontNormalSmall"); Theme.Text(masterLabel)
+master:SetScript("OnClick", function()
+    FostercareTweaks_Config.nameplatesEnabled = master:GetChecked() and 1 or 0
+    page:RefreshValues()
+end)
+page.master = master; y = y - 28
+Text("Restart the game after changing this switch. Off keeps Blizzard plates and your target-frame castbar. Individual feature choices are kept.", "hint", 46)
 local ownerNote = Text("", "hint", 32)
+Text("The feature settings below apply immediately while enabled.", "hint", 30)
 Text("Target preview (size preview capped at 2.5x)", "muted")
 local preview = CreateFrame("Frame", nil, content); preview:EnableMouse(false)
 preview:SetWidth(110); preview:SetHeight(14); preview:SetPoint("TOP", content, "TOP", 0, y - 110)
@@ -187,6 +200,8 @@ function page:RefreshPreview()
 end
 function page:RefreshValues()
     refreshing = true
+    local enabled = FostercareTweaks_Config.nameplatesEnabled ~= 0
+    master:SetChecked(enabled)
     for _, control in pairs(controls) do
         if control.key then control:SetValue(FT.GetNumber(control.key, control.fallback, control.minimum, control.maximum))
         elseif control.checkKey then
@@ -198,7 +213,9 @@ function page:RefreshValues()
             control:SetText(control.title .. ": " .. label)
         end
     end
-    if not FT.OwnsNameplates() then ownerNote:SetText("BlizzNameplatesPlus or ShaguPlates owns the plates. These settings stay inactive.")
+    if enabled ~= FT.nameplatesEnabled then ownerNote:SetText("Restart the game to apply your nameplate feature choice.")
+    elseif not enabled then ownerNote:SetText("Blizzard plates are active. FostercareTweaks nameplate features are inactive.")
+    elseif not FT.OwnsNameplates() then ownerNote:SetText("BlizzNameplatesPlus or ShaguPlates owns the plates. These settings stay inactive.")
     elseif not CD:IsAvailable() then ownerNote:SetText("Enemy cooldowns need NamPower 4.6.2+. Other features are available.")
     else ownerNote:SetText("Select a target for health and combo points. The preview shows sample values.") end
     refreshing = nil; self:RefreshPreview()

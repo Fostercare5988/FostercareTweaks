@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.2.0"
+FT.version = "1.2.1"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -78,7 +78,8 @@ function FT:Initialize()
     end
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
-        if FostercareTweaks_Config[title] == 1 and mod.enable then
+        if FostercareTweaks_Config[title] == 1 and mod.enable
+            and (mod.category ~= "Nameplates" or self.nameplatesEnabled) then
             local success, err = pcall(mod.enable, mod)
             if not success and DEFAULT_CHAT_FRAME then
                 DEFAULT_CHAT_FRAME:AddMessage("|cffff2020[FostercareTweaks Error]|r Failed to enable '" .. tostring(title) .. "': " .. tostring(err), 1, 0.3, 0.3)
