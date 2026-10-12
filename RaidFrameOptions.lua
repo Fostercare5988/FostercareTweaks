@@ -25,7 +25,7 @@ local rBox1 = CreateSectionBox(raidContainer, "Raid & Group Frames", 88)
 rBox1:SetPoint("TOPLEFT", raidContainer, "TOPLEFT", 22, -10)
 rBox1:SetPoint("TOPRIGHT", raidContainer, "TOPRIGHT", -22, -10)
 
-local enableCB = CreateCheckButton("FCTweaksRaidPageEnableCB", "Use group frames for party and raid", "Toggle display of unified party and raid frames.", rBox1, 16, -26)
+local enableCB = CreateCheckButton("FCTweaksRaidPageEnableCB", "Use FostercareTweaks party and raid frames", "Replace party frames and pause the built-in compact group grid. Turning this off returns control to the game's frame settings.", rBox1, 16, -26)
 
 local groupLabelsCB = CreateCheckButton("FCTweaksGroupLabelsCB", "Show Group Labels", "Show G1-G8 in raids and Party in groups. Hiding labels removes header space.", rBox1, 16, -54)
 

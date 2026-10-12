@@ -1196,6 +1196,8 @@ function UF:SuppressPartyFrames()
 end
 
 function UF:RestorePartyFrames()
+    -- The compact native grid owns party visibility when it replaces party UI.
+    if GROUP_ENABLED == "1" and GROUP_REPLACE_PARTY == "1" and GroupFrame then return end
     for i = 1, 4 do
         local pf = _G["PartyMemberFrame" .. i]
         if pf and GetNumPartyMembers() >= i then

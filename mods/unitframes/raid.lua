@@ -913,6 +913,9 @@ local MOCK_CLASSES = { "WARRIOR", "PRIEST", "MAGE", "ROGUE", "DRUID", "HUNTER", 
 function UF:ToggleRaidTest()
     ConstructRaidGrid()
     testMode = not testMode
+    if UF.SyncNativeGroupFrames then
+        UF:SyncNativeGroupFrames(testMode or UF:GetGroupDimensions().enabled)
+    end
     SyncRangeTicker()
 
     local bc = UF.backdropBorderColor or { 0.15, 0.15, 0.15, 0.9 }
@@ -1099,6 +1102,7 @@ end
 
 function UF:EnableRaidFrames(deferRoster)
     local dims = UF:GetGroupDimensions()
+    if UF.SyncNativeGroupFrames then UF:SyncNativeGroupFrames(dims.enabled) end
     if not dims.enabled then
         if raidFrame then raidFrame:Hide() end
         return
@@ -1133,4 +1137,5 @@ function UF:DisableRaidFrames()
         raidFrame:Hide()
         raidFrame:UnregisterAllEvents()
     end
+    if UF.SyncNativeGroupFrames then UF:SyncNativeGroupFrames(false) end
 end

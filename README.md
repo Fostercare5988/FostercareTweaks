@@ -56,6 +56,18 @@ BlizzNameplatesPlus and ShaguPlates retain ownership when loaded.
 The target-frame castbar and nameplate castbars are separate views within this
 addon. Keep either or both enabled; their controls identify the view they affect.
 
+In **Raid Frames**, **Use FostercareTweaks party and raid frames** gives this addon
+control of the group grid. The built-in compact group grid is hidden and its
+native group/member updates are paused. Turning the switch off returns control
+to the game's frame settings, keeping your native compact-grid preference.
+The test grid temporarily takes the same ownership. On clients with the built-in
+compact grid, repeated world entries reuse its frame lists instead of appending
+duplicate references. This integration adds no polling timer.
+
+**Chat Class Colors** colors player names in chat. Friends, Guild and Who keep
+the game's built-in list colors; this addon no longer recolors those lists.
+Your previous Social Colors switch carries over to the chat setting.
+
 Health and aura changes use batched unit events. Aura countdowns run at 5 Hz only
 while timed rows are visible; resolved classes are cached and idle casts reconcile
 at 5 Hz. Cast animation and native color/mark/opacity repair remain smooth at render

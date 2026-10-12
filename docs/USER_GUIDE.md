@@ -1,6 +1,6 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.2.1**.
+Configuration and controls for **FostercareTweaks 1.2.2**.
 
 Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
 **Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
@@ -19,6 +19,11 @@ player/target frames; Blizzard auras are the original top-right icons.
 
 **Raid Frames** has **Layout**, **Indicators** and **Auras**. One grid serves both
 parties and raids. Each control updates its own setting and keeps unrelated choices.
+
+**Chat Class Colors**, under General > Social & Chat, colors player names in chat.
+Friends, Guild and Who use the game's built-in list colors. The previous Social
+Colors setting migrates to this chat-only setting; its offline friend display
+and last-seen formatting are retired.
 
 ### Nameplates
 
@@ -75,6 +80,7 @@ Configure your preferred style under `/ft uf`:
 - Sweeps and duration text are independent for buffs and debuffs. Missing timing stays unknown; the addon does not invent durations.
 
 ### Raid Grid
+- **Frame owner**: **Use FostercareTweaks party and raid frames** pauses the built-in compact group grid and its native member updates while this addon's grid is enabled. Turning it off returns control to the game's frame settings. Your native compact-grid preference is preserved. The test grid temporarily pauses the native grid too. Changes apply immediately.
 - **Layout & Sizing**: Open `/ft raid` to configure row height, width, scale, and spacing.
 - **Group Labels**: Show or hide G1–G8 / Party. Hidden labels reclaim the header space, including in previews and after roster updates.
 - **Aura Indicators**: Buffs and debuffs share one strip inside each member frame. Set separate sizes/counts and a shared gap. Default requests are four 10 px buffs, three 11 px debuffs and a 2 px gap. Icons shrink vertically on small frames; the minimum-height layout is a dense overview. Use larger member frames for readable stack and timer detail.

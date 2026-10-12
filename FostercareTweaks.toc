@@ -4,9 +4,9 @@
 ## X-ClassicAPI-Min-Version: 1.15.15
 ## Title: FostercareTweaks
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.15.15+ and SuperWoW 2.2+; NamPower v4.6.2+ is optional.
-## OptionalDeps: GearRack, AutoBG, AtlasLoot, BlizzNameplatesPlus, ShaguPlates
+## OptionalDeps: GearRack, AutoBG, AtlasLoot, BlizzNameplatesPlus, ShaguPlates, Turtle_GroupUI
 ## Author: Fostercare5988
-## Version: 1.2.1
+## Version: 1.2.2
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 
@@ -34,6 +34,7 @@ mods\unitframes\player.lua
 mods\unitframes\target.lua
 mods\unitframes\tot.lua
 mods\unitframes\raid.lua
+mods\unitframes\native-group.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
 mods\unitframes-classportrait.lua
@@ -64,7 +65,7 @@ mods\equip-compare.lua
 
 # Chat & Social Modules
 mods\chat-tweaks.lua
-mods\social-colors.lua
+mods\chat-class-colors.lua
 
 # General & Gameplay Modules
 mods\gameplay.lua

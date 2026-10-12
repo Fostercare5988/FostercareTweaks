@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.2.1"
+FT.version = "1.2.2"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -46,6 +46,18 @@ local function EnsureSavedTables()
     if type(FostercareTweaks_Config.overwrites) ~= "table" then FostercareTweaks_Config.overwrites = {} end
     if type(FostercareTweaks_Cache) ~= "table" then FostercareTweaks_Cache = {} end
     if type(FostercareTweaks_Cache.players) ~= "table" then FostercareTweaks_Cache.players = {} end
+    -- Retire social-list styling; preserve the independent chat-color choice.
+    if FostercareTweaks_Config["Social Colors"] ~= nil then
+        if FostercareTweaks_Config["Chat Class Colors"] == nil then
+            FostercareTweaks_Config["Chat Class Colors"] = FostercareTweaks_Config["Social Colors"]
+        end
+        FostercareTweaks_Config["Social Colors"] = nil
+        for _, record in pairs(FostercareTweaks_Cache.players) do
+            if type(record) == "table" then
+                record.cname, record.clevel, record.cclass, record.lastseen = nil, nil, nil, nil
+            end
+        end
+    end
 end
 
 -- ClassicAPI loads SavedVariables before source; modules also read them at load.
