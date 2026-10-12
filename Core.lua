@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.2.2"
+FT.version = "1.3.0"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -69,7 +69,6 @@ function FT:Initialize()
     EnsureSavedTables()
 
     if self.MigrateFrameSettings then self.MigrateFrameSettings() end
-    if self.MigrateNameplateSettings then self.MigrateNameplateSettings() end
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.
@@ -90,8 +89,7 @@ function FT:Initialize()
     end
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
-        if FostercareTweaks_Config[title] == 1 and mod.enable
-            and (mod.category ~= "Nameplates" or self.nameplatesEnabled) then
+        if FostercareTweaks_Config[title] == 1 and mod.enable then
             local success, err = pcall(mod.enable, mod)
             if not success and DEFAULT_CHAT_FRAME then
                 DEFAULT_CHAT_FRAME:AddMessage("|cffff2020[FostercareTweaks Error]|r Failed to enable '" .. tostring(title) .. "': " .. tostring(err), 1, 0.3, 0.3)
@@ -136,11 +134,6 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
         if FostercareTweaksSettingsGUI then
             FostercareTweaksSettingsGUI:Show()
             FostercareTweaksSettingsGUI.SelectTab(4)
-        end
-    elseif cmd[1] == "nameplates" or cmd[1] == "plates" then
-        if FostercareTweaksSettingsGUI then
-            FostercareTweaksSettingsGUI:Show()
-            FostercareTweaksSettingsGUI.SelectTab(5)
         end
     elseif cmd[1] == "uf" or cmd[1] == "unitframes" or cmd[1] == "unitframe" then
         if FostercareTweaksSettingsGUI then

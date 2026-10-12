@@ -142,7 +142,7 @@ local markOutsideCB = CreateCheckButton("FCTweaksMarkOutsideCB", "Marks Beside P
 local markHint = Theme.Font(markBox, "OVERLAY", "GameFontHighlightSmall")
 markHint:SetPoint("TOPLEFT", markBox, "TOPLEFT", 24, -140)
 markHint:SetWidth(400); markHint:SetJustifyH("LEFT")
-markHint:SetText("Size and placement apply live. Enable changes need Reload UI below. Nameplate marks have separate controls on the Nameplates page.")
+markHint:SetText("Size and placement apply live. Enable changes need Reload UI below. These controls affect unit-frame marks only.")
 
 local sharedBox = CreateSectionBox(unitContainer, "Standard-frame appearance", 150)
 sharedBox:SetPoint("TOPLEFT", markBox, "BOTTOMLEFT", 0, -14)
@@ -152,8 +152,8 @@ local classColorCB = CreateCheckButton("FCTweaksClassColorCB", "Unit Frame Class
 local classPortraitCB = CreateCheckButton("FCTweaksClassPortCB", "Unit Frame Class Portraits", "Class portraits on standard Blizzard frames.", sharedBox, 16, -72)
 local healthNumbersCB = CreateCheckButton("FCTweaksHealthNumCB", "Real Health Numbers", "Real health values on standard unit frames.", sharedBox, 230, -24)
 local energyTickCB = CreateCheckButton("FCTweaksEnergyTickCB", "Show Energy Ticks", "Estimated two-second energy ticks; mana spending shows the five-second rule. Spell gains are excluded when NamPower v4.6.2+ is available.", sharedBox, 230, -48)
-local enemyCastbarCB = CreateCheckButton("FCTweaksEnemyCastCB", "Target-frame castbar", "Show casts beneath your selected target frame. Nameplate castbars are controlled separately on the Nameplates page.", sharedBox, 230, -72)
-local uninterruptCB = CreateCheckButton("FCTweaksUninterruptCB", "Grey bars for uninterruptible casts", "Applies to both target-frame and nameplate castbars.", sharedBox, 16, -96)
+local enemyCastbarCB = CreateCheckButton("FCTweaksEnemyCastCB", "Target-frame castbar", "Show casts beneath your selected target frame.", sharedBox, 230, -72)
+local uninterruptCB = CreateCheckButton("FCTweaksUninterruptCB", "Grey bars for uninterruptible casts", "Use grey bars for uninterruptible casts beneath your target frame.", sharedBox, 16, -96)
 local debuffTimerCB = CreateCheckButton("FCTweaksDebuffTimerCB", "Timers on original target debuffs", "Used only when Enhanced standard-frame auras is off. Changing this option requires Reload UI.", sharedBox, 230, -96)
 local improvedStandardAurasCB = CreateCheckButton("FCTweaksImpStdAurasCB", "Enhanced standard-frame auras", "Show enhanced auras on standard frames. Hold Ctrl+Shift to move each aura area.", sharedBox, 16, -120)
 local energyBox = CreateSectionBox(unitContainer, "Energy Tick Visibility", 106)
@@ -710,7 +710,7 @@ Place(uninterruptCB, combatBox, 16, -52)
 local castHint = Theme.Font(combatBox, "OVERLAY", "GameFontNormalSmall", "hint")
 castHint:SetPoint("TOPLEFT", combatBox, "TOPLEFT", 24, -80)
 castHint:SetWidth(402); castHint:SetHeight(22); castHint:SetJustifyH("LEFT")
-castHint:SetText("Nameplate castbars have their own switch on the Nameplates page.")
+castHint:SetText("This castbar follows your selected target-frame style.")
 energyBox:SetHeight(200)
 Place(energyTickCB, energyBox, 16, -24)
 Place(energyContrastCB, energyBox, 16, -52)
@@ -732,6 +732,6 @@ Widgets.Sections(unitPage, unitContainer, {
     {title="Standard frames", boxes={sharedBox}, hint="These enhancements apply to Blizzard frames. Changes needing a restart of the UI show a Reload UI button."},
     {title="Modern layout", boxes={modernBox, dimBox, fontBox, formatBox}, hint="Size, text and decorations for the modern frames selected under Frame style. Blizzard frames keep their original layout."},
     {title="Unit auras", boxes={buffBox, debuffBox}, hint="Buffs and debuffs attached to player/target frames. Blizzard frames need Enhanced standard-frame auras for these controls."},
-    {title="Combat details", boxes={combatBox, energyBox, markBox}, hint="Target-frame casts, energy/mana timing and unit-frame raid marks. Nameplate details remain on the Nameplates page."},
+    {title="Combat details", boxes={combatBox, energyBox, markBox}, hint="Target-frame casts, energy/mana timing and unit-frame raid marks."},
     {title="Blizzard auras", boxes={nativeAuraBox, borderBox}, hint="Top-right buffs, debuffs and weapon enchants. Border settings also apply to unit/raid aura icons; visibility stays independent."},
 }, "Choose a section. Live changes apply immediately; Reload UI is always an explicit action.")

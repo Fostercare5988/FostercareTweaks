@@ -308,7 +308,7 @@ do
 
 local module = FT:register({
     title = "Uninterruptible Castbars",
-    description = "Changes castbar color to silver for spells that cannot be interrupted (target and nameplates).",
+    description = "Changes castbar color to silver for spells that cannot be interrupted (target frame).",
     category = "Unit Frames",
     enabled = true,
 })

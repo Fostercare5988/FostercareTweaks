@@ -1,11 +1,11 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.2.2**.
+Configuration and controls for **FostercareTweaks 1.3.0**.
 
-Open `/ft` for one settings window with five pages: **General**, **Unit Frames**,
-**Raid Frames**, **Action Bars** and **Nameplates**. Charcoal sections, white labels and teal
+Open `/ft` for one settings window with four pages: **General**, **Unit Frames**,
+**Raid Frames** and **Action Bars**. Charcoal sections, white labels and teal
 selection marks distinguish controls and the active page. `/ft uf`, `/ft raid`
-and `/ft bars` open the corresponding page directly. `/ft nameplates` opens nameplate settings.
+and `/ft bars` open the corresponding page directly.
 
 General uses fixed headings with no collapse arrows. Its switches are staged until
 **Apply**; **Cancel** discards those staged changes. The other pages save each
@@ -24,28 +24,6 @@ parties and raids. Each control updates its own setting and keeps unrelated choi
 Friends, Guild and Who use the game's built-in list colors. The previous Social
 Colors setting migrates to this chat-only setting; its offline friend display
 and last-seen formatting are retired.
-
-### Nameplates
-
-**Use FostercareTweaks nameplate features** is the master switch. Restart the game
-after changing it. Turning it off keeps ordinary Blizzard nameplates and your
-independent target-frame castbar, and bypasses this addon's plate hooks, cast
-queries and nameplate feature events. Individual feature choices are preserved;
-**Reset nameplate settings** does not change the master switch. The remaining
-settings apply live while the features are enabled.
-
-- Feature controls and individual module switches apply live while enabled. The target preview uses sample values and caps its displayed scale at 2.5x so it fits the window.
-- **Plate size** spans 0.1–4x independently of global UI scale. Optionally multiply by UI scale and enlarge the selected target by up to 1.5x. Existing base sizes migrate once. Scaling includes the health bar, border, level decorations and castbar. Names and level text retain their stock size and native parent; native targeting remains intact.
-- **Target emphasis** enlarges the selected plate and offers adjustable opacity for other units. The optional warm highlight is off by default to preserve the stock bar and border. Marked units retain at least 90% opacity. Disable **Target emphasis, marks and details** for plain native visuals while retaining independent scale, class-color, castbar and cooldown modules.
-- **Raid target marks** use the game's native icon and visibility. Set 12–40 px size and left, right or above-name placement. Disabling adjustment restores native placement, without hiding marks. Nameplate marks are independent of **Clear Raid Target Marks** under **Unit Frames**.
-- **Health text** offers off, percent, current health or both. It defaults to target only. Values come from SuperWoW's native health queries.
-- **Auras** show up to 1–6 of your debuffs, including your pet's, plus one crowd-control effect from any caster. A duplicated own CC effect appears once. Optionally show up to two enemy buffs. Choose 14–32 px icons. Countdown text is shown only when the client supplies timing; stacks appear in the corner. Aura and cooldown rows reserve separate space above the name.
-- **Combo points** appear on the selected target. Optional **Targeting you** labels identify hostile non-player units whose current target is you; this indicates targeting, not threat lead or a guaranteed attack.
-- **Castbars** retain the Blizzard texture, scale with the plate, and offer height and gap controls. Uninterruptible casts follow the existing grey-castbar option.
-- **Enemy cooldowns** require NamPower 4.6.2+. Icons show the latest observed enemy-player abilities first, with a sweep and an estimated `~` timer. Set 1–8 visible icons, 14–40 px size, minimum base cooldown and extra space above the aura row. Optionally show cooldowns only on the target. Castbars remain below the plate.
-- Base cooldowns come from the current client's spell data, including custom spells with that data. Talents, reset abilities, delayed cooldown starts and server-side rules can change the actual timer. An expired icon does not prove readiness. Item-only cooldowns, pets and unobserved abilities are not tracked.
-- Observations survive a plate leaving view until their estimated expiry. World transitions clear them. The tracker uses no saved enemy database or sound alerts.
-- **Reset nameplate settings** restores this page's visual/detail preferences. Other frames and module enable choices are kept. BlizzNameplatesPlus and ShaguPlates keep ownership of their plates; FostercareTweaks stays inactive for nameplates while either is loaded.
 
 ---
 
@@ -66,8 +44,8 @@ Configure your preferred style under `/ft uf`:
 - **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Health uses native SuperWoW values.
 - Each **Modern Player / Target / Target's Target** checkbox selects that frame's style; unchecked uses Blizzard. Existing dimensions, scale, power-bar height and fonts apply live. Fonts shrink to their available lane; names truncate before covering health. Tall, narrow frames limit portrait width. Power numbers hide below an 8 px bar height.
 - Choose name, class/creature type and level visibility independently. Health and power offer **Smart**, **Current**, **Percent** and **Hidden**. Smart omits an unnecessary maximum and uses current energy/rage; Percent remains a percentage for every resource. Level badges use native difficulty colors; unknown-level bosses use the native skull.
-- Under **Combat details**, **Adjust unit-frame raid marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column. Nameplate marks have separate controls under **Nameplates**.
-- **Target-frame castbar** under **Combat details** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows. **Nameplate castbars** on the Nameplates page controls the second view. Both are provided by FostercareTweaks and can stay enabled together. Disabling either stops its cast-event subscriptions; the target view also stops its animation immediately.
+- Under **Combat details**, **Adjust unit-frame raid marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column. These controls affect unit-frame marks only.
+- **Target-frame castbar** under **Combat details** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows. The target castbar remains available with FostercareNameplates disabled. Disabling it stops its cast-event subscriptions and animation immediately.
 
 ### Aura Controls & Borders
 - **Aura Border Toggles**: Under `/ft` > **Unit Frames** > **Blizzard auras**, toggle borders for Buffs, Debuffs, and Weapon Enchants independently:

@@ -1,20 +1,17 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Use the native eight-symbol atlas and authoritative unit/plate identities.
+-- Use the native eight-symbol atlas and authoritative unit identities.
 local module = FT:register({
     title = "Clear Raid Target Marks", category = "Unit Frames", enabled = true,
     description = "Readable raid target marks on unit frames.",
     config = { raidmark_size = 22, raidmark_position = "portrait" },
 })
 
-function FT.GetRaidMarkSettings(nameplate)
-    local key = nameplate and "nameplate_raidmark_" or "raidmark_"
-    local size = FT.GetNumber(key .. "size", nameplate and 20 or 22, 12, nameplate and 40 or 36)
-    local position = FT.GetOverride(key .. "position")
-    if nameplate then position = (position == "above" or position == "right") and position or "left"
-    else position = position == "outside" and "outside" or "portrait" end
-    return size, position
+function FT.GetRaidMarkSettings()
+    local size = FT.GetNumber("raidmark_size", 22, 12, 36)
+    local position = FT.GetOverride("raidmark_position")
+    return size, position == "outside" and "outside" or "portrait"
 end
 
 function FT.LayoutRaidMark(frame, icon, native)
@@ -36,16 +33,11 @@ function FT.LayoutRaidMark(frame, icon, native)
     icon:SetVertexColor(1, 1, 1, 1)
 end
 
-function FT.RefreshNameplateRaidMarks()
-    if FT.Nameplates then FT.Nameplates:RefreshMarks() end
-end
-
-function FT:RefreshRaidMarks(includeRaid, skipNameplates)
+function FT:RefreshRaidMarks(includeRaid)
     local UF = self.UnitFrames
     if UF and UF.targetFrame then self.LayoutRaidMark(UF.targetFrame, UF.targetFrame.raidIcon) end
     if TargetRaidTargetIcon and TargetFrame and TargetPortrait then self.LayoutRaidMark(TargetFrame, TargetRaidTargetIcon, true) end
     if includeRaid ~= false and UF and UF.RefreshRaidMarks then UF:RefreshRaidMarks() end
-    if not skipNameplates then self.RefreshNameplateRaidMarks() end
 end
 
 module.enable = function(self)
@@ -59,7 +51,7 @@ module.enable = function(self)
     driver:RegisterEvent("PLAYER_ENTERING_WORLD")
     driver:RegisterEvent("UI_SCALE_CHANGED")
     FT.SetEventHandler(driver, function(_, ev)
-        FT:RefreshRaidMarks(ev == "UI_SCALE_CHANGED", true)
+        FT:RefreshRaidMarks(ev == "UI_SCALE_CHANGED")
     end)
     FT:RefreshRaidMarks()
 end

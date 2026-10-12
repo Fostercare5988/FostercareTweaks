@@ -102,7 +102,7 @@ settings.okay:SetScript("OnClick", function()
 
     if reload then settings:RequireReload() end
     for title, mod in pairs(FT.mods) do
-        if mod.category ~= "Unit Frames" and mod.category ~= "Nameplates" then
+        if mod.category ~= "Unit Frames" then
             current_config[title] = FostercareTweaks_Config[title]
         end
     end
@@ -141,7 +141,7 @@ end
 settings:RegisterEvent("UI_SCALE_CHANGED")
 FT.SetEventHandler(settings, EnsureWindowHeight)
 
-local pageNames = { "scrollframe", "unitPage", "raidPage", "actionPage", "nameplatePage" }
+local pageNames = { "scrollframe", "unitPage", "raidPage", "actionPage" }
 
 local function SelectTab(tabId)
     EnsureWindowHeight()
@@ -207,9 +207,7 @@ tab3:SetPoint("LEFT", tab2, "RIGHT", 4, 0)
 
 local tab4 = CreateTabButton(4, "Action Bars")
 tab4:SetPoint("LEFT", tab3, "RIGHT", 4, 0)
-local tab5 = CreateTabButton(5, "Nameplates")
-tab5:SetPoint("LEFT", tab4, "RIGHT", 4, 0)
-settings.tabs = { tab1, tab2, tab3, tab4, tab5 }
+settings.tabs = { tab1, tab2, tab3, tab4 }
 
 -- Categories have fixed headings on every visit. No page has collapse arrows.
 settings.load = function(self)
@@ -219,7 +217,7 @@ settings.load = function(self)
         local gui = {}
         for _, title in ipairs(FT.moduleOrder) do
             local module = FT.mods[title]
-            if module.category ~= "Unit Frames" and module.category ~= "Nameplates" then
+            if module.category ~= "Unit Frames" then
                 gui[module.category] = gui[module.category] or {}
                 table.insert(gui[module.category], module)
             end
@@ -260,7 +258,7 @@ end
 
 function settings:defaults()
     for title, mod in pairs(FT.mods) do
-        if mod.category ~= "Unit Frames" and mod.category ~= "Nameplates" then
+        if mod.category ~= "Unit Frames" then
             current_config[title] = mod.enabled and 1 or 0
         end
     end
@@ -271,7 +269,7 @@ settings:SetScript("OnShow", function()
     current_config = {}
     if FostercareTweaks_Config and FT.mods then
         for title, mod in pairs(FT.mods) do
-            if mod.category ~= "Unit Frames" and mod.category ~= "Nameplates" then current_config[title] = FostercareTweaks_Config[title] end
+            if mod.category ~= "Unit Frames" then current_config[title] = FostercareTweaks_Config[title] end
         end
     end
     SelectTab(settings.currentTab or 1)

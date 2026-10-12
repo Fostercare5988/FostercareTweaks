@@ -1,21 +1,8 @@
 -- FostercareTweaks: Helpers.lua
--- Shared timers, frame traversal, metadata and nameplate ownership
+-- Shared settings helpers, metadata and unit-frame health
 
 local FT = FostercareTweaks
 if not FT then return end
-
--- Traverse frame returns without constructing a temporary region array.
-local function RegionWalk(idx, callback, arg1, arg2, arg3, r, ...)
-    if not r then return end
-    callback(r, idx, arg1, arg2, arg3)
-    return RegionWalk(idx + 1, callback, arg1, arg2, arg3, ...)
-end
-
-FT.ForEachRegion = function(frame, callback, arg1, arg2, arg3)
-    if frame and frame.GetRegions and callback then
-        RegionWalk(1, callback, arg1, arg2, arg3, frame:GetRegions())
-    end
-end
 
 -- Required ClassicAPI posthooks preserve native return values and ownership.
 FT.hooksecurefunc = hooksecurefunc
@@ -76,16 +63,6 @@ end
 
 function FT.GetNumber(key, default, minimum, maximum)
     return FT.ClampNumber(FT.GetOverride(key), default, minimum, maximum)
-end
-
--- Native 1.12 FontStrings have no Frame GetScale/SetScale methods.
--- Use this only for addon-owned labels. Engine-owned name/level text scales
--- independently in the native renderer; preserve both font and parent ownership.
-function FT.SetNameplateFontSize(text, size)
-    if not text then return end
-    local font, current, flags = text:GetFont()
-    size = math.max(1, math.floor(size + 0.5))
-    if font and current ~= size then text:SetFont(font, size, flags) end
 end
 
 function FT.SetOverride(key, value)
@@ -409,133 +386,6 @@ FT.SetEventHandler(unitScanFrame, function(_, ev)
     elseif ev == "PLAYER_TARGET_CHANGED" then ReadUnit("target")
     elseif ev == "UPDATE_MOUSEOVER_UNIT" then ReadUnit("mouseover") end
 end)
-
--- Nameplate lifecycle and verified GUID bindings.
-local NAMEPLATE_OBJECTORDER = { "border", "glow", "name", "level", "levelicon", "raidicon", "dragon" }
-
--- Snapshot the master choice before plate discovery. Changing it requires a
--- restart so disabling never leaves a partly initialized plate subsystem.
-FT.nameplatesEnabled = FostercareTweaks_Config.nameplatesEnabled ~= 0
-
-local function IsNamePlate(frame)
-    if not frame or frame:GetObjectType() ~= "Button" then return false end
-    local regions = frame:GetRegions()
-    if not regions or not regions.GetObjectType or not regions.GetTexture then return false end
-    if regions:GetObjectType() ~= "Texture" then return false end
-    return regions:GetTexture() == "Interface\\Tooltips\\Nameplate-Border"
-end
-
-local libnameplate = CreateFrame("Frame", "FCTweaksLibNameplate", UIParent)
-libnameplate.OnInit = {}
-libnameplate.OnShow = {}
-libnameplate.OnUpdate = {}
-libnameplate.OnAdded = {}
-libnameplate.OnRemoved = {}
-local plateRegistry = {}
-libnameplate.plates = plateRegistry
-
-function FT.OwnsNameplates()
-    return FT.nameplatesEnabled and not libnameplate.stopping and not ShaguPlates and not BNP
-end
-
-local function InitPlate(plate, unit)
-    if not plate or plateRegistry[plate] then
-        if plate and unit then plate.fctUnitGUID = UnitGUID(unit) end
-        return
-    end
-    if not IsNamePlate(plate) then return end
-
-    if unit then plate.fctUnitGUID = UnitGUID(unit) end
-    plate.healthbar = plate:GetChildren()
-    FT.ForEachRegion(plate, function(region, index)
-        local key = NAMEPLATE_OBJECTORDER[index]
-        if key then plate[key] = region end
-    end)
-
-    for _, func in ipairs(libnameplate.OnInit) do
-        func(plate)
-    end
-
-    FT.HookScript(plate, "OnUpdate", function(self)
-        if not FT.OwnsNameplates() or #libnameplate.OnUpdate == 0 then return end
-        -- Validate a pooled frame once for all render consumers, not once per feature.
-        local unit, now = FT.GetNameplateUnit(self), GetTime()
-        for _, callback in ipairs(libnameplate.OnUpdate) do callback(self, unit, now) end
-    end)
-    FT.HookScript(plate, "OnShow", function(self)
-        if libnameplate.stopping then return end
-        for _, callback in ipairs(libnameplate.OnShow) do callback(self) end
-    end)
-
-    plateRegistry[plate] = plate
-end
-
--- Validate pooled-frame ownership before consuming any unit data.
-FT.GetNameplateUnit = function(plate)
-    local guid = plate.fctUnitGUID
-    if guid and C_NamePlate.GetNamePlateForUnit(guid) == plate then
-        return guid
-    end
-    plate.fctUnitGUID = nil
-end
-
-if FT.nameplatesEnabled then
-    libnameplate:RegisterEvent("NAME_PLATE_CREATED")
-    libnameplate:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-    libnameplate:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-    libnameplate:RegisterEvent("PLAYER_ENTERING_WORLD")
-    libnameplate:RegisterEvent("PLAYER_LOGOUT")
-end
-
-local function ShutdownNameplates()
-    libnameplate.stopping = true
-    libnameplate:UnregisterAllEvents()
-    if FT.Nameplates then FT.Nameplates:Shutdown() end
-    if FT.NameplateCooldowns then FT.NameplateCooldowns:ApplyConfiguration() end
-    for plate in pairs(plateRegistry) do
-        if FT.RestoreNameplateScale then FT.RestoreNameplateScale(plate) end
-        -- Engine-created plates can outlive the Lua UI. Unlink only our
-        -- regions/frames before reload frees their font/layout resources.
-        for _, key in ipairs({ "fctHealth",
-            "fctAuras", "fctCombo", "fctTargetGlow", "fctTargeting",
-            "fctCastbar", "fctEnemyCooldowns" }) do
-            local object = plate[key]
-            if object then
-                object:Hide(); object:ClearAllPoints(); object:SetParent(UIParent)
-            end
-        end
-    end
-end
-
-FT.SetEventHandler(libnameplate, function(_, ev, a1)
-    if ev == "PLAYER_LOGOUT" then ShutdownNameplates(); return end
-    if libnameplate.stopping or not FT.nameplatesEnabled then return end
-    if ev == "NAME_PLATE_CREATED" and a1 then
-        InitPlate(a1)
-    elseif ev == "NAME_PLATE_UNIT_ADDED" and a1 then
-        local unit = a1
-        local plate = C_NamePlate.GetNamePlateForUnit(unit)
-        if plate then
-            InitPlate(plate, unit)
-            if plateRegistry[plate] then
-                for _, callback in ipairs(libnameplate.OnAdded) do callback(plate, plate.fctUnitGUID) end
-            end
-        end
-    elseif ev == "NAME_PLATE_UNIT_REMOVED" and a1 then
-        local unit = a1
-        local plate = C_NamePlate.GetNamePlateForUnit(unit)
-        if plate and plate.fctUnitGUID == UnitGUID(unit) then
-            plate.fctUnitGUID = nil
-            for _, callback in ipairs(libnameplate.OnRemoved) do callback(plate) end
-        end
-    elseif ev == "PLAYER_ENTERING_WORLD" then
-        for _, guid in ipairs(C_NamePlate.GetNamePlateGUIDs()) do
-            InitPlate(C_NamePlate.GetNamePlateForGUID(guid), guid)
-        end
-    end
-end)
-
-FT.libnameplate = libnameplate
 
 -- SuperWoW supplies real values through native UnitHealth/UnitHealthMax.
 function FT.GetUnitHealthValues(unit)
