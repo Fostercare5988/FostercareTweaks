@@ -251,16 +251,7 @@ module.enable = function(self)
 
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
-        local isCombat = 0
-        if cf and cf.messageTypeList then
-            for _, msg in pairs(cf.messageTypeList) do
-                if strfind(msg, "SPELL", 1) or strfind(msg, "COMBAT", 1) then
-                    isCombat = isCombat + 1
-                end
-            end
-        end
-
-        if cf and not cf.FCTweaks_HookAddMessage and isCombat < 5 then
+        if cf and not cf.FCTweaks_HookAddMessage and not FT.IsCombatChatFrame(cf) then
             cf.FCTweaks_HookAddMessage = cf.AddMessage
             cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
                 if text then
@@ -327,16 +318,7 @@ module.enable = function(self)
 
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
-        local combat = 0
-        if cf and cf.messageTypeList then
-            for _, msg in pairs(cf.messageTypeList) do
-                if strfind(msg, "SPELL", 1) or strfind(msg, "COMBAT", 1) then
-                    combat = combat + 1
-                end
-            end
-        end
-
-        if cf and combat <= 5 and not cf.FCTweaks_ChatHistoryAddMessage then
+        if cf and not FT.IsCombatChatFrame(cf) and not cf.FCTweaks_ChatHistoryAddMessage then
             local history = GetChatHistory(i)
             for j = math.min(#history, 30), 1, -1 do
                 if type(history[j]) == "string" then

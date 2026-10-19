@@ -6,9 +6,11 @@ if not FT then return end
 -- Modern Unit Frames Subsystem: Core Foundation
 
 
+-- Owns the shared modern-frame defaults (uf_scale). Each frame has its own
+-- toggle below; PLAYER_LOGIN applies them, so this entry has no switch of its own.
 local module = FT:register({
     title = "Unit Frames (Modern)",
-    description = "Modern unit frames for Player and Target inspired by Luna Unit Frames, backed by enhanced client APIs.",
+    description = "Shared settings for the modern unit frames.",
     category = "Unit Frames",
     enabled = false,
     config = {
@@ -1045,6 +1047,7 @@ local function UnitFrame_OnEnter()
     if not unit then return end
 
     if SetMouseoverUnit then
+        -- UNVERIFIED: test in game. SetMouseoverUnit is documented for GUIDs; unit-token use is not in the VanillaForge references.
         SetMouseoverUnit(unit)
     end
 
@@ -1356,11 +1359,6 @@ function UF:RestoreBlizzardFrames()
     UF:RestorePlayerFrame()
     UF:RestoreTargetFrame()
     UF:RestorePartyFrames()
-end
-
-module.enable = function(self)
-    UF.enabled = true
-    UF:ApplyConfiguration()
 end
 
 -- Hook Blizzard frames so they respect user toggles

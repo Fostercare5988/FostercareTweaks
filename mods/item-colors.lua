@@ -117,6 +117,7 @@ module.enable = function()
     end
     local controller = CreateFrame("Frame", "FCTweaksItemBorders", UIParent)
     for _, ev in ipairs({"BAG_UPDATE_DELAYED", "BAG_UPDATE", "UNIT_INVENTORY_CHANGED",
+        -- UNVERIFIED: test in game. GET_ITEM_INFO_RECEIVED payload is not in the VanillaForge references.
         "PLAYERBANKSLOTS_CHANGED", "GET_ITEM_INFO_RECEIVED"}) do controller:RegisterEvent(ev) end
     FT.SetEventHandler(controller, function(_, ev, unitOrBag)
         if ev == "BAG_UPDATE_DELAYED" or (ev == "BAG_UPDATE" and unitOrBag == -2) then RefreshBags()

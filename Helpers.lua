@@ -95,6 +95,18 @@ function FT.HookAddonOrVariable(addon, callback)
     loadWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
 end
 
+-- Chat modules leave combat-log windows alone. A window counts as combat
+-- output when more than five of its message types are spell/combat types.
+function FT.IsCombatChatFrame(frame)
+    local combat = 0
+    for _, msg in pairs(frame and frame.messageTypeList or {}) do
+        if strfind(msg, "SPELL", 1) or strfind(msg, "COMBAT", 1) then
+            combat = combat + 1
+        end
+    end
+    return combat > 5
+end
+
 -- Math & Color Utilities
 FT.rgbhex = function(r, g, b, a)
     local _r, _g, _b, _a
@@ -395,17 +407,19 @@ end
 
 -- One palette for all settings pages. These styles touch addon-owned UI
 -- only; native font objects and gameplay frames keep their original colors.
+-- VanillaForge dark plum and lavender settings theme (KNOWN_PATTERNS).
 local Theme = {
-    background = { 19 / 255, 25 / 255, 32 / 255 }, -- #131920: window
-    panel = { 36 / 255, 46 / 255, 58 / 255 }, -- #242E3A: grouped settings
-    control = { 53 / 255, 69 / 255, 86 / 255 }, -- #354556: buttons and tracks
-    selected = { 18 / 255, 61 / 255, 75 / 255 }, -- #123D4B: active choice
-    text = { 241 / 255, 245 / 255, 249 / 255 }, -- #F1F5F9
-    heading = { 1, 1, 1 },
-    muted = { 193 / 255, 203 / 255, 214 / 255 }, -- #C1CBD6
-    hint = { 193 / 255, 203 / 255, 214 / 255 },
-    border = { 139 / 255, 156 / 255, 176 / 255 }, -- #8B9CB0
-    accent = { 100 / 255, 216 / 255, 230 / 255 }, -- #64D8E6
+    background = { 0.055, 0.045, 0.075 }, -- window
+    panel = { 0.10, 0.075, 0.14 }, -- grouped settings, between window and buttons
+    control = { 0.14, 0.10, 0.20 }, -- buttons and tracks
+    selected = { 0.25, 0.18, 0.35 }, -- active choice (button hover tone)
+    text = { 0.92, 0.90, 1 },
+    heading = { 0.78, 0.65, 1 },
+    muted = { 0.80, 0.76, 0.90 },
+    hint = { 0.80, 0.76, 0.90 },
+    border = { 0.55, 0.43, 0.72 }, -- panel border
+    buttonBorder = { 0.42, 0.33, 0.54 },
+    accent = { 0.78, 0.65, 1 },
 }
 FT.SettingsTheme = Theme
 local settingsBackdrop = {
@@ -431,7 +445,7 @@ function Theme.Panel(frame, surface)
     frame:SetBackdropBorderColor(border[1], border[2], border[3], 1)
 end
 function Theme.SelectButton(button, selected)
-    local color = selected and Theme.accent or Theme.border
+    local color = selected and Theme.accent or Theme.buttonBorder
     local bg = selected and Theme.selected or Theme.control
     button:SetBackdropColor(bg[1], bg[2], bg[3], 1)
     button:SetBackdropBorderColor(color[1], color[2], color[3], 1)

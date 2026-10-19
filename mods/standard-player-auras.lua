@@ -157,6 +157,7 @@ module.enable = function()
     FT.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
     local inventory = CreateFrame("Frame", nil, UIParent)
     inventory:RegisterEvent("UNIT_INVENTORY_CHANGED")
+    -- UNVERIFIED: test in game. GET_ITEM_INFO_RECEIVED payload is not in the VanillaForge references.
     inventory:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     FT.SetEventHandler(inventory, function(_, ev, unitOrItem)
         if ev == "UNIT_INVENTORY_CHANGED" and unitOrItem == "player" then

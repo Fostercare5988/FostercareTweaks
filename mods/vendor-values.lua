@@ -58,9 +58,11 @@ module.enable = function(self)
   end
   for _, frame in ipairs({GameTooltip, ItemRefTooltip}) do
     FT.HookScript(frame, "OnHide", ClearValue)
+    -- UNVERIFIED: test in game. OnTooltipCleared is not in the VanillaForge references.
     FT.HookScript(frame, "OnTooltipCleared", ClearValue)
   end
   local pending = CreateFrame("Frame")
+  -- UNVERIFIED: test in game. GET_ITEM_INFO_RECEIVED payload is not in the VanillaForge references.
   pending:RegisterEvent("GET_ITEM_INFO_RECEIVED")
   FT.SetEventHandler(pending, function(_, ev, itemID, success)
     if success == false then return end

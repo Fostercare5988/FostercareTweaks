@@ -199,6 +199,7 @@ module.enable = function(self)
         local major, minor, patch = GetNampowerVersion()
         if type(major) == "number" and type(minor) == "number" and type(patch) == "number" and
             (major > 4 or (major == 4 and (minor > 6 or (minor == 6 and patch >= 2)))) then
+            -- UNVERIFIED: test in game. NamPower SPELL_ENERGIZE_ON_SELF is not in the VanillaForge references.
             driver:RegisterEvent("SPELL_ENERGIZE_ON_SELF")
         end
     end

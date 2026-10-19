@@ -142,6 +142,7 @@ local function ToTFrame_OnEnter()
     if not UnitExists("targettarget") then return end
 
     if SetMouseoverUnit then
+        -- UNVERIFIED: test in game. SetMouseoverUnit is documented for GUIDs; unit-token use is not in the VanillaForge references.
         SetMouseoverUnit("targettarget")
     end
 
@@ -335,6 +336,7 @@ function UF:EnableToTFrame()
 
     -- Events
     totFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    -- UNVERIFIED: test in game. UNIT_TARGET is not in the VanillaForge references; the poll below still covers ToT changes.
     totFrame:RegisterEvent("UNIT_TARGET")
     totFrame:RegisterEvent("UNIT_HEALTH")
     totFrame:RegisterEvent("UNIT_MAXHEALTH")

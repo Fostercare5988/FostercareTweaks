@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.3.0"
+FT.version = "1.3.1"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -117,6 +117,7 @@ SLASH_FOSTERCARETWEAKS4 = "/st"
 SLASH_FOSTERCARETWEAKS5 = "/shagutweaks"
 
 SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
+    -- UNVERIFIED: test in game. strsplit is not in the VanillaForge references.
     local cmd = { strsplit(" ", msg or "") }
     if cmd[1] == "reset" then
         FostercareTweaks_Config.overwrites = {}

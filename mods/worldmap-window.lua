@@ -86,6 +86,7 @@ local module = FT:register({
 })
 
 module.enable = function(self)
+    -- UNVERIFIED: test in game. C_Map.GetMapAreaIDs/GetAreaInfo/GetMapChildrenInfo/GetFallbackWorldMapID/GetPlayerMapPosition are not in the VanillaForge references.
     local mapAreaIDs = C_Map.GetMapAreaIDs()
     local mapIDsByName = {}
     for _, mapID in pairs(mapAreaIDs) do

@@ -551,6 +551,7 @@ function Auras:UpdateContainer(container)
             local countSlots = 0
             if maxBuffs > 0 then
                 local continuation
+                -- UNVERIFIED: test in game. GetAuraSlots out-table form and (token, count) returns are not in the VanillaForge references.
                 continuation, countSlots = C_UnitAuras.GetAuraSlots(unit, "HELPFUL", 48, nil, slots)
             end
             for i = 1, countSlots do

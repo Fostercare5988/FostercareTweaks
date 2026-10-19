@@ -64,7 +64,7 @@ rBox2:SetPoint("TOPLEFT", rBox1, "BOTTOMLEFT", 0, -14)
 rBox2:SetPoint("TOPRIGHT", rBox1, "BOTTOMRIGHT", 0, -14)
 
 local aggroCB  = CreateCheckButton("FCTweaksRaidAggroCB",  "Show Aggro Indicator", "Display a red threat warning square on unit frames when threat is high.", rBox2, 16, -24)
-local hotCB    = CreateCheckButton("FCTweaksRaidHoTCB",    "Show HoT Indicator",   "Display a HoT tracking square on the top-left of friendly frames (Renew, Rejuvenation, Regrowth, PW:S, BoP).", rBox2, 230, -24)
+local hotCB    = CreateCheckButton("FCTweaksRaidHoTCB",    "Show HoT Indicator",   "Show a top-left square for Renew, Rejuvenation, Regrowth, Power Word: Shield, Healing Way or Blessing of Protection.", rBox2, 230, -24)
 local debuffCB = CreateCheckButton("FCTweaksRaidDebuffCB", "Show debuff icons",   "Show debuffs inside member frames. Debuffs with a dispel type come first.", rBox2, 16, -48)
 
 local raidBuffBox = CreateSectionBox(raidContainer, "Buffs and Debuffs Inside Frames", 208)

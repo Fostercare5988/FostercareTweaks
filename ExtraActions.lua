@@ -290,6 +290,7 @@ local function Display(button, full)
             end
         elseif not full then count = button.count.fctText or "" end
     elseif itemID then
+        -- UNVERIFIED: test in game. C_Item.IsUsableItem is not in the VanillaForge references.
         usable, noMana = C_Item.IsUsableItem(itemID)
         inRange = C_Item.IsItemInRange(itemID, "target")
         if full then

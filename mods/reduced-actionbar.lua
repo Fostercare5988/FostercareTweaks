@@ -147,9 +147,6 @@ module.enable = function(self)
 
     FT.hooksecurefunc("UIParent_ManageFramePositions", ManageReducedFramePositions)
 
-    local restore = CreateFrame("Frame", nil, UIParent)
-    restore:SetScript("OnShow", ManageReducedFramePositions)
-
     FT.hooksecurefunc("ShowPetActionBar", function()
         PETACTIONBAR_XPOS = 36
     end)
@@ -348,8 +345,15 @@ module.enable = function(self)
                 f:SetPoint("BOTTOMLEFT", anchor, id == 1 and "BOTTOMLEFT" or "BOTTOMRIGHT", id == 1 and 5 or -4, id == 1 and 2 or 0)
                 f:SetParent(microframe)
                 f.fctReducedHidden = nil
-                f:Show()
+                if f ~= TalentMicroButton then f:Show() end
             end
+        end
+        -- Native code hides the talent button below level 10 and re-anchors
+        -- the quest button beside it; keep this bar's spacing afterwards.
+        if UpdateTalentButton then UpdateTalentButton() elseif TalentMicroButton then TalentMicroButton:Show() end
+        if TalentMicroButton and TalentMicroButton:IsShown() and QuestLogMicroButton then
+            QuestLogMicroButton:ClearAllPoints()
+            QuestLogMicroButton:SetPoint("BOTTOMLEFT", TalentMicroButton, "BOTTOMRIGHT", -4, 0)
         end
     end
 

@@ -105,9 +105,11 @@ local function UpdateButtonPower(btn)
     btn.powerBar:SetStatusBarColor(pc.r, pc.g, pc.b, 1)
 end
 
+-- Healing and protective buffs, matched by English client names. Spell IDs
+-- would be locale-proof but are not yet verified against the deployed DBC.
 local HOT_NAMES = {
     ["Renew"] = true, ["Rejuvenation"] = true, ["Regrowth"] = true,
-    ["Power Word: Shield"] = true, ["Flash Heal"] = true, ["Healing Way"] = true,
+    ["Power Word: Shield"] = true, ["Healing Way"] = true,
     ["Blessing of Protection"] = true,
 }
 
@@ -175,6 +177,7 @@ local function ReadRaidAuras(btn, kind, enabled)
         if testMode then count = kind == "buff" and 32 or (btn.memberIdx == 2 and 1 or (btn.memberIdx == 3 and 2 or 0))
         else
             local continuation
+            -- UNVERIFIED: test in game. GetAuraSlots out-table form and (token, count) returns are not in the VanillaForge references.
             continuation, count = C_UnitAuras.GetAuraSlots(btn.unit, kind == "buff" and "HELPFUL" or "HARMFUL", 0, nil, btn[kind .. "Slots"])
         end
         for i = 1, count do
@@ -331,6 +334,7 @@ local function UpdateButtonAggro(btn, nativeFallback, targetTargetGUID)
         if showAggro then
             if Banzai and Banzai.GetUnitAggroByUnitId then
                 hasAggro = Banzai:GetUnitAggroByUnitId(unit)
+            -- UNVERIFIED: test in game. UnitThreatSituation is not in the VanillaForge references.
             elseif UnitThreatSituation then
                 hasAggro = (UnitThreatSituation(unit) or 0) >= 2
             elseif nativeFallback then
@@ -437,6 +441,7 @@ local function RaidButton_OnEnter()
     if not unit then return end
 
     if SetMouseoverUnit then
+        -- UNVERIFIED: test in game. SetMouseoverUnit is documented for GUIDs; unit-token use is not in the VanillaForge references.
         SetMouseoverUnit(unit)
     end
 

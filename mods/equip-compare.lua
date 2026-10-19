@@ -133,6 +133,7 @@ module.enable = function(self)
             HideCompare()
         end)
 
+        -- UNVERIFIED: test in game. OnTooltipCleared is not in the VanillaForge references.
         FT.HookScript(tt, "OnTooltipCleared", function(self)
             wantedLinks[self] = nil
             self.compareLink = nil
