@@ -14,7 +14,7 @@ Warcraft 1.12.1.
 
 ## Requirements
 
-WoW 1.12.1 build 5875, **ClassicAPI 1.15.15+** and **SuperWoW 2.2+**.
+WoW 1.12.1 build 5875, **ClassicAPI 1.16.0+** and **SuperWoW 2.2+**.
 NamPower 4.6.2+ improves resource-tick attribution when available.
 
 ## Installation
