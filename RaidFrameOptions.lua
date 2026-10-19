@@ -123,8 +123,9 @@ local function OnRaidBuffSwitch(control)
     control = control or this
     FostercareTweaks_Config[control.setting] = control:GetChecked() and 1 or 0
     UpdateRaidBuffCountControl()
-    raidBuffCountSlider.label:SetText("Buffs Per Player: " ..
-        (FostercareTweaks_Config["Show All Raid Buffs"] == 1 and "All" or FT.GetOverride("raid_buff_count")))
+    -- The model supplies the default count before the slider has saved one.
+    local _, buffCount, _, allBuffs = FT.UnitFrames:GetRaidBuffSettings()
+    raidBuffCountSlider.label:SetText("Buffs Per Player: " .. (allBuffs and "All" or buffCount))
     FT.UnitFrames:UpdateAllRaidFrames()
 end
 raidBuffCB.setting, raidAllBuffsCB.setting = "Show Raid Buffs", "Show All Raid Buffs"

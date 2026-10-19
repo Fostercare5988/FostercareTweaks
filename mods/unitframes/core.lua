@@ -1076,49 +1076,56 @@ end
 --------------------------------------------------------------------------------
 
 
+-- Native OnLoad/UnitFrame_Initialize own these registrations. Suppression
+-- remembers exactly which were present; restoring re-registers only those.
+local NATIVE_FRAME_EVENTS = {
+    "UNIT_NAME_UPDATE", "UNIT_PORTRAIT_UPDATE", "UNIT_DISPLAYPOWER", "UNIT_LEVEL",
+    "UNIT_COMBAT", "UNIT_FACTION", "UNIT_CLASSIFICATION_CHANGED", "UNIT_AURA",
+    "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_FOCUS",
+    "UNIT_ENERGY", "UNIT_HAPPINESS", "UNIT_MAXMANA", "UNIT_MAXRAGE", "UNIT_MAXFOCUS",
+    "UNIT_MAXENERGY", "UNIT_MAXHAPPINESS", "PLAYER_ENTERING_WORLD",
+    "PLAYER_TARGET_CHANGED", "PLAYER_COMBO_POINTS", "PLAYER_ENTER_COMBAT",
+    "PLAYER_LEAVE_COMBAT", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
+    "PLAYER_UPDATE_RESTING", "PLAYER_FLAGS_CHANGED", "PARTY_MEMBERS_CHANGED",
+    "PARTY_LEADER_CHANGED", "PARTY_LOOT_METHOD_CHANGED", "RAID_ROSTER_UPDATE",
+    "RAID_TARGET_UPDATE", "PLAYTIME_CHANGED",
+}
+local suppressedEvents = {}
+
+local function SuppressEvents(frame)
+    if not frame then return end
+    -- Repeated suppression keeps the first, native snapshot.
+    if not suppressedEvents[frame] then
+        local events = {}
+        for _, name in ipairs(NATIVE_FRAME_EVENTS) do
+            if frame:IsEventRegistered(name) then table.insert(events, name) end
+        end
+        suppressedEvents[frame] = events
+    end
+    frame:UnregisterAllEvents()
+end
+
+local function RestoreEvents(frame)
+    local events = frame and suppressedEvents[frame]
+    if not events then return end
+    for _, name in ipairs(events) do frame:RegisterEvent(name) end
+    suppressedEvents[frame] = nil
+end
+
 function UF:SuppressPlayerFrame()
     if PlayerFrame then
         PlayerFrame:Hide()
-        PlayerFrame:UnregisterAllEvents()
-        if PlayerFrameHealthBar then PlayerFrameHealthBar:UnregisterAllEvents() end
-        if PlayerFrameManaBar then PlayerFrameManaBar:UnregisterAllEvents() end
+        SuppressEvents(PlayerFrame)
+        SuppressEvents(PlayerFrameHealthBar)
+        SuppressEvents(PlayerFrameManaBar)
     end
 end
 
 function UF:RestorePlayerFrame()
     if not PlayerFrame then return end
-    PlayerFrame:RegisterEvent("UNIT_LEVEL")
-    PlayerFrame:RegisterEvent("UNIT_COMBAT")
-    PlayerFrame:RegisterEvent("UNIT_FACTION")
-    PlayerFrame:RegisterEvent("UNIT_NAME_UPDATE")
-    PlayerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    PlayerFrame:RegisterEvent("PLAYER_ENTER_COMBAT")
-    PlayerFrame:RegisterEvent("PLAYER_LEAVE_COMBAT")
-    PlayerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    PlayerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    PlayerFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
-    PlayerFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
-    PlayerFrame:RegisterEvent("PARTY_LEADER_CHANGED")
-    PlayerFrame:RegisterEvent("PARTY_LOOT_METHOD_CHANGED")
-    PlayerFrame:RegisterEvent("RAID_ROSTER_UPDATE")
-    PlayerFrame:RegisterEvent("PLAYER_PVP_INFO_CHANGED")
-    PlayerFrame:RegisterEvent("UNIT_PORTRAIT_UPDATE")
-    PlayerFrame:RegisterEvent("UNIT_MODEL_CHANGED")
-    if PlayerFrameHealthBar then
-        PlayerFrameHealthBar:RegisterEvent("UNIT_HEALTH")
-        PlayerFrameHealthBar:RegisterEvent("UNIT_MAXHEALTH")
-    end
-    if PlayerFrameManaBar then
-        PlayerFrameManaBar:RegisterEvent("UNIT_MANA")
-        PlayerFrameManaBar:RegisterEvent("UNIT_RAGE")
-        PlayerFrameManaBar:RegisterEvent("UNIT_FOCUS")
-        PlayerFrameManaBar:RegisterEvent("UNIT_ENERGY")
-        PlayerFrameManaBar:RegisterEvent("UNIT_MAXMANA")
-        PlayerFrameManaBar:RegisterEvent("UNIT_MAXRAGE")
-        PlayerFrameManaBar:RegisterEvent("UNIT_MAXFOCUS")
-        PlayerFrameManaBar:RegisterEvent("UNIT_MAXENERGY")
-        PlayerFrameManaBar:RegisterEvent("UNIT_DISPLAYPOWER")
-    end
+    RestoreEvents(PlayerFrame)
+    RestoreEvents(PlayerFrameHealthBar)
+    RestoreEvents(PlayerFrameManaBar)
     PlayerFrame:Show()
     local oldThis = this
     this = PlayerFrame
@@ -1129,46 +1136,22 @@ end
 function UF:SuppressTargetFrame()
     if TargetFrame then
         TargetFrame:Hide()
-        TargetFrame:UnregisterAllEvents()
-        if TargetFrameHealthBar then TargetFrameHealthBar:UnregisterAllEvents() end
-        if TargetFrameManaBar then TargetFrameManaBar:UnregisterAllEvents() end
+        SuppressEvents(TargetFrame)
+        SuppressEvents(TargetFrameHealthBar)
+        SuppressEvents(TargetFrameManaBar)
         if ComboFrame then
             ComboFrame:Hide()
-            ComboFrame:UnregisterAllEvents()
+            SuppressEvents(ComboFrame)
         end
     end
 end
 
 function UF:RestoreTargetFrame()
     if not TargetFrame then return end
-    TargetFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    TargetFrame:RegisterEvent("UNIT_HEALTH")
-    TargetFrame:RegisterEvent("UNIT_LEVEL")
-    TargetFrame:RegisterEvent("UNIT_FACTION")
-    TargetFrame:RegisterEvent("UNIT_CLASSIFICATION_CHANGED")
-    TargetFrame:RegisterEvent("UNIT_AURA")
-    TargetFrame:RegisterEvent("PLAYER_FLAGS_CHANGED")
-    TargetFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
-    TargetFrame:RegisterEvent("RAID_TARGET_UPDATE")
-    if TargetFrameHealthBar then
-        TargetFrameHealthBar:RegisterEvent("UNIT_HEALTH")
-        TargetFrameHealthBar:RegisterEvent("UNIT_MAXHEALTH")
-    end
-    if TargetFrameManaBar then
-        TargetFrameManaBar:RegisterEvent("UNIT_MANA")
-        TargetFrameManaBar:RegisterEvent("UNIT_RAGE")
-        TargetFrameManaBar:RegisterEvent("UNIT_FOCUS")
-        TargetFrameManaBar:RegisterEvent("UNIT_ENERGY")
-        TargetFrameManaBar:RegisterEvent("UNIT_MAXMANA")
-        TargetFrameManaBar:RegisterEvent("UNIT_MAXRAGE")
-        TargetFrameManaBar:RegisterEvent("UNIT_MAXFOCUS")
-        TargetFrameManaBar:RegisterEvent("UNIT_MAXENERGY")
-        TargetFrameManaBar:RegisterEvent("UNIT_DISPLAYPOWER")
-    end
-    if ComboFrame then
-        ComboFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-        ComboFrame:RegisterEvent("PLAYER_COMBO_POINTS")
-    end
+    RestoreEvents(TargetFrame)
+    RestoreEvents(TargetFrameHealthBar)
+    RestoreEvents(TargetFrameManaBar)
+    RestoreEvents(ComboFrame)
     if UnitExists("target") then
         local oldThis = this
         this = TargetFrame
