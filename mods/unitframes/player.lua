@@ -163,6 +163,14 @@ local function UpdateAll(frame)
     end
 end
 
+local aurasPending
+local function FlushAuras()
+    aurasPending = nil
+    if playerFrame and playerFrame.enabled and playerFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
+        UF.Auras:UpdateContainer(playerFrame.auraContainer)
+    end
+end
+
 local function PlayerFrame_OnEvent(_, ev, a1)
 
     if ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
@@ -181,8 +189,10 @@ local function PlayerFrame_OnEvent(_, ev, a1)
     elseif ev == "UNIT_PORTRAIT_UPDATE" or ev == "UNIT_MODEL_CHANGED" then
         if a1 == "player" then UpdatePortrait(playerFrame) end
     elseif ev == "PLAYER_AURAS_CHANGED" or (ev == "UNIT_AURA" and a1 == "player") then
-        if playerFrame and playerFrame.auraContainer and UF.Auras and UF.Auras.UpdateContainer then
-            UF.Auras:UpdateContainer(playerFrame.auraContainer)
+        -- Both events can report one change; rescan once on the next frame.
+        if not aurasPending then
+            aurasPending = true
+            C_Timer.After(0, FlushAuras)
         end
     elseif ev == "PLAYER_ENTERING_WORLD" then
         UpdateAll(playerFrame)

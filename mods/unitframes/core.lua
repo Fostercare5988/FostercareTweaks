@@ -457,6 +457,12 @@ end
 local function FitText(text, width, height, requested, fitWidth)
     if not text then return end
     width, height = math.max(1, width), math.max(1, height)
+    -- Health and power events call this per update. Refit only when the lane,
+    -- requested size, content or externally applied font size has changed.
+    local content = fitWidth and text:GetText() or nil
+    local _, currentSize = text:GetFont()
+    if text.fctFitW == width and text.fctFitH == height and text.fctFitReq == requested
+        and text.fctFitText == content and text.fctFitSize == currentSize then return end
     local size = math.max(8, math.min(requested, height))
     UF.SetFontSize(text, size)
     if fitWidth then
@@ -465,8 +471,11 @@ local function FitText(text, width, height, requested, fitWidth)
             UF.SetFontSize(text, size)
         end
     end
-    text:SetWidth(width)
-    text:SetHeight(height)
+    if text.fctFitW ~= width then text:SetWidth(width) end
+    if text.fctFitH ~= height then text:SetHeight(height) end
+    local _, fittedSize = text:GetFont()
+    text.fctFitW, text.fctFitH, text.fctFitReq = width, height, requested
+    text.fctFitText, text.fctFitSize = content, fittedSize
 end
 
 function UF:LayoutText(frame)
@@ -476,38 +485,55 @@ function UF:LayoutText(frame)
     local rows = height >= 18
     local rowH = rows and math.floor(height / 2) or height
     local classText = pb and pb.leftText
-    local hasClass = rows and classText and classText:GetText() and classText:GetText() ~= ""
+    local hasClass = rows and classText and classText:GetText() and classText:GetText() ~= "" and true or false
     local healthW = hasClass and math.floor(width * 0.6) or (rows and width or math.floor(width * 0.55))
-    hb.nameText:ClearAllPoints()
-    hb.nameText:SetPoint(rows and "TOPLEFT" or "LEFT", hb, rows and "TOPLEFT" or "LEFT", 4, rows and -1 or 0)
+    -- Anchors depend only on the row mode.
+    if frame.fctTextRows ~= rows then
+        frame.fctTextRows = rows
+        hb.nameText:ClearAllPoints()
+        hb.nameText:SetPoint(rows and "TOPLEFT" or "LEFT", hb, rows and "TOPLEFT" or "LEFT", 4, rows and -1 or 0)
+        hb.healthText:ClearAllPoints()
+        hb.healthText:SetPoint(rows and "BOTTOMRIGHT" or "RIGHT", hb, rows and "BOTTOMRIGHT" or "RIGHT", -4, rows and 1 or 0)
+        if classText then
+            classText:ClearAllPoints()
+            classText:SetPoint("BOTTOMLEFT", hb, "BOTTOMLEFT", 4, 1)
+        end
+    end
     FitText(hb.nameText, rows and width or width - healthW - 3, rowH, UF:GetFontNameSize(), false)
-    hb.healthText:ClearAllPoints()
-    hb.healthText:SetPoint(rows and "BOTTOMRIGHT" or "RIGHT", hb, rows and "BOTTOMRIGHT" or "RIGHT", -4, rows and 1 or 0)
     FitText(hb.healthText, healthW, rowH, UF:GetFontHealthSize(), true)
     if classText then
-        classText:ClearAllPoints()
-        classText:SetPoint("BOTTOMLEFT", hb, "BOTTOMLEFT", 4, 1)
         FitText(classText, math.max(1, width - healthW - 3), rowH, UF:GetFontLevelSize(), false)
-        if hasClass then classText:Show() else classText:Hide() end
+        if hasClass ~= (classText:IsShown() and true or false) then
+            if hasClass then classText:Show() else classText:Hide() end
+        end
     end
     if pb and pb.powerText then
         FitText(pb.powerText, pb:GetWidth() - 8, pb:GetHeight(), UF:GetFontPowerSize(), true)
-        if pb:GetHeight() >= 8 then pb.powerText:Show() else pb.powerText:Hide() end
+        local showPower = pb:GetHeight() >= 8
+        if showPower ~= (pb.powerText:IsShown() and true or false) then
+            if showPower then pb.powerText:Show() else pb.powerText:Hide() end
+        end
     end
     if frame.levelBadge then
         local badge = frame.levelBadge
         local side = frame.portrait:GetWidth()
         local size = math.min(UF:GetFontLevelSize(), math.max(8, side - 18))
-        UF.SetFontSize(badge.text, size)
-        badge:SetWidth(math.min(side, math.max(20, badge.text:GetStringWidth() + 6)))
-        badge:SetHeight(math.min(side, size + 4))
-        if badge.skull then
-            local skullSize = math.min(14, badge:GetHeight() - 2)
-            badge.skull:SetWidth(skullSize); badge.skull:SetHeight(skullSize)
+        local label = badge.text:GetText()
+        local _, currentSize = badge.text:GetFont()
+        if badge.fctSide ~= side or badge.fctSize ~= size or badge.fctLabel ~= label
+            or currentSize ~= size then
+            badge.fctSide, badge.fctSize, badge.fctLabel = side, size, label
+            UF.SetFontSize(badge.text, size)
+            badge:SetWidth(math.min(side, math.max(20, badge.text:GetStringWidth() + 6)))
+            badge:SetHeight(math.min(side, size + 4))
+            if badge.skull then
+                local skullSize = math.min(14, badge:GetHeight() - 2)
+                badge.skull:SetWidth(skullSize); badge.skull:SetHeight(skullSize)
+            end
+            badge:ClearAllPoints()
+            local anchor = frame.portraitSide == "left" and "BOTTOMLEFT" or "BOTTOMRIGHT"
+            badge:SetPoint(anchor, frame.portrait, anchor, 0, 0)
         end
-        badge:ClearAllPoints()
-        local anchor = frame.portraitSide == "left" and "BOTTOMLEFT" or "BOTTOMRIGHT"
-        badge:SetPoint(anchor, frame.portrait, anchor, 0, 0)
     end
 end
 

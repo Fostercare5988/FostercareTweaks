@@ -87,7 +87,12 @@ local function UpdatePower(frame)
         frame.powerBar:Hide()
     end
 
-    UF:LayoutBars(frame)
+    -- Bar geometry changes only when the power bar appears or disappears.
+    local shown = max > 0
+    if frame.fctPowerShown ~= shown then
+        frame.fctPowerShown = shown
+        UF:LayoutBars(frame)
+    end
 end
 UF.UpdateToTPower = UpdatePower
 

@@ -854,6 +854,19 @@ function Auras:UpdateBlizzPlayerAuras()
     Auras:UpdateContainer(container)
 end
 
+-- UNIT_AURA(player) and PLAYER_AURAS_CHANGED can report the same change.
+-- Rescan the player's auras once, on the next frame.
+local playerAurasPending
+local function FlushPlayerAuras()
+    playerAurasPending = nil
+    Auras:UpdateBlizzPlayerAuras()
+end
+local function QueuePlayerAuras()
+    if playerAurasPending then return end
+    playerAurasPending = true
+    C_Timer.After(0, FlushPlayerAuras)
+end
+
 auraEventFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
 auraEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 FT.SetEventHandler(auraEventFrame, function(_, ev, unit)
@@ -861,9 +874,9 @@ FT.SetEventHandler(auraEventFrame, function(_, ev, unit)
         Auras:UpdateBlizzTargetAuras()
     elseif ev == "UNIT_AURA" then
         if unit and UnitIsUnit(unit, "target") then Auras:UpdateBlizzTargetAuras() end
-        if unit and UnitIsUnit(unit, "player") then Auras:UpdateBlizzPlayerAuras() end
+        if unit and UnitIsUnit(unit, "player") then QueuePlayerAuras() end
     elseif ev == "PLAYER_AURAS_CHANGED" then
-        Auras:UpdateBlizzPlayerAuras()
+        QueuePlayerAuras()
     elseif ev == "PLAYER_ENTERING_WORLD" then
         Auras:UpdateBlizzPlayerAuras()
         Auras:UpdateBlizzTargetAuras()

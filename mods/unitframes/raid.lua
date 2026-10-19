@@ -59,7 +59,7 @@ local function UpdateButtonHealth(btn)
 
     -- FontString bounds handle long names at the current size.
     local name = UnitName(unit) or btn.rosterName or ("Group" .. btn.index)
-    btn.nameText:SetText(name)
+    if btn.nameText:GetText() ~= name then btn.nameText:SetText(name) end
 
     -- Health / Status text (Configurable: Deficit, Percentage, Current)
     local isOffline = not UnitIsConnected(unit)
@@ -67,24 +67,27 @@ local function UpdateButtonHealth(btn)
     local isGhost = UnitIsGhost(unit)
     local fmt = (UF.GetRaidHealthFormat and UF:GetRaidHealthFormat()) or "deficit"
 
+    local text
     if isOffline then
-        btn.healthText:SetText("|cff888888Off|r")
+        text = "|cff888888Off|r"
     elseif isDead then
-        btn.healthText:SetText(isGhost and "|cffaaaaaaGhost|r" or "|cffff2020Dead|r")
+        text = isGhost and "|cffaaaaaaGhost|r" or "|cffff2020Dead|r"
     elseif fmt == "percent" then
         local pct = (max > 0) and math.floor((cur / max) * 100 + 0.5) or 0
-        btn.healthText:SetText(pct .. "%")
+        text = pct .. "%"
     elseif fmt == "current" then
-        btn.healthText:SetText(FT.Abbreviate(cur))
+        text = FT.Abbreviate(cur)
     else -- "deficit" (Luna standard healer deficit)
         if max > 0 and cur < max then
-            local deficit = max - cur
-            btn.healthText:SetText("-" .. FT.Abbreviate(deficit))
+            text = "-" .. FT.Abbreviate(max - cur)
         else
-            btn.healthText:SetText("")
+            text = ""
         end
     end
-    if UF.LayoutRaidText then UF.LayoutRaidText(btn, btn.auraStripHeight or 0) end
+    -- Text lanes depend on marks, leader icons and the aura strip, which
+    -- their own updates lay out. Health changes only replace the text.
+    text = tostring(text)
+    if btn.healthText:GetText() ~= text then btn.healthText:SetText(text) end
 end
 
 local function UpdateButtonPower(btn)
@@ -208,6 +211,11 @@ local function LayoutRaidText(btn, strip)
     local marker = btn.raidIcon:IsShown() and markSize + 2 or 0
     local leader = btn.leaderIcon:IsShown() and 7 or 0
     local w = math.max(1, hb:GetWidth() - 8 - marker - leader)
+    -- Lanes depend only on these inputs; repeated calls leave widgets untouched.
+    if btn.fctTextH == h and btn.fctTextW == w and btn.fctTextMark == markSize
+        and btn.fctTextMarker == marker and btn.fctTextLeader == leader then return end
+    btn.fctTextH, btn.fctTextW, btn.fctTextMark = h, w, markSize
+    btn.fctTextMarker, btn.fctTextLeader = marker, leader
     local rows = h >= 16
     local font = math.max(8, math.min(11, rows and math.floor(h / 2) or h))
     UF.SetFontSize(btn.nameText, font); UF.SetFontSize(btn.healthText, font)
@@ -225,26 +233,30 @@ end
 UF.LayoutRaidText = LayoutRaidText
 
 local function ShowRaidAura(btn, badge, a, size, x, y)
-    badge:SetWidth(size); badge:SetHeight(size)
-    badge.border:SetWidth(size + 2); badge.border:SetHeight(size + 2)
-    badge:ClearAllPoints(); badge:SetPoint("TOPLEFT", btn, "TOPLEFT", x, -y)
+    local stacked = a.stacks and a.stacks > 1 and true or false
+    -- Geometry and fonts change only with size, slot or stack labelling.
+    if badge.fctSize ~= size or badge.fctX ~= x or badge.fctY ~= y or badge.fctStacked ~= stacked then
+        badge.fctSize, badge.fctX, badge.fctY, badge.fctStacked = size, x, y, stacked
+        badge:SetWidth(size); badge:SetHeight(size)
+        badge.border:SetWidth(size + 2); badge.border:SetHeight(size + 2)
+        badge:ClearAllPoints(); badge:SetPoint("TOPLEFT", btn, "TOPLEFT", x, -y)
+        -- Keep two labels apart on larger indicators. On tiny indicators preserve
+        -- stacks and the sweep; expose remaining seconds in the aura tooltip.
+        badge.fctHideDuration = size < 8 or (stacked and size < 14)
+        local font = math.min(size, math.max(6, math.min(9, stacked and math.floor(size / 2) or size - 1)))
+        UF.SetFontSize(badge.countText, font); UF.SetFontSize(badge.durationText, font)
+        badge.countText:ClearAllPoints(); badge.countText:SetPoint("BOTTOMRIGHT", badge, "BOTTOMRIGHT", 0, 0)
+        badge.countText:SetWidth(size); badge.countText:SetHeight(font)
+        badge.durationText:ClearAllPoints()
+        if stacked then badge.durationText:SetPoint("TOP", badge, "TOP", 0, 0)
+        else badge.durationText:SetPoint("CENTER", badge, "CENTER", 0, 0) end
+        badge.durationText:SetWidth(size); badge.durationText:SetHeight(font)
+        badge.cooldown:SetScale(size / 36)
+    end
     badge.unit, badge.auraIndex, badge.spellId = btn.unit, a.index, a.id
     badge.icon:SetTexture(a.icon)
-    badge.countText:SetText(a.stacks and a.stacks > 1 and a.stacks or "")
-    if a.stacks and a.stacks > 1 then badge.countText:Show() else badge.countText:Hide() end
-    local stacked = a.stacks and a.stacks > 1
-    -- Keep two labels apart on larger indicators. On tiny indicators preserve
-    -- stacks and the sweep; expose remaining seconds in the aura tooltip.
-    badge.fctHideDuration = size < 8 or (stacked and size < 14)
-    local font = math.min(size, math.max(6, math.min(9, stacked and math.floor(size / 2) or size - 1)))
-    UF.SetFontSize(badge.countText, font); UF.SetFontSize(badge.durationText, font)
-    badge.countText:ClearAllPoints(); badge.countText:SetPoint("BOTTOMRIGHT", badge, "BOTTOMRIGHT", 0, 0)
-    badge.countText:SetWidth(size); badge.countText:SetHeight(font)
-    badge.durationText:ClearAllPoints()
-    if stacked then badge.durationText:SetPoint("TOP", badge, "TOP", 0, 0)
-    else badge.durationText:SetPoint("CENTER", badge, "CENTER", 0, 0) end
-    badge.durationText:SetWidth(size); badge.durationText:SetHeight(font)
-    badge.cooldown:SetScale(size / 36)
+    badge.countText:SetText(stacked and a.stacks or "")
+    if stacked then badge.countText:Show() else badge.countText:Hide() end
     UF.Auras.UpdateAuraTiming(badge, UnitGUID(btn.unit), a.id, a.source, a.duration, a.expiration,
         badge.isDebuff and UF:IsDebuffSpin() or (not badge.isDebuff and UF:IsBuffSpin()),
         badge.isDebuff and UF:IsDebuffText() or (not badge.isDebuff and UF:IsBuffText()), GetTime())
@@ -289,7 +301,10 @@ local function LayoutButtonAuras(btn)
     for i = shownD + 1, #btn.debuffBadges do UF.Auras.ResetAuraButton(btn.debuffBadges[i]) end
     btn.auraOverflowCount = bn + dn - shownB - shownD
     btn.auraOverflow:SetText(btn.auraOverflowCount > 0 and ("+" .. btn.auraOverflowCount) or "")
-    btn.auraOverflow:ClearAllPoints(); btn.auraOverflow:SetPoint("TOPRIGHT", btn, "TOPRIGHT", -2, -y)
+    if btn.fctOverflowY ~= y then
+        btn.fctOverflowY = y
+        btn.auraOverflow:ClearAllPoints(); btn.auraOverflow:SetPoint("TOPRIGHT", btn, "TOPRIGHT", -2, -y)
+    end
     UF.SetFontSize(btn.auraOverflow, math.max(6, math.min(9, maxSize)))
     if btn.auraOverflowCount > 0 then btn.auraOverflow:Show() else btn.auraOverflow:Hide() end
     btn.auraStripHeight = strip
