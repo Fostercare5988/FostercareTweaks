@@ -37,7 +37,9 @@ module.enable = function(self)
         -- An empty reagent list is authoritative. A shared icon never supplies
         -- a reagent for a different spell, item or equipment set.
         local reagents = spellID and C_Spell.GetSpellReagents(spellID)
+        local previous = spells[slot]
         spells[slot] = reagents and reagents[1] and spellID or nil
+        return spells[slot] ~= previous
     end
 
     local function UpdateButtonReagent(button)
@@ -97,7 +99,12 @@ module.enable = function(self)
             fullScan = true
         elseif ev == "MODIFIER_STATE_CHANGED" or ev == "PLAYER_TARGET_CHANGED" or ev == "BAG_UPDATE_DELAYED" then
             -- Only macros can change spell identity with conditions or inventory.
-            for macroSlot in pairs(macroSlots) do ScanSlot(macroSlot) end
+            local changed = false
+            for macroSlot in pairs(macroSlots) do
+                if ScanSlot(macroSlot) then changed = true end
+            end
+            -- Modifier and target changes cannot alter reagent counts themselves.
+            if not changed and ev ~= "BAG_UPDATE_DELAYED" then return end
         end
         if not pending then
             pending = true

@@ -65,6 +65,9 @@ castbar.text:SetPoint("CENTER", castbar, "CENTER", 0, 0)
 local font, size = castbar.text:GetFont()
 castbar.text:SetFont(font, (size or 12) - 2, "THINOUTLINE")
 
+-- Current target identity, refreshed on target changes and when listening starts.
+local targetGUID
+
 local function GetCastingInfo(unit)
     return C_Spell.UnitCastingInfo(unit)
 end
@@ -239,9 +242,10 @@ module.enable = function(self)
         if not ev then return end
 
         if ev == "PLAYER_TARGET_CHANGED" or ev == "PLAYER_ENTERING_WORLD" then
+            targetGUID = UnitGUID("target")
             UpdateCast()
         elseif ev == "UNIT_CASTEVENT" then
-            local targetGUID = UnitGUID and UnitGUID("target")
+            -- Fires for every nearby cast and swing; compare with the cached target.
             if targetGUID and a1 == targetGUID then
                 if a3 == "START" or a3 == "CHANNEL" then
                     UpdateCast()
@@ -250,7 +254,7 @@ module.enable = function(self)
                 end
             end
         elseif string.find(ev, "^UNIT_SPELLCAST_") then
-            if a1 == "target" or (a1 and (a1 == UnitGUID("target") or UnitIsUnit(a1, "target"))) then
+            if a1 == "target" or (a1 and (a1 == targetGUID or UnitIsUnit(a1, "target"))) then
                 if ev == "UNIT_SPELLCAST_STOP" or ev == "UNIT_SPELLCAST_FAILED" or ev == "UNIT_SPELLCAST_INTERRUPTED" or ev == "UNIT_SPELLCAST_CHANNEL_STOP" then
                     StopCast()
                 else
@@ -298,6 +302,7 @@ module.apply = function(self)
             self.frame:RegisterEvent("UNIT_CASTEVENT")
         end
     end
+    targetGUID = UnitGUID("target")
     UpdateCast()
 end
 end
