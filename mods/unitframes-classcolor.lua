@@ -52,6 +52,9 @@ local originalPartyColors = {}
 local CLASS_FILL = "Interface\\Buttons\\WHITE8X8"
 local LEVEL_BACKGROUND = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
 
+-- A full-strength fill is glaring; 75% keeps the class hue but is easy on the eyes.
+local NAME_SHADE = 0.75
+
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
         PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BACKGROUND")
@@ -70,7 +73,7 @@ local function ColorPlayer()
         EnsurePlayerBackground()
         if PlayerFrameNameBackground then
             PlayerFrameNameBackground:SetTexture(CLASS_FILL)
-            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+            PlayerFrameNameBackground:SetVertexColor(color.r * NAME_SHADE, color.g * NAME_SHADE, color.b * NAME_SHADE, 1)
             PlayerFrameNameBackground:Show()
         end
     end
@@ -82,7 +85,7 @@ local function ColorTarget()
         local color = GetClassColor("target")
         if color then
             TargetFrameNameBackground:SetTexture(CLASS_FILL)
-            TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+            TargetFrameNameBackground:SetVertexColor(color.r * NAME_SHADE, color.g * NAME_SHADE, color.b * NAME_SHADE, 1)
             TargetFrameNameBackground:Show()
         end
     else
