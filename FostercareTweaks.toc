@@ -3,7 +3,7 @@
 ## Interface: 11200
 ## X-ClassicAPI-Min-Version: 1.16.0
 ## Dependencies: !!!ClassicAPI
-## Title: FostercareTweaks
+## Title: |cffff9e38FostercareTweaks|r |cffffd6a8[Fostercare5988]|r
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.16.0+, SuperWoW 2.2+, NamPower 4.6.2+ and UnitXP SP3 v89+.
 ## OptionalDeps: GearRack, AutoBG, AtlasLoot, Turtle_GroupUI
 ## Author: Fostercare5988
