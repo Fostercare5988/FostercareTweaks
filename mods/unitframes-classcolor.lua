@@ -47,13 +47,11 @@ local ownsPlayerBackground = false
 local originalPartyColors = {}
 
 -- Blizzard's name background is grey and partly see-through, which turns class
--- colors muddy (rogue yellow looked olive). Players get a plain fill so the
--- class color shows true; NPC targets keep Blizzard's texture for reaction colors.
-local CLASS_FILL = "Interface\\Buttons\\WHITE8X8"
+-- colors muddy (rogue yellow looked olive). Players get the raid frames' Luna
+-- bar at full class color, so the colors match them; NPC targets keep
+-- Blizzard's texture for reaction colors.
+local CLASS_FILL = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
 local LEVEL_BACKGROUND = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
-
--- A full-strength fill is glaring; 75% keeps the class hue but is easy on the eyes.
-local NAME_SHADE = 0.75
 
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
@@ -73,7 +71,7 @@ local function ColorPlayer()
         EnsurePlayerBackground()
         if PlayerFrameNameBackground then
             PlayerFrameNameBackground:SetTexture(CLASS_FILL)
-            PlayerFrameNameBackground:SetVertexColor(color.r * NAME_SHADE, color.g * NAME_SHADE, color.b * NAME_SHADE, 1)
+            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
             PlayerFrameNameBackground:Show()
         end
     end
@@ -85,7 +83,7 @@ local function ColorTarget()
         local color = GetClassColor("target")
         if color then
             TargetFrameNameBackground:SetTexture(CLASS_FILL)
-            TargetFrameNameBackground:SetVertexColor(color.r * NAME_SHADE, color.g * NAME_SHADE, color.b * NAME_SHADE, 1)
+            TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
             TargetFrameNameBackground:Show()
         end
     else
