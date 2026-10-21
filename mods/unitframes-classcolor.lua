@@ -47,12 +47,12 @@ local ownsPlayerBackground = false
 local originalPartyColors = {}
 
 -- The player and target frames hold a 50% black square on the BACKGROUND layer
--- where the name sits; a class color on that layer can end up under it and read
--- dark (rogue yellow looked olive). Class bars therefore live on BORDER, above
--- the square and below the frame art, using the raid frames' Luna bar at full
--- class color. NPC targets keep Blizzard's own name background and its
--- reaction colors.
-local CLASS_FILL = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
+-- where the name sits. A class color on that layer is drawn above or below it
+-- at random, so it looked right one session and olive the next. Class bars
+-- therefore live on BORDER, always above the square and below the frame art,
+-- with Blizzard's own name-bar texture at full class color. NPC targets keep
+-- Blizzard's name background and its reaction colors.
+local CLASS_FILL = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
 
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
