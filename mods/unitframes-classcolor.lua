@@ -46,10 +46,16 @@ end
 local ownsPlayerBackground = false
 local originalPartyColors = {}
 
+-- Blizzard's name background is grey and partly see-through, which turns class
+-- colors muddy (rogue yellow looked olive). Players get a plain fill so the
+-- class color shows true; NPC targets keep Blizzard's texture for reaction colors.
+local CLASS_FILL = "Interface\\Buttons\\WHITE8X8"
+local LEVEL_BACKGROUND = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
+
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
         PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BACKGROUND")
-        PlayerFrameNameBackground:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
+        PlayerFrameNameBackground:SetTexture(CLASS_FILL)
         PlayerFrameNameBackground:SetWidth(119)
         PlayerFrameNameBackground:SetHeight(19)
         PlayerFrameNameBackground:SetPoint("TOPLEFT", 106, -22)
@@ -63,6 +69,7 @@ local function ColorPlayer()
     if color then
         EnsurePlayerBackground()
         if PlayerFrameNameBackground then
+            PlayerFrameNameBackground:SetTexture(CLASS_FILL)
             PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
             PlayerFrameNameBackground:Show()
         end
@@ -74,12 +81,14 @@ local function ColorTarget()
     if UnitExists("target") and UnitIsPlayer("target") then
         local color = GetClassColor("target")
         if color then
+            TargetFrameNameBackground:SetTexture(CLASS_FILL)
             TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
             TargetFrameNameBackground:Show()
         end
     else
         -- For NPCs (like Scarlet Myrmidon): Blizzard's native TargetFrame_CheckFaction
-        -- sets the reaction color (red/yellow/green). Ensure background is visible.
+        -- sets the reaction color (red/yellow/green) on its own texture.
+        TargetFrameNameBackground:SetTexture(LEVEL_BACKGROUND)
         TargetFrameNameBackground:Show()
     end
 end
@@ -172,6 +181,7 @@ function module:apply()
         if PlayerFrameNameBackground and ownsPlayerBackground then
             PlayerFrameNameBackground:Hide()
         end
+        if TargetFrameNameBackground then TargetFrameNameBackground:SetTexture(LEVEL_BACKGROUND) end
         if UnitExists("target") and TargetFrame_CheckFaction then
             TargetFrame_CheckFaction()
         end
