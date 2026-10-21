@@ -49,11 +49,10 @@ local originalPartyColors = {}
 -- The player and target frames hold a 50% black square on the BACKGROUND layer
 -- where the name sits. A class color on that layer is drawn above or below it
 -- at random, so it looked right one session and olive the next. Class bars
--- therefore live on BORDER, always above the square and below the frame art:
--- one flat class color at 85%, as full strength glares. NPC targets keep
+-- therefore live on BORDER, always above the square and below the frame art,
+-- with Blizzard's own name-bar texture at full class color. NPC targets keep
 -- Blizzard's name background and its reaction colors.
-local CLASS_FILL = "Interface\\Buttons\\WHITE8X8"
-local CLASS_SHADE = 0.85
+local CLASS_FILL = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
 
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
@@ -73,7 +72,7 @@ local function ColorPlayer()
         EnsurePlayerBackground()
         if PlayerFrameNameBackground then
             PlayerFrameNameBackground:SetTexture(CLASS_FILL)
-            PlayerFrameNameBackground:SetVertexColor(color.r * CLASS_SHADE, color.g * CLASS_SHADE, color.b * CLASS_SHADE, 1)
+            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
             PlayerFrameNameBackground:Show()
         end
     end
@@ -90,7 +89,7 @@ local function ColorTarget()
     end
     local color = UnitExists("target") and UnitIsPlayer("target") and GetClassColor("target")
     if color and targetClassBar then
-        targetClassBar:SetVertexColor(color.r * CLASS_SHADE, color.g * CLASS_SHADE, color.b * CLASS_SHADE, 1)
+        targetClassBar:SetVertexColor(color.r, color.g, color.b, 1)
         targetClassBar:Show()
     else
         -- NPCs (like Scarlet Myrmidon): Blizzard's TargetFrame_CheckFaction colors
