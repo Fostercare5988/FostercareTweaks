@@ -46,16 +46,17 @@ end
 local ownsPlayerBackground = false
 local originalPartyColors = {}
 
--- Blizzard's name background is grey and partly see-through, which turns class
--- colors muddy (rogue yellow looked olive). Players get the raid frames' Luna
--- bar at full class color, so the colors match them; NPC targets keep
--- Blizzard's texture for reaction colors.
+-- The player and target frames hold a 50% black square on the BACKGROUND layer
+-- where the name sits; a class color on that layer can end up under it and read
+-- dark (rogue yellow looked olive). Class bars therefore live on BORDER, above
+-- the square and below the frame art, using the raid frames' Luna bar at full
+-- class color. NPC targets keep Blizzard's own name background and its
+-- reaction colors.
 local CLASS_FILL = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
-local LEVEL_BACKGROUND = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
 
 local function EnsurePlayerBackground()
     if not PlayerFrameNameBackground and PlayerFrame then
-        PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BACKGROUND")
+        PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BORDER")
         PlayerFrameNameBackground:SetTexture(CLASS_FILL)
         PlayerFrameNameBackground:SetWidth(119)
         PlayerFrameNameBackground:SetHeight(19)
@@ -77,19 +78,23 @@ local function ColorPlayer()
     end
 end
 
+local targetClassBar
 local function ColorTarget()
     if not IsActive() or not TargetFrameNameBackground then return end
-    if UnitExists("target") and UnitIsPlayer("target") then
-        local color = GetClassColor("target")
-        if color then
-            TargetFrameNameBackground:SetTexture(CLASS_FILL)
-            TargetFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
-            TargetFrameNameBackground:Show()
-        end
+    if not targetClassBar and TargetFrame then
+        targetClassBar = TargetFrame:CreateTexture(nil, "BORDER")
+        targetClassBar:SetTexture(CLASS_FILL)
+        targetClassBar:SetAllPoints(TargetFrameNameBackground)
+        targetClassBar:Hide()
+    end
+    local color = UnitExists("target") and UnitIsPlayer("target") and GetClassColor("target")
+    if color and targetClassBar then
+        targetClassBar:SetVertexColor(color.r, color.g, color.b, 1)
+        targetClassBar:Show()
     else
-        -- For NPCs (like Scarlet Myrmidon): Blizzard's native TargetFrame_CheckFaction
-        -- sets the reaction color (red/yellow/green) on its own texture.
-        TargetFrameNameBackground:SetTexture(LEVEL_BACKGROUND)
+        -- NPCs (like Scarlet Myrmidon): Blizzard's TargetFrame_CheckFaction colors
+        -- its own name background red, yellow or green.
+        if targetClassBar then targetClassBar:Hide() end
         TargetFrameNameBackground:Show()
     end
 end
@@ -182,7 +187,7 @@ function module:apply()
         if PlayerFrameNameBackground and ownsPlayerBackground then
             PlayerFrameNameBackground:Hide()
         end
-        if TargetFrameNameBackground then TargetFrameNameBackground:SetTexture(LEVEL_BACKGROUND) end
+        if targetClassBar then targetClassBar:Hide() end
         if UnitExists("target") and TargetFrame_CheckFaction then
             TargetFrame_CheckFaction()
         end
