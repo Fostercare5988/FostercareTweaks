@@ -81,23 +81,8 @@ module.enable = function(self)
         end
 
         HideCompare()
-        if GameTooltip_ShowCompareItem then
-            GameTooltip_ShowCompareItem(tooltip)
-        elseif ShoppingTooltip1 and ShoppingTooltip1.SetHyperlinkCompareItem then
-            local slots = ShoppingTooltip1:SetHyperlinkCompareItem(link, 1, nil, tooltip)
-            if slots and slots > 0 then
-                ShoppingTooltip1:SetOwner(tooltip, "ANCHOR_NONE")
-                ShoppingTooltip1:ClearAllPoints()
-                ShoppingTooltip1:SetPoint("TOPLEFT", tooltip, "TOPRIGHT", 10, -10)
-                ShoppingTooltip1:Show()
-                if slots > 1 and ShoppingTooltip2 and ShoppingTooltip2:SetHyperlinkCompareItem(link, 2, nil, tooltip) > 0 then
-                    ShoppingTooltip2:SetOwner(ShoppingTooltip1, "ANCHOR_NONE")
-                    ShoppingTooltip2:ClearAllPoints()
-                    ShoppingTooltip2:SetPoint("TOPLEFT", ShoppingTooltip1, "TOPRIGHT", 10, 0)
-                    ShoppingTooltip2:Show()
-                end
-            end
-        end
+        -- ClassicAPI's bundled GameTooltip_ShowCompareItem fills and places both shopping tooltips.
+        GameTooltip_ShowCompareItem(tooltip)
 
         tooltip.lastComparedItem = link
     end

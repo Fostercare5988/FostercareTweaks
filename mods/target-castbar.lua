@@ -299,6 +299,9 @@ module.apply = function(self)
             self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
             self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
             self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+            -- Target and focus only: a mid-cast flip re-reads notInterruptible.
+            self.frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
+            self.frame:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
             self.frame:RegisterEvent("UNIT_CASTEVENT")
         end
     end

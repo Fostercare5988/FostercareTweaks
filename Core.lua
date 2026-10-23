@@ -2,8 +2,8 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.16.0+ & SuperWoW v2.2+)
-local MIN_CLASSIC_API = 11600
+-- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.17.3+ & SuperWoW v2.2+)
+local MIN_CLASSIC_API = 11703
 local superMajor, superMinor = string.match(tostring(SUPERWOW_VERSION or ""), "^(%d+)%.(%d+)")
 superMajor, superMinor = tonumber(superMajor), tonumber(superMinor)
 local hasSuperWoW = superMajor and (superMajor > 2 or (superMajor == 2 and superMinor >= 2))
@@ -12,7 +12,7 @@ if type(CLASSIC_API_VERSION) ~= "number" or not hasSuperWoW or
    CLASSIC_API_VERSION < MIN_CLASSIC_API then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.16.0+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.17.3+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -22,7 +22,7 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.3.1"
+FT.version = "1.4.0"
 
 -- Component Registration
 FT.register = function(self, mod)

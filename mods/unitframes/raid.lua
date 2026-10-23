@@ -254,7 +254,6 @@ local function ShowRaidAura(btn, badge, a, size, x, y)
         if stacked then badge.durationText:SetPoint("TOP", badge, "TOP", 0, 0)
         else badge.durationText:SetPoint("CENTER", badge, "CENTER", 0, 0) end
         badge.durationText:SetWidth(size); badge.durationText:SetHeight(font)
-        badge.cooldown:SetScale(size / 36)
     end
     badge.unit, badge.auraIndex, badge.spellId = btn.unit, a.index, a.id
     badge.icon:SetTexture(a.icon)
