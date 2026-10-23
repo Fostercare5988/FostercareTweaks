@@ -71,35 +71,6 @@ function Auras:RefreshBorders()
 end
 
 
--- Reverse cooldown animation support (Luna mechanism for auras)
-if not CooldownFrame_OnUpdateModel_FCT_Orig then
-    local orig_CooldownFrame_OnUpdateModel = CooldownFrame_OnUpdateModel
-    CooldownFrame_OnUpdateModel_FCT_Orig = orig_CooldownFrame_OnUpdateModel
-    function CooldownFrame_OnUpdateModel()
-        if this and this.reverse then
-            if this.stopping == 0 and this.start and this.duration and this.duration > 0 then
-                local finished = (GetTime() - this.start) / this.duration
-                if finished < 1.0 then
-                    finished = 1 - finished
-                    local time = finished * 1000
-                    this:SetSequenceTime(0, time)
-                    return
-                end
-                this.stopping = 1
-                this:SetSequence(1)
-                this:SetSequenceTime(1, 0)
-                return
-            else
-                this:AdvanceTime()
-                return
-            end
-        end
-        if orig_CooldownFrame_OnUpdateModel then
-            orig_CooldownFrame_OnUpdateModel()
-        end
-    end
-end
-
 local function AuraButton_OnEnter()
     if not this.unit or not this.auraIndex then return end
     GameTooltip:SetOwner(this, "ANCHOR_BOTTOMRIGHT")
@@ -250,15 +221,11 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
     btn.border:Hide()
 
-    -- Cooldown radial sweep
-    btn.cooldown = CreateFrame("Model", name .. "CD", btn, "CooldownFrameTemplate")
-    btn.cooldown:ClearAllPoints()
-    btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-    btn.cooldown:SetWidth(36)
-    btn.cooldown:SetHeight(36)
-    btn.cooldown:SetScale((size + 0.7) / 36)
+    -- Native cooldown sweep (ClassicAPI 1.17.1+); it follows the button's size.
+    btn.cooldown = CreateFrame("Cooldown", name .. "CD", btn, "CooldownFrameTemplate")
+    btn.cooldown:SetAllPoints(btn)
+    btn.cooldown:SetReverse(true)
     btn.cooldown:EnableMouse(false)
-    btn.cooldown.reverse = true
     btn.cooldown.noCooldownCount = true
     btn.cooldown:Hide()
 
@@ -404,13 +371,6 @@ function Auras:ApplyBuffSize(container, newSize)
         btn:SetHeight(newSize)
         btn.border:SetWidth(newSize + 2)
         btn.border:SetHeight(newSize + 2)
-        if btn.cooldown then
-            btn.cooldown:ClearAllPoints()
-            btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-            btn.cooldown:SetWidth(36)
-            btn.cooldown:SetHeight(36)
-            btn.cooldown:SetScale((newSize + 0.7) / 36)
-        end
         btn:ClearAllPoints()
         AnchorAuraButton(btn, container.buffFrame, i, newSize, spacing, perRow,
             container.options and container.options.buffAnchor ~= "BOTTOM", container.options and container.options.alignRight)
@@ -431,13 +391,6 @@ function Auras:ApplyDebuffSize(container, newSize)
         btn:SetHeight(newSize)
         btn.border:SetWidth(newSize + 2)
         btn.border:SetHeight(newSize + 2)
-        if btn.cooldown then
-            btn.cooldown:ClearAllPoints()
-            btn.cooldown:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-            btn.cooldown:SetWidth(36)
-            btn.cooldown:SetHeight(36)
-            btn.cooldown:SetScale((newSize + 0.7) / 36)
-        end
         btn:ClearAllPoints()
         AnchorAuraButton(btn, container.debuffFrame, i, newSize, spacing, perRow,
             container.options and container.options.debuffAnchor == "TOP", container.options and container.options.alignRight)
@@ -450,8 +403,8 @@ function Auras:ApplyAuraSize(container, newSize)
     Auras:ApplyDebuffSize(container, newSize)
 end
 
--- Preserve a running model until its actual aura identity/timing changes.
--- Native CooldownFrame_SetTimer restarts the animation sequence on every call.
+-- Preserve a running sweep until its actual aura identity/timing changes.
+-- CooldownFrame_SetTimer restarts the sweep on every call.
 local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expiration, spin, text, now)
     local sourceGUID = source and UnitGUID(source)
     local changedIdentity = btn.timerUnitGUID ~= unitGUID or btn.timerSpellID ~= spellID or
@@ -702,7 +655,6 @@ function Auras:LayoutContainer(container)
                     if btn:GetWidth() ~= iconSize then
                         btn:SetWidth(iconSize); btn:SetHeight(iconSize)
                         btn.border:SetWidth(iconSize + 2); btn.border:SetHeight(iconSize + 2)
-                        btn.cooldown:SetScale(iconSize / 36)
                     end
                     if btn.isOccupied then
                         if x > 0 and x + iconSize > limit then y, x, lineH = y + lineH + spacing, 0, 0 end

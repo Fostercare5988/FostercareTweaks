@@ -70,7 +70,7 @@ module.enable = function(self)
             local button = _G["TargetFrameDebuff" .. i]
             if button and button:IsShown() then
                 if not button.cd then
-                    button.cd = CreateFrame("Model", "TargetFrameDebuff" .. i .. "Cooldown", button, "CooldownFrameTemplate")
+                    button.cd = CreateFrame("Cooldown", "TargetFrameDebuff" .. i .. "Cooldown", button, "CooldownFrameTemplate")
                     button.cd.noCooldownCount = true
                     button.cd:SetAllPoints(button)
                     button.cd:SetAlpha(0.8)
