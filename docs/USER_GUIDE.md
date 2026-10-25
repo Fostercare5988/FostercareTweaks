@@ -1,24 +1,15 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.4.0**.
+Configuration and controls for **FostercareTweaks 1.5.0**.
 
-Open `/ft` for one settings window with four pages: **General**, **Unit Frames**,
-**Raid Frames** and **Action Bars**. Charcoal sections, white labels and teal
-selection marks distinguish controls and the active page. `/ft uf`, `/ft raid`
-and `/ft bars` open the corresponding page directly.
+Open the settings with `/ft`, or from **Game Menu > AddOn Options >
+FostercareTweaks**. The window has five pages: **General**, **Unit Frames**,
+**Auras**, **Raid** and **Action Bars**. `/ft uf`, `/ft auras`, `/ft raid` and
+`/ft bars` open a page directly.
 
-General uses fixed headings with no collapse arrows. Its switches are staged until
-**Apply**; **Cancel** discards those staged changes. The other pages save each
-change immediately. Changes requiring a reload display **Reload UI**, which you
-click when ready. Apply and page resets never reload the UI automatically.
-
-**Unit Frames** has six sections: **Frame style**, **Standard frames**, **Modern
-layout**, **Unit auras**, **Combat details** and **Blizzard auras**. Start with
-Frame style, then adjust the matching layout or appearance. Unit auras belong to
-player/target frames; Blizzard auras are the original top-right icons.
-
-**Raid Frames** has **Layout**, **Indicators** and **Auras**. One grid serves both
-parties and raids. Each control updates its own setting and keeps unrelated choices.
+Every change saves at once. A feature that can only start or stop with a fresh
+interface shows a **Reload UI** button; click it when ready. Hover any switch
+for a short explanation; a dimmed control waits for the switch above it.
 
 **Chat Class Colors**, under General > Social & Chat, colors player names in chat.
 Friends, Guild and Who use the game's built-in list colors. Classes come from

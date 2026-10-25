@@ -136,26 +136,13 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
             FT.UnitFrames:ToggleRaidTest()
         end
     elseif cmd[1] == "bars" or cmd[1] == "actionbars" then
-        if FostercareTweaksSettingsGUI then
-            FostercareTweaksSettingsGUI:Show()
-            FostercareTweaksSettingsGUI.SelectTab(4)
-        end
+        FT.OpenSettings("bars")
     elseif cmd[1] == "uf" or cmd[1] == "unitframes" or cmd[1] == "unitframe" then
-        if FostercareTweaksSettingsGUI then
-            FostercareTweaksSettingsGUI:Show()
-            if FostercareTweaksSettingsGUI.SelectTab then
-                FostercareTweaksSettingsGUI.SelectTab(2)
-            end
-        end
+        FT.OpenSettings("unit")
+    elseif cmd[1] == "auras" then
+        FT.OpenSettings("auras")
     elseif cmd[1] == "groupconfig" or cmd[1] == "groupsettings" or cmd[1] == "gfconfig" or cmd[1] == "raid" or cmd[1] == "raidframes" then
-        if FostercareTweaksSettingsGUI then
-            FostercareTweaksSettingsGUI:Show()
-            if FostercareTweaksSettingsGUI.SelectTab then
-                FostercareTweaksSettingsGUI.SelectTab(3)
-            end
-        elseif FT.UnitFrames and FT.UnitFrames.ToggleGroupFrameSettings then
-            FT.UnitFrames:ToggleGroupFrameSettings()
-        end
+        FT.OpenSettings("raid")
     elseif cmd[1] == "groupsize" then
         local w = tonumber(cmd[2])
         local h = tonumber(cmd[3])
@@ -182,13 +169,7 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
             DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Usage:|r /ft groupscale <scale> (e.g. /ft groupscale 1.0)", 1, 1, 1)
         end
     elseif cmd[1] == "options" or cmd[1] == "gui" or cmd[1] == "menu" or cmd[1] == "" then
-        if FostercareTweaksSettingsGUI then
-            if FostercareTweaksSettingsGUI:IsShown() then
-                FostercareTweaksSettingsGUI:Hide()
-            else
-                FostercareTweaksSettingsGUI:Show()
-            end
-        end
+        FT.OpenSettings()
     elseif cmd[1] then
         local index = cmd[1]
         local input = cmd[2] or ""

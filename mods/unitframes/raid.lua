@@ -1100,17 +1100,8 @@ function UF:UpdateAllRaidFrames()
     LayoutRaidGroups()
 end
 
-function UF:ToggleGroupFrameSettings()
-    if FostercareTweaksSettingsGUI then
-        if FostercareTweaksSettingsGUI:IsShown() and FostercareTweaksSettingsGUI.currentTab == 3 then
-            FostercareTweaksSettingsGUI:Hide()
-        else
-            FostercareTweaksSettingsGUI:Show()
-            if FostercareTweaksSettingsGUI.SelectTab then
-                FostercareTweaksSettingsGUI.SelectTab(3)
-            end
-        end
-    end
+function UF:IsRaidTest()
+    return testMode
 end
 
 --------------------------------------------------------------------------------
