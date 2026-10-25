@@ -2,8 +2,8 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Strict Engine Dependency Guard (Mandatory ClassicAPI v1.17.3+ & SuperWoW v2.2+)
-local MIN_CLASSIC_API = 11703
+-- Requires ClassicAPI 1.17.5+ (session player names in C_PlayerCache) and SuperWoW 2.2+.
+local MIN_CLASSIC_API = 11705
 local superMajor, superMinor = string.match(tostring(SUPERWOW_VERSION or ""), "^(%d+)%.(%d+)")
 superMajor, superMinor = tonumber(superMajor), tonumber(superMinor)
 local hasSuperWoW = superMajor and (superMajor > 2 or (superMajor == 2 and superMinor >= 2))
@@ -12,7 +12,7 @@ if type(CLASSIC_API_VERSION) ~= "number" or not hasSuperWoW or
    CLASSIC_API_VERSION < MIN_CLASSIC_API then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.17.3+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.17.5+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -22,7 +22,6 @@ end
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
 local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
 FostercareTweaks = FT
-FT.version = "1.4.0"
 
 -- Component Registration
 FT.register = function(self, mod)
@@ -36,28 +35,26 @@ FT.register = function(self, mod)
     return mod
 end
 
--- Backward compatibility alias for modules registering via ShaguTweaks:register
-if not ShaguTweaks then
-    ShaguTweaks = FT
-end
-
 local function EnsureSavedTables()
     if type(FostercareTweaks_Config) ~= "table" then FostercareTweaks_Config = {} end
     if type(FostercareTweaks_Config.overwrites) ~= "table" then FostercareTweaks_Config.overwrites = {} end
     if type(FostercareTweaks_Cache) ~= "table" then FostercareTweaks_Cache = {} end
-    if type(FostercareTweaks_Cache.players) ~= "table" then FostercareTweaks_Cache.players = {} end
-    -- Retire social-list styling; preserve the independent chat-color choice.
+    -- Player classes come from ClassicAPI's C_PlayerCache; drop our saved list.
+    FostercareTweaks_Cache.players = nil
+    -- Retire social-list styling; keep the chat-color choice it carried.
     if FostercareTweaks_Config["Social Colors"] ~= nil then
         if FostercareTweaks_Config["Chat Class Colors"] == nil then
             FostercareTweaks_Config["Chat Class Colors"] = FostercareTweaks_Config["Social Colors"]
         end
         FostercareTweaks_Config["Social Colors"] = nil
-        for _, record in pairs(FostercareTweaks_Cache.players) do
-            if type(record) == "table" then
-                record.cname, record.clevel, record.cclass, record.lastseen = nil, nil, nil, nil
-            end
-        end
     end
+    -- Auto Dismount moved to ClassicAPI's cast settings (AddOn Options > ClassicAPI).
+    -- A character that had it on turns them on once.
+    if FostercareTweaks_Config["Auto Dismount"] == 1 then
+        SetCVar("autoDismount", "1"); SetCVar("autoUnshift", "1"); SetCVar("autoStand", "1")
+    end
+    FostercareTweaks_Config["Auto Dismount"] = nil
+    FostercareTweaks_Config["Hide Errors"] = nil
     -- Nameplates moved to FostercareNameplates (2026-10-12); clear their old settings.
     for _, key in ipairs({ "Nameplate Scale", "Nameplate Details", "Nameplate Class Colors",
         "Nameplate Castbar", "Enemy Nameplate Cooldowns", "nameplatesEnabled", "nameplate_layout_version" }) do
@@ -123,11 +120,8 @@ coreFrame:SetScript("OnEvent", InitializeOnEvent)
 SLASH_FOSTERCARETWEAKS1 = "/ft"
 SLASH_FOSTERCARETWEAKS2 = "/ftweaks"
 SLASH_FOSTERCARETWEAKS3 = "/fostercaretweaks"
-SLASH_FOSTERCARETWEAKS4 = "/st"
-SLASH_FOSTERCARETWEAKS5 = "/shagutweaks"
 
 SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
-    -- UNVERIFIED: test in game. strsplit is not in the VanillaForge references.
     local cmd = { strsplit(" ", msg or "") }
     if cmd[1] == "reset" then
         FostercareTweaks_Config.overwrites = {}

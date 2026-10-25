@@ -21,9 +21,10 @@ player/target frames; Blizzard auras are the original top-right icons.
 parties and raids. Each control updates its own setting and keeps unrelated choices.
 
 **Chat Class Colors**, under General > Social & Chat, colors player names in chat.
-Friends, Guild and Who use the game's built-in list colors. The previous Social
-Colors setting migrates to this chat-only setting; its offline friend display
-and last-seen formatting are retired.
+Friends, Guild and Who use the game's built-in list colors. Classes come from
+ClassicAPI, which knows your group, nearby players, friends and everyone seen
+this session. To remember players between sessions, turn on the player cache
+in Game Menu > AddOn Options > ClassicAPI.
 
 ---
 
@@ -160,7 +161,8 @@ minimalist style.
 - **Floating Action Bar**: Removes the heavy stone background textures and max-level border art from the primary action bar for a lightweight floating aesthetic.
 - **Reagent Counters**: Action buttons show available casts based on all reagent requirements and the reagents you carry. Bank items do not count. Spell actions and identified macros on native bars are supported; re-save older native-bar macros if their spell is not identified. Item stack counts retain their normal display.
 - **Cooldown Numbers**: Clean numeric countdown text on action bar and bag cooldowns. GearRack uses its own counters when enabled; otherwise FostercareTweaks supplies the numbers. GearRack option changes apply immediately, including open flyouts. Equipment swaps and queues remain owned by GearRack.
-- **Auto Dismount & Stance**: Automatically dismounts or cancels shapeshift forms after a mount/form restriction. A warrior or druid form restriction selects the first usable required stance or form.
+- **Auto Stance**: A warrior or druid spell that needs another stance or form switches to the first usable one.
+- **Dismount, leave form, stand up when casting**: these are ClassicAPI settings (Game Menu > AddOn Options > ClassicAPI). Characters that had Auto Dismount on get them turned on once.
 - **Hide Bars**: Easily hide the Blizzard player cast bar or shapeshift/stance bar under `/ft` without breaking cast events.
 
 ## 6. Chat
