@@ -12,7 +12,7 @@ local module = FT:register({
 module.enable = function(self)
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
-        if cf and not cf.FCTweaks_HookAddMessageColor and not Prat and not FT.IsCombatChatFrame(cf) then
+        if cf and not cf.FCTweaks_HookAddMessageColor and not FT.IsCombatChatFrame(cf) then
             cf.FCTweaks_HookAddMessageColor = cf.AddMessage
             cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
                 if text then

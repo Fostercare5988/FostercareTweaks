@@ -29,8 +29,6 @@ module.enable = function(self)
     local delay = CreateFrame("Frame")
     delay:RegisterEvent("PLAYER_ENTERING_WORLD")
     FT.SetEventHandler(delay, function(self)
-        if Cartographer or METAMAP_TITLE then return end
-
         UIPanelWindows["WorldMapFrame"] = { area = "center" }
 
         if not self.hooked then
@@ -122,8 +120,6 @@ module.enable = function(self)
     local delay = CreateFrame("Frame")
     delay:RegisterEvent("PLAYER_ENTERING_WORLD")
     FT.SetEventHandler(delay, function(self)
-        if Cartographer or METAMAP_TITLE then return end
-
         if not WorldMapButton.coords then
             local coords = CreateFrame("Frame", "FCTweaksWorldMapCursorCoords", WorldMapButton)
             coords.text = coords:CreateFontString(nil, "OVERLAY")
@@ -131,10 +127,6 @@ module.enable = function(self)
             coords.text:SetFontObject(GameFontWhite)
             coords.text:SetTextColor(1, 1, 1)
             coords.text:SetJustifyH("RIGHT")
-
-            if Gatherer_WorldMapDisplay then
-                coords.text:SetPoint("LEFT", Gatherer_WorldMapDisplay, "RIGHT", 3, -21)
-            end
 
             local player = CreateFrame("Frame", "FCTweaksWorldMapPlayerCoords", WorldMapButton)
             player.text = player:CreateFontString(nil, "OVERLAY")

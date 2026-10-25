@@ -60,15 +60,30 @@ local function CreateTextCooldown(cooldown)
 
 end
 
+local function ClearTimer(button)
+    if not button.cd then return end
+    CooldownFrame_SetTimer(button.cd, 0, 0, 0)
+    button.cd:Hide()
+    if button.cd.readable then
+        button.cd.readable.spellId = nil
+        StopText(button.cd.readable)
+    end
+end
+
+local slots = {}
+
 module.enable = function(self)
+    -- Blizzard's update fills TargetFrameDebuff1..n in aura order and colors
+    -- their borders; this adds the sweep, the countdown and the stack count.
     local function UpdateTargetDebuffTimers()
-        -- Skip when Modern Target Frame or Improved Standard Auras manages target auras
         if IsManaged() then UpdateTexts(); return end
 
         local now, unitGUID = GetTime(), UnitGUID("target")
+        -- One walk of the aura list; slot i is the aura native button i shows.
+        local _, count = C_UnitAuras.GetAuraSlots("target", "HARMFUL", nil, nil, slots)
         for i = 1, MAX_TARGET_DEBUFFS do
             local button = _G["TargetFrameDebuff" .. i]
-            if button and button:IsShown() then
+            if button and button:IsShown() and i <= (count or 0) then
                 if not button.cd then
                     button.cd = CreateFrame("Cooldown", "TargetFrameDebuff" .. i .. "Cooldown", button, "CooldownFrameTemplate")
                     button.cd.noCooldownCount = true
@@ -77,12 +92,10 @@ module.enable = function(self)
                     button.cd:EnableMouse(false)
                 end
 
+                local _, _, applications, _, duration, expirationTime, source, _, _, spellId =
+                    C_UnitAuras.UnitAuraBySlot("target", slots[i])
+
                 local dCount = _G["TargetFrameDebuff" .. i .. "Count"]
-                local dBorder = _G["TargetFrameDebuff" .. i .. "Border"]
-
-                -- Strict ClassicAPI v1.15.12 positional unpack
-                local name, icon, applications, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = C_UnitAuras.UnitDebuff("target", i, "HARMFUL")
-
                 if dCount then
                     if not dCount.fixup then
                         dCount.fixup = true
@@ -96,15 +109,8 @@ module.enable = function(self)
                     end
                 end
 
-                if dBorder and dispelType then
-                    local color = DebuffTypeColor[dispelType] or DebuffTypeColor["none"]
-                    if color then dBorder:SetVertexColor(color.r, color.g, color.b) end
-                end
-
-                local effectiveExpiration = expirationTime
-
-                if duration and duration > 0 and effectiveExpiration and effectiveExpiration > now then
-                    local start = effectiveExpiration - duration
+                if duration and duration > 0 and expirationTime and expirationTime > now then
+                    local start = expirationTime - duration
                     CreateTextCooldown(button.cd)
                     local sourceGUID = source and UnitGUID(source)
                     local text = button.cd.readable
@@ -112,35 +118,18 @@ module.enable = function(self)
                        text.spellId ~= spellId or text.start ~= start or text.duration ~= duration then
                         CooldownFrame_SetTimer(button.cd, start, duration, 1)
                     end
-                    text.unitGUID, text.sourceGUID = unitGUID, sourceGUID
-                    button.cd.readable.spellId = spellId
-                    button.cd.readable.expirationTime = effectiveExpiration
-                    button.cd.readable.start = start
-                    button.cd.readable.duration = duration
-                    button.cd.readable:Show()
+                    text.unitGUID, text.sourceGUID, text.spellId = unitGUID, sourceGUID, spellId
+                    text.start, text.duration = start, duration
+                    text:Show()
                     button.cd:Show()
-                    active[button.cd.readable] = true
-                    UpdateText(button.cd.readable, now)
-                    if next(active) and not ticker then ticker = C_Timer.NewTicker(0.1, UpdateTexts) end
+                    active[text] = true
+                    UpdateText(text, now)
+                    if not ticker then ticker = C_Timer.NewTicker(0.1, UpdateTexts) end
                 else
-                    if button.cd and button.cd.readable then
-                        button.cd.readable.spellId = nil
-                        button.cd.readable.expirationTime = nil
-                        StopText(button.cd.readable)
-                    end
-                    if button.cd then
-                        CooldownFrame_SetTimer(button.cd, 0, 0, 0)
-                        button.cd:Hide()
-                    end
+                    ClearTimer(button)
                 end
-            elseif button and button.cd then
-                button.cd:Hide()
-                CooldownFrame_SetTimer(button.cd, 0, 0, 0)
-                if button.cd.readable then
-                    button.cd.readable.spellId = nil
-                    button.cd.readable.expirationTime = nil
-                    StopText(button.cd.readable)
-                end
+            elseif button then
+                ClearTimer(button)
             end
         end
     end

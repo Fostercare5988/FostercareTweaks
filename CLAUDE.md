@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (32 tests).
+VanillaForge (34 tests).
 
 | Area | Files |
 | --- | --- |
@@ -29,7 +29,12 @@ Things to know:
   through the `syncs` list; never write settings from a refresh.
 - Raid buttons click through ClassicAPI unit attributes (`SetUnit` in
   raid.lua: `unit`, `type1` target, `type2` menu). Aura badges on them keep
-  their own click handler so their tooltips stay.
+  their aura tooltip and pass clicks to the button with
+  `owner:Click(GetMouseButtonClicked())`.
+- `mods/unitframes/raid.lua` mixes CRLF and LF lines. Editors may rewrite all
+  of them; restore unchanged lines' endings before committing.
+- No code for addons that are not installed (Cartographer, Gatherer, Prat,
+  quest addons and the like); `tools/find_holes.py` reports any that return.
 - Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
 - Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
   runs on a timer must not build strings or tables each tick.

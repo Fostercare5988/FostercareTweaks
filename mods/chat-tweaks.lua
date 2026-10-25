@@ -216,8 +216,6 @@ module.enable = function(self)
         local questlink, _, quest_id = string.find(link, "quest:(%d+):.*")
         local playerlink = string.sub(link, 1, 6) == "player"
 
-        if ShaguQuest or pfQuest or Questie then questlink = nil end
-
         if string.sub(link, 1, 3) == "url" then
             if string.len(link) > 4 and string.sub(link, 1, 4) == "url:" then
                 CopyLinkDialog.CopyText(string.sub(link, 5))
