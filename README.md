@@ -14,7 +14,7 @@ Warcraft 1.12.1.
 
 ## Requirements
 
-WoW 1.12.1 build 5875 with **ClassicAPI 1.17.3+**, **SuperWoW 2.2+**, **NamPower 4.6.2+**
+WoW 1.12.1 build 5875 with **ClassicAPI 1.17.5+**, **SuperWoW 2.2+**, **NamPower 4.6.2+**
 and **UnitXP SP3 v89+** loaded. NamPower also improves resource-tick attribution.
 
 ## Installation
@@ -52,8 +52,7 @@ compact grid, repeated world entries reuse its frame lists instead of appending
 duplicate references. This integration adds no polling timer.
 
 **Chat Class Colors** colors player names in chat. Friends, Guild and Who keep
-the game's built-in list colors; this addon no longer recolors those lists.
-Your previous Social Colors switch carries over to the chat setting.
+the game's built-in list colors. Classes come from ClassicAPI's player cache.
 
 Under **Unit Frames**, **Clear Raid Target Marks** enables mark support after
 Reload UI; mark size and placement apply live. All four pages scroll, and the

@@ -77,49 +77,6 @@ end
 end
 
 do
--- Automatically dismounts or cancels shapeshift on spell casting attempts
-
-
-local module = FT:register({
-    title = "Auto Dismount",
-    description = "Dismounts or leaves a form after an action reports a mount/form restriction.",
-    category = "General",
-    enabled = true,
-})
-
-local errors = {
-    SPELL_FAILED_NOT_MOUNTED, ERR_ATTACK_MOUNTED, ERR_TAXIPLAYERALREADYMOUNTED,
-    SPELL_FAILED_NOT_SHAPESHIFT, SPELL_FAILED_NO_ITEMS_WHILE_SHAPESHIFTED, SPELL_NOT_SHAPESHIFTED,
-    SPELL_NOT_SHAPESHIFTED_NOSPACE, ERR_CANT_INTERACT_SHAPESHIFTED, ERR_NOT_WHILE_SHAPESHIFTED,
-    ERR_NO_ITEMS_WHILE_SHAPESHIFTED, ERR_TAXIPLAYERSHAPESHIFTED, ERR_MOUNT_SHAPESHIFTED
-}
-
-local errorMap = {}
-for _, err in pairs(errors) do
-    if err then errorMap[err] = true end
-end
-
-module.enable = function(self)
-    local dismount = CreateFrame("Frame")
-    FT.dismount = dismount
-    dismount:RegisterEvent("UI_ERROR_MESSAGE")
-    FT.SetEventHandler(dismount, function(_, ev, msg)
-        if msg == SPELL_FAILED_NOT_STANDING then
-            SitOrStand()
-            return
-        end
-
-        if errorMap[msg] then
-            -- The required runtime cancels the actual mount/form by identity.
-            -- Do not guess or cancel another aura based on a shared texture.
-            Dismount()
-            CancelShapeshiftForm()
-        end
-    end)
-end
-end
-
-do
 -- Automatically switches to the required warrior or druid stance on spell cast
 
 
@@ -147,22 +104,5 @@ module.enable = function(self)
             if usable then CastSpellByName(name); return end
         end
     end)
-end
-end
-
-do
--- Hides and ignores Lua errors produced by broken addons
-
-
-local module = FT:register({
-    title = "Hide Errors",
-    description = "Hides and ignores all Lua errors produced by broken addons.",
-    category = "General",
-    enabled = nil,
-})
-
-module.enable = function(self)
-    local noop = function() end
-    seterrorhandler(noop)
 end
 end

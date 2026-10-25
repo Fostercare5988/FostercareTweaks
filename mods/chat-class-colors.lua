@@ -1,7 +1,7 @@
 local FT = FostercareTweaks
 if not FT then return end
 
-local GetUnitData, rgbhex = FT.GetUnitData, FT.rgbhex
+local GetPlayerClass, rgbhex = FT.GetPlayerClass, FT.rgbhex
 local module = FT:register({
     title = "Chat Class Colors",
     description = "Color player names in chat by class. Friends, Guild and Who use the game's built-in colors.",
@@ -19,8 +19,7 @@ module.enable = function(self)
                     for name in string.gmatch(text, "|Hplayer:(.-)|h") do
                         local real = string.gsub(name, ":.*$", "")
                         local color = "|cffaaaaaa"
-                        local class = GetUnitData and GetUnitData(real)
-                        local classToken = FT.NormalizeClass(class)
+                        local classToken = GetPlayerClass(real)
 
                         if classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken] then
                             color = rgbhex(RAID_CLASS_COLORS[classToken])

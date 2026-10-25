@@ -216,20 +216,14 @@ local module = FT:register({
 
 local myPartyNames = {}
 
+-- C_PlayerCache also knows raid members that are out of range.
 local function GetUnitClassToken(unit, name)
+    local token
     if unit and UnitExists(unit) then
         local _, class = UnitClass(unit)
-        local token = FT.NormalizeClass(class)
-        if token and RAID_CLASS_COLORS[token] then return token end
+        token = FT.NormalizeClass(class)
     end
-    local raidIndex = unit and tonumber(string.match(unit, "^raid(%d+)$"))
-    if raidIndex then
-        local _, _, _, _, localized, token = GetRaidRosterInfo(raidIndex)
-        token = FT.NormalizeClass(token or localized)
-        if token and RAID_CLASS_COLORS[token] then return token end
-    end
-    name = name or (unit and UnitName(unit))
-    local token = FT.GetUnitData(name)
+    token = token or FT.GetPlayerClass(name or (unit and UnitName(unit)))
     if token and RAID_CLASS_COLORS[token] then return token end
 end
 
@@ -312,11 +306,6 @@ local function UpdateWorldMapColors()
     local showWorld = WorldMapFrame and WorldMapFrame:IsShown()
     local showBattlefield = BattlefieldMinimap and BattlefieldMinimap:IsShown()
 
-    -- Skip roster/style work while both maps are closed.
-    if not showWorld and not showBattlefield then
-        return
-    end
-
     -- Pre-calculate party roster names once per tick for O(1) membership lookups
     table.wipe(myPartyNames)
 
@@ -387,9 +376,29 @@ local function EnsureTooltipHooks()
     end
 end
 
+-- The native map moves and re-skins its group buttons while it is open; the
+-- timer runs only then.
+local ticker
+local function SyncTicker()
+    local open = (WorldMapFrame and WorldMapFrame:IsShown())
+        or (BattlefieldMinimap and BattlefieldMinimap:IsShown())
+    if open and not ticker then
+        ticker = C_Timer.NewTicker(0.2, UpdateWorldMapColors)
+        UpdateWorldMapColors()
+    elseif not open and ticker then
+        ticker:Cancel(); ticker = nil
+    end
+end
+
 module.enable = function(self)
     EnsureTooltipHooks()
-    C_Timer.NewTicker(0.2, UpdateWorldMapColors)
+    FT.HookScript(WorldMapFrame, "OnShow", SyncTicker)
+    FT.HookScript(WorldMapFrame, "OnHide", SyncTicker)
+    FT.HookAddonOrVariable("Blizzard_BattlefieldMinimap", function()
+        FT.HookScript(BattlefieldMinimap, "OnShow", SyncTicker)
+        FT.HookScript(BattlefieldMinimap, "OnHide", SyncTicker)
+    end)
+    SyncTicker()
 end
 end
 end

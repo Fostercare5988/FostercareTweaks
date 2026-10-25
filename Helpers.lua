@@ -198,7 +198,6 @@ FT.AddBorder = function(frame, inset, color)
     end
 
     frame.FostercareTweaks_border = b
-    frame.ShaguTweaks_border = b
     return b
 end
 
@@ -260,144 +259,20 @@ function FT.cmatch(message, template)
         Capture(order[3], a, b, c, d, e), Capture(order[4], a, b, c, d, e), Capture(order[5], a, b, c, d, e)
 end
 
--- Player metadata is indexed on roster events. Live unit/GUID data wins over
--- saved names, and pooled tokens are validated before use.
-local unitMobs, rosterUnits = {}, {}
-local classMisses, missCount, classSource = {}, 0, nil
-local function ClearClassMisses()
-    table.wipe(classMisses)
-    missCount = 0
-end
 local function NormalizeClass(class)
     if type(class) ~= "string" or class == "" then return nil end
     return string.upper(class)
 end
 FT.NormalizeClass = NormalizeClass
 
-local function AddUnitData(database, name, class, level, elite)
-    if type(name) ~= "string" or name == "" or name == UNKNOWN then return end
-    local records = database == "players" and FostercareTweaks_Cache.players or unitMobs
-    local record = records[name]
-    if type(record) ~= "table" then record = {}; records[name] = record end
-    if class then record.class = NormalizeClass(class) end
-    if type(level) == "number" and level > 0 then record.level = level end
-    if elite then record.elite = elite end
-end
-FT.AddUnitData = AddUnitData
-
-local function ReadUnit(unit, expectedName)
-    if not UnitExists(unit) then return end
-    local name = UnitName(unit)
-    if expectedName and name ~= expectedName then return end
-    local _, class = UnitClass(unit)
-    local level = UnitLevel(unit)
-    local player = UnitIsPlayer(unit)
-    local elite = not player and UnitClassification(unit) or nil
-    AddUnitData(player and "players" or "mobs", name, class, level, elite)
-    return NormalizeClass(class), level, elite, player
-end
-
-function FT.GetUnitData(name)
+-- A player's class token by name. ClassicAPI looks in the group, nearby
+-- players, friends, everyone seen this session and, when the player turned it
+-- on (AddOn Options > ClassicAPI), its saved player cache.
+function FT.GetPlayerClass(name)
     if type(name) ~= "string" or name == "" then return end
-    if string.match(name, "^0x%x+$") then return ReadUnit(name) end
-    if UnitName("target") == name then
-        local class, level, elite, player = ReadUnit("target", name)
-        if class then return class, level, elite, player end
-    end
-    if UnitName("mouseover") == name then
-        local class, level, elite, player = ReadUnit("mouseover", name)
-        if class then return class, level, elite, player end
-    end
-    if rosterUnits[name] then
-        local class, level, elite, player = ReadUnit(rosterUnits[name], name)
-        if class then return class, level, elite, player end
-    end
-    local record = FostercareTweaks_Cache.players[name]
-    if type(record) == "table" and record.class then
-        return NormalizeClass(record.class), record.level, record.elite, true
-    end
-    record = unitMobs[name]
-    if record then return record.class, record.level, record.elite, false end
-    -- AutoBG's public helper scans the scoreboard and roster. Use our event
-    -- indexes first, and ask it only once per unknown name per source update.
-    if type(AutoBG_FindPlayerClass) == "function" then
-        if classSource ~= AutoBG_FindPlayerClass then
-            classSource = AutoBG_FindPlayerClass
-            ClearClassMisses()
-        end
-        if not classMisses[name] then
-            local class = NormalizeClass(AutoBG_FindPlayerClass(name))
-            if class then AddUnitData("players", name, class); return class, nil, nil, true end
-            if missCount >= 256 then ClearClassMisses() end
-            classMisses[name], missCount = true, missCount + 1
-        end
-    end
+    local _, class = C_PlayerCache.GetPlayerInfoByName(name)
+    return NormalizeClass(class)
 end
-
-local function ScanRoster()
-    table.wipe(rosterUnits)
-    local function AddRosterUnit(unit, expectedName)
-        ReadUnit(unit, expectedName)
-        local name = expectedName or UnitName(unit)
-        if name and name ~= UNKNOWN then rosterUnits[name] = unit end
-    end
-    AddRosterUnit("player")
-    local raidCount = GetNumRaidMembers()
-    if raidCount > 0 then
-        for i = 1, raidCount do
-            local name, _, _, level, localized, token = GetRaidRosterInfo(i)
-            AddUnitData("players", name, token or localized, level)
-            AddRosterUnit("raid" .. i, name)
-        end
-    else
-        for i = 1, GetNumPartyMembers() do AddRosterUnit("party" .. i) end
-    end
-end
-local function ScanFriends()
-    for i = 1, GetNumFriends() do
-        local name, level, class = GetFriendInfo(i)
-        AddUnitData("players", name, class, level)
-    end
-end
-local function ScanGuild()
-    for i = 1, GetNumGuildMembers() do
-        local name, _, _, level, class = GetGuildRosterInfo(i)
-        AddUnitData("players", name, class, level)
-    end
-end
-local function ScanWho()
-    for i = 1, GetNumWhoResults() do
-        local name, _, level, _, class = GetWhoInfo(i)
-        AddUnitData("players", name, class, level)
-    end
-end
-local function ScanBattlefield()
-    for i = 1, GetNumBattlefieldScores() do
-        local name, _, _, _, _, _, _, _, localized, token = GetBattlefieldScore(i)
-        local class = NormalizeClass(token or localized)
-        if name and class and RAID_CLASS_COLORS[class] then
-            AddUnitData("players", name, class)
-            AddUnitData("players", string.match(name, "^[^-]+"), class)
-        end
-    end
-end
-local unitScanFrame = CreateFrame("Frame", "FCTweaksUnitScan", UIParent)
-for _, ev in ipairs({"PLAYER_ENTERING_WORLD", "FRIENDLIST_UPDATE", "GUILD_ROSTER_UPDATE",
-    "RAID_ROSTER_UPDATE", "PARTY_MEMBERS_CHANGED", "PLAYER_TARGET_CHANGED",
-    "WHO_LIST_UPDATE", "UPDATE_MOUSEOVER_UNIT", "UPDATE_BATTLEFIELD_SCORE"}) do
-    unitScanFrame:RegisterEvent(ev)
-end
-FT.SetEventHandler(unitScanFrame, function(_, ev)
-    if ev == "PLAYER_ENTERING_WORLD" or ev == "RAID_ROSTER_UPDATE" or ev == "PARTY_MEMBERS_CHANGED" then
-        ClearClassMisses()
-        ScanRoster()
-    elseif ev == "FRIENDLIST_UPDATE" then ScanFriends()
-    elseif ev == "GUILD_ROSTER_UPDATE" then ScanGuild()
-    elseif ev == "WHO_LIST_UPDATE" then ScanWho()
-    elseif ev == "UPDATE_BATTLEFIELD_SCORE" then ClearClassMisses(); ScanBattlefield()
-    elseif ev == "PLAYER_TARGET_CHANGED" then ReadUnit("target")
-    elseif ev == "UPDATE_MOUSEOVER_UNIT" then ReadUnit("mouseover") end
-end)
 
 -- SuperWoW supplies real values through native UnitHealth/UnitHealthMax.
 function FT.GetUnitHealthValues(unit)

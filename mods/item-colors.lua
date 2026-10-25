@@ -49,7 +49,7 @@ module.enable = function()
     local function Style(button, quality, bank)
         if not button then return end
         quality = KnownQuality(quality)
-        local border = button.FCTweaks_border or button.ShaguTweaks_border or AddBorder(button, 3, neutral)
+        local border = button.FCTweaks_border or AddBorder(button, 3, neutral)
         button.FCTweaks_border = border
         if bank and quality and quality < 2 then quality = nil end
         if button.fctBorderQuality == quality then return end

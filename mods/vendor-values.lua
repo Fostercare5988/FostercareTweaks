@@ -21,16 +21,6 @@ local function GetSellPrice(item)
   return C_Item.GetItemSellPriceByID(id) or 0
 end
 
--- Backwards-compatible lookup table for other modules referencing SellValueDB[id]
-local SellValueDB = setmetatable({}, {
-  __index = function(tab, id)
-    local p = GetSellPrice(id)
-    return (p > 0) and p or nil
-  end
-})
-
-FT.SellValueDB = SellValueDB
-
 module.enable = function(self)
   -- Vendor values are a post-call decoration. Never replace Blizzard's item
   -- methods: other tooltip owners may hook them in either load order.

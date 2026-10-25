@@ -21,17 +21,7 @@ end
 local function GetClassColor(unit)
     if not unit or not UnitExists(unit) then return nil end
     local _, class = UnitClass(unit)
-    if not class or class == "" then
-        class = UnitClass(unit)
-    end
-    if class and FT.NormalizeClass then
-        class = FT.NormalizeClass(class)
-    elseif class then
-        class = string.upper(class)
-    end
-    if (not class or class == "") and UnitName(unit) and FT.GetUnitData then
-        class = FT.GetUnitData(UnitName(unit))
-    end
+    class = FT.NormalizeClass(class)
     if not class then return nil end
     local colors = FT.UnitFrames and FT.UnitFrames.ClassColors
     if colors and colors[class] then
