@@ -7,15 +7,13 @@
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.17.5+, SuperWoW 2.2+, NamPower 4.6.2+ and UnitXP SP3 v89+.
 ## OptionalDeps: GearRack, AutoBG, AtlasLoot, Turtle_GroupUI
 ## Author: Fostercare5988
-## Version: 1.4.1
+## Version: 1.5.0
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 
 # Core Architecture
 Core.lua
 Helpers.lua
-SettingsWidgets.lua
-Options.lua
 
 # Action Bar Modules
 mods\actionbar-float.lua
@@ -24,7 +22,6 @@ mods\cooldown-numbers.lua
 mods\reduced-actionbar.lua
 ExtraActions.lua
 ActionBars.lua
-ActionBarOptions.lua
 
 # Unit Frame Modules
 mods\move-unitframes.lua
@@ -43,8 +40,6 @@ mods\target-castbar.lua
 mods\target-debufftimer.lua
 mods\unitframe-energytick.lua
 mods\raid-target-marks.lua
-UnitFrameOptions.lua
-RaidFrameOptions.lua
 
 
 # World & MiniMap Modules
@@ -64,4 +59,7 @@ mods\chat-class-colors.lua
 # General & Gameplay Modules
 mods\gameplay.lua
 mods\blue-shaman.lua
-mods\custom.lua
+
+# Settings (VanillaForge ForgeUI kit)
+ForgeUI.lua
+Settings.lua
