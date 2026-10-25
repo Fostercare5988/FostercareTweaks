@@ -21,7 +21,6 @@ module.enable = function(self)
         if not button then return end
         if MerchantFrame:IsShown() and MerchantFrame.selectedTab == 1 then
             button:Show()
-            -- UNVERIFIED: test in game. C_MerchantFrame.GetNumJunkItems/SellAllJunkItems are not in the VanillaForge references.
             if C_MerchantFrame.GetNumJunkItems() > 0 then
                 button:Enable()
                 button:GetNormalTexture():SetDesaturated(false)
