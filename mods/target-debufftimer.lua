@@ -22,7 +22,7 @@ end
 
 local function IsManaged()
     local UF = FT.UnitFrames
-    return UF and (UF:IsModernTarget() or UF:IsImprovedStandardAuras())
+    return UF and UF:IsImprovedStandardAuras()
 end
 
 local function UpdateText(text, now)

@@ -92,17 +92,7 @@ local function StopCast()
 end
 
 local function UpdateAnchor()
-    local UF = FT.UnitFrames
-    local owner = UF and UF:IsModernTarget() and UF.targetFrame or TargetFrame
-    if castbar:GetParent() ~= owner then castbar:SetParent(owner); castbar.lastYOffset = nil end
-    if owner ~= TargetFrame then
-        local row = owner.auraContainer and owner.auraContainer.debuffFrame
-        local anchor = row and row:IsShown() and (row.occupiedCount or 0) > 0 and row or owner
-        castbar:SetWidth(math.max(24, owner:GetWidth() - 28))
-        castbar:ClearAllPoints()
-        castbar:SetPoint("TOPRIGHT", anchor, "BOTTOMRIGHT", -3, -7)
-        return
-    end
+    if castbar:GetParent() ~= TargetFrame then castbar:SetParent(TargetFrame); castbar.lastYOffset = nil end
     castbar:SetWidth(140)
     local yOffset = -4
     local targetOfTarget = TargetofTargetFrame and TargetofTargetFrame:IsShown()

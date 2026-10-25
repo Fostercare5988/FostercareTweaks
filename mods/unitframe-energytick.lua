@@ -9,10 +9,6 @@ local module = FT:register({
 })
 
 local function GetActivePowerBar()
-    local UF = FT.UnitFrames
-    if UF and UF.playerFrame and UF:IsModernPlayer() and UF.playerFrame:IsShown() then
-        return UF.playerFrame.powerBar
-    end
     return PlayerFrameManaBar
 end
 
@@ -75,8 +71,6 @@ module.enable = function(self)
     Refresh = function()
         local bar = GetActivePowerBar()
         Watch(PlayerFrame); Watch(PlayerFrameManaBar)
-        local UF = FT.UnitFrames
-        if UF and UF.playerFrame then Watch(UF.playerFrame); Watch(UF.playerFrame.powerBar) end
         local active = FostercareTweaks_Config["Show Energy Ticks"] ~= 0 and bar and bar:IsVisible() and
             not UnitIsDeadOrGhost("player") and (power == 0 or power == 3) and driver.start
         local width, height = 0, 0

@@ -2,682 +2,103 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/unitframes/core.lua
--- World of Warcraft 1.12.1 Enhanced Client
--- Modern Unit Frames Subsystem: Core Foundation
+-- Shared unit-frame settings, colors and bars for the improved auras on
+-- Blizzard's player and target frames and for the party and raid frames.
 
-
--- Owns the shared modern-frame defaults (uf_scale). Each frame has its own
--- toggle below; PLAYER_LOGIN applies them, so this entry has no switch of its own.
-local module = FT:register({
-    title = "Unit Frames (Modern)",
-    description = "Shared settings for the modern unit frames.",
-    category = "Unit Frames",
-    enabled = false,
-    config = {
-        ["uf_scale"] = 1.0,
-    }
-})
-
--- Positive modern unit frame toggles (disabled by default for new users)
-FT:register({
-    title = "Modern Player Frame",
-    description = "Enable the modern FostercareTweaks player unit frame instead of the default Blizzard frame.",
-    category = "Unit Frames",
-    enabled = false,
-})
-
-FT:register({
-    title = "Modern Target Frame",
-    description = "Enable the modern FostercareTweaks target unit frame instead of the default Blizzard frame.",
-    category = "Unit Frames",
-    enabled = false,
-})
-
-FT:register({
-    title = "Modern Combo Points",
-    description = "Display combo points on the modern target unit frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Modern Target's Target",
-    description = "Enable the modern FostercareTweaks Target of Target frame instead of the standard Blizzard frame.",
-    category = "Unit Frames",
-    enabled = false,
-})
-
-FT:register({
-    title = "Show PvP Emblem",
-    description = "Display faction PvP emblem on modern unit frames.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Target Level",
-    description = "Display target level and difficulty color on the modern target frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Target Class",
-    description = "Display target class or creature type on the modern target frame.",
-    category = "Unit Frames",
-    enabled = false,
-})
-
-FT:register({
-    title = "Show Unit Name",
-    description = "Display unit name text on modern unit frames.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Improved Standard Auras",
-    description = "Display enhanced buffs and debuffs with timers, spirals and dispel borders on standard Blizzard frames.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
--- Granular toggles for modern aura visibility and configuration
-FT:register({
-    title = "Show Player Buffs",
-    description = "Display buff icons above the modern player unit frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Target Buffs",
-    description = "Display buff icons above the modern target unit frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Player Debuffs",
-    description = "Display debuff icons on the modern player unit frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Target Debuffs",
-    description = "Display debuff icons below the modern target unit frame.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Buff Cooldown Spiral",
-    description = "Display the radial cooldown sweep on unit frame buffs.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Buff Duration Text",
-    description = "Display remaining time numbers on unit frame buffs.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Debuff Cooldown Spiral",
-    description = "Display the radial cooldown sweep on unit frame debuffs.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Debuff Duration Text",
-    description = "Display remaining time numbers on unit frame debuffs.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Color Debuffs by Dispel Type",
-    description = "Color debuff borders by magic, curse, disease, or poison.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Only Show My Debuffs on Target",
-    description = "Only show debuffs cast by you on the target unit frame.",
-    category = "Unit Frames",
-    enabled = false,
-})
-
-FT:register({
-    title = "Show Raid Aggro Indicator",
-    description = "Show a red indicator box on group/raid frames when a member has aggro.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Raid HoT Indicator",
-    description = "Show corner status indicators for active healing over time buffs.",
-    category = "Unit Frames",
-    enabled = true,
-})
-
-FT:register({
-    title = "Show Raid Debuff Badges",
-    description = "Show compact debuff icons on group/raid frames.",
-    category = "Unit Frames",
-    enabled = true,
-})
+for _, spec in ipairs({
+    { "Improved Standard Auras", "Timers, sweeps and dispel colors under the player and target frames.", true },
+    { "Show Player Buffs", "Player buffs under the player frame.", true },
+    { "Show Target Buffs", "Target buffs under the target frame.", true },
+    { "Show Player Debuffs", "Player debuffs under the player frame.", true },
+    { "Show Target Debuffs", "Target debuffs under the target frame.", true },
+    { "Show Buff Cooldown Spiral", "The clock sweep on buffs.", true },
+    { "Show Buff Duration Text", "Time left on buffs.", true },
+    { "Show Debuff Cooldown Spiral", "The clock sweep on debuffs.", true },
+    { "Show Debuff Duration Text", "Time left on debuffs.", true },
+    { "Color Debuffs by Dispel Type", "Dispel-type colors on debuff borders.", true },
+    { "Only Show My Debuffs on Target", "Only your own debuffs on the target.", false },
+    { "Show Raid Aggro Indicator", "A red corner on the member your enemy target attacks.", true },
+    { "Show Raid HoT Indicator", "A corner icon for heals over time and shields.", true },
+    { "Show Raid Debuff Badges", "Debuff icons inside raid members.", true },
+}) do
+    FT:register({ title = spec[1], description = spec[2], category = "Unit Frames", enabled = spec[3] })
+end
 
 FT.UnitFrames = FT.UnitFrames or {}
 local UF = FT.UnitFrames
-UF.module = module
-UF.frames = {}
 
--- Translate old combined/inverted settings before Core fills new defaults.
+-- The Modern player, target and target-of-target frames were removed on
+-- 2026-10-25 (no character used them). Clear their saved settings once; the
+-- old "Show Aura" switches carry over to the buff/debuff pair first.
 function FT.MigrateFrameSettings()
     local cfg = FostercareTweaks_Config
-    local aliases = {
-        ["Use Standard Player Frame"] = "Modern Player Frame",
-        ["Use Standard Target Frame"] = "Modern Target Frame",
-        ["Use Standard Target's Target"] = "Modern Target's Target",
-    }
-    for old, new in pairs(aliases) do
-        if cfg[new] == nil and cfg[old] ~= nil then cfg[new] = cfg[old] == 0 and 1 or 0 end
-    end
-    for _, kind in ipairs({"Buff", "Debuff"}) do
-        for _, suffix in ipairs({"Cooldown Spiral", "Duration Text"}) do
+    for _, kind in ipairs({ "Buff", "Debuff" }) do
+        for _, suffix in ipairs({ "Cooldown Spiral", "Duration Text" }) do
             local old, new = "Show Aura " .. suffix, "Show " .. kind .. " " .. suffix
             if cfg[new] == nil and cfg[old] ~= nil then cfg[new] = cfg[old] end
         end
     end
-end
-
-
-function UF:IsModernPlayer()
-    if not FostercareTweaks_Config then return false end
-    if FostercareTweaks_Config["Modern Player Frame"] ~= nil then
-        return FostercareTweaks_Config["Modern Player Frame"] == 1
+    for _, key in ipairs({ "Show Aura Cooldown Spiral", "Show Aura Duration Text", "Unit Frames (Modern)",
+        "Modern Player Frame", "Modern Target Frame", "Modern Combo Points", "Modern Target's Target",
+        "Use Standard Player Frame", "Use Standard Target Frame", "Use Standard Target's Target",
+        "Show PvP Emblem", "Show Target Level", "Show Target Class", "Show Unit Name",
+        "Unit Frame Class Portraits", "Larger Armor Debuffs" }) do
+        cfg[key] = nil
     end
-    if FostercareTweaks_Config["Use Standard Player Frame"] ~= nil then
-        return FostercareTweaks_Config["Use Standard Player Frame"] == 0
+    for _, key in ipairs({ "uf_scale", "uf_player_width", "uf_player_height", "uf_target_width",
+        "uf_target_height", "uf_tot_width", "uf_tot_height", "uf_power_height", "uf_font_name",
+        "uf_font_level", "uf_font_health", "uf_font_power", "uf_health_format", "uf_power_format",
+        "uf_aura_size", "uf_armor_debuff_scale" }) do
+        cfg.overwrites[key] = nil
     end
-    return false
-end
-
-function UF:IsModernTarget()
-    if not FostercareTweaks_Config then return false end
-    if FostercareTweaks_Config["Modern Target Frame"] ~= nil then
-        return FostercareTweaks_Config["Modern Target Frame"] == 1
-    end
-    if FostercareTweaks_Config["Use Standard Target Frame"] ~= nil then
-        return FostercareTweaks_Config["Use Standard Target Frame"] == 0
-    end
-    return false
-end
-
-function UF:IsModernComboPoints()
-    return FT.IsEnabled("Modern Combo Points", true)
-end
-
-function UF:IsModernToT()
-    if not FostercareTweaks_Config then return false end
-    if FostercareTweaks_Config["Modern Target's Target"] ~= nil then
-        return FostercareTweaks_Config["Modern Target's Target"] == 1
-    end
-    if FostercareTweaks_Config["Use Standard Target's Target"] ~= nil then
-        return FostercareTweaks_Config["Use Standard Target's Target"] == 0
-    end
-    return false
-end
-
-function UF:IsStandardPlayer()
-    return not UF:IsModernPlayer()
-end
-
-function UF:IsStandardTarget()
-    return not UF:IsModernTarget()
-end
-
-function UF:IsStandardToT()
-    return not UF:IsModernToT()
-end
-
-function UF:IsShowPvP()
-    return FT.IsEnabled("Show PvP Emblem", true)
-end
-
-function UF:IsShowLevel()
-    return FT.IsEnabled("Show Target Level", true)
-end
-
-function UF:IsShowClass()
-    return FT.IsEnabled("Show Target Class", false)
-end
-
-function UF:IsShowName()
-    return FT.IsEnabled("Show Unit Name", true)
-end
-
-function UF:GetHealthFormat()
-    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["uf_health_format"]
-    if not val and FT.overwrites then
-        val = FT.overwrites["uf_health_format"]
-    end
-    return val or "smart"
-end
-
-function UF:GetPowerFormat()
-    local val = FostercareTweaks_Config and FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["uf_power_format"]
-    if not val and FT.overwrites then
-        val = FT.overwrites["uf_power_format"]
-    end
-    return val or "smart"
-end
-
-function UF.FormatHealthText(cur, max)
-    if not cur or not max or max <= 0 then return "" end
-    local fmt = UF:GetHealthFormat()
-    if fmt == "none" then
-        return ""
-    elseif fmt == "current" then
-        return FT.Abbreviate(cur)
-    elseif fmt == "percent" then
-        local pct = math.floor((cur / max) * 100)
-        return pct .. "%"
-    elseif fmt == "deficit" then
-        local def = max - cur
-        if def > 0 then
-            return "-" .. FT.Abbreviate(def)
-        else
-            return ""
-        end
-    else -- "smart" / "current_max"
-        local curStr = FT.Abbreviate(cur)
-        if cur == max then
-            return curStr
-        else
-            return curStr .. " / " .. FT.Abbreviate(max)
-        end
+    local positions = cfg.unitframe_positions
+    if type(positions) == "table" then
+        for _, key in ipairs({ "player", "target", "targettarget", "modern_player_buffs",
+            "modern_player_debuffs", "modern_target_buffs", "modern_target_debuffs" }) do positions[key] = nil end
     end
 end
 
-function UF.FormatPowerText(cur, max, powerType)
-    if not cur then return "" end
-    local fmt = UF:GetPowerFormat()
-    if fmt == "none" then
-        return ""
-    end
-    -- Smart format uses current energy/rage; explicit formats apply to all resources.
-    if fmt == "smart" and (powerType == 1 or powerType == 3) then
-        return tostring(cur)
-    end
-    if not max or max <= 0 then return tostring(cur) end
-    if fmt == "current" then
-        return FT.Abbreviate(cur)
-    elseif fmt == "percent" then
-        local pct = math.floor((cur / max) * 100)
-        return pct .. "%"
-    else -- "smart"
-        local curStr = FT.Abbreviate(cur)
-        if cur == max then
-            return curStr
-        else
-            return curStr .. " / " .. FT.Abbreviate(max)
-        end
-    end
-end
+-- Settings ---------------------------------------------------------------------
 
-function UF:GetPlayerWidth()
-    return FT.GetNumber("uf_player_width", 200, 140, 350)
-end
+function UF:IsImprovedStandardAuras() return FT.IsEnabled("Improved Standard Auras", true) end
+function UF:IsShowPlayerBuffs() return FT.IsEnabled("Show Player Buffs", true) end
+function UF:IsShowTargetBuffs() return FT.IsEnabled("Show Target Buffs", true) end
+function UF:IsShowPlayerDebuffs() return FT.IsEnabled("Show Player Debuffs", true) end
+function UF:IsShowTargetDebuffs() return FT.IsEnabled("Show Target Debuffs", true) end
+function UF:IsBuffSpin() return FT.IsEnabled("Show Buff Cooldown Spiral", true) end
+function UF:IsBuffText() return FT.IsEnabled("Show Buff Duration Text", true) end
+function UF:IsDebuffSpin() return FT.IsEnabled("Show Debuff Cooldown Spiral", true) end
+function UF:IsDebuffText() return FT.IsEnabled("Show Debuff Duration Text", true) end
+function UF:IsColorDebuffsByDispel() return FT.IsEnabled("Color Debuffs by Dispel Type", true) end
+function UF:IsOnlyMyDebuffs() return FT.IsEnabled("Only Show My Debuffs on Target", false) end
+function UF:IsRaidShowAggro() return FT.IsEnabled("Show Raid Aggro Indicator", true) end
+function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator", true) end
+function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges", true) end
+function UF:GetBuffSize() return FT.GetNumber("uf_buff_size", 20, 14, 32) end
+function UF:GetDebuffSize() return FT.GetNumber("uf_debuff_size", 20, 14, 32) end
+function UF:GetRaidHealthFormat() return FT.GetOverride("raid_health_format", "deficit") end
 
-function UF:GetPlayerHeight()
-    return FT.GetNumber("uf_player_height", 42, 30, 80)
-end
-
-function UF:GetTargetWidth()
-    return FT.GetNumber("uf_target_width", 200, 140, 350)
-end
-
-function UF:GetTargetHeight()
-    return FT.GetNumber("uf_target_height", 42, 30, 80)
-end
-
-function UF:GetToTWidth()
-    return FT.GetNumber("uf_tot_width", 120, 80, 220)
-end
-
-function UF:GetToTHeight()
-    return FT.GetNumber("uf_tot_height", 26, 20, 50)
-end
-
-function UF:GetPowerHeight()
-    return FT.GetNumber("uf_power_height", 10, 4, 20)
-end
-
-function UF:GetFontNameSize()
-    return FT.GetNumber("uf_font_name", 12, 8, 20)
-end
-
-function UF:GetFontLevelSize()
-    return FT.GetNumber("uf_font_level", 11, 8, 20)
-end
-
-function UF:GetFontHealthSize()
-    return FT.GetNumber("uf_font_health", 11, 8, 20)
-end
-
-function UF:GetFontPowerSize()
-    return FT.GetNumber("uf_font_power", 11, 8, 20)
-end
+UF.GetUnitHealthValues = FT.GetUnitHealthValues
 
 function UF.SetFontSize(fontString, size)
     if not fontString or not size then return end
     local fontFile, currentSize, flags = fontString:GetFont()
     if currentSize == size then return end
-    if not fontFile or fontFile == "" then
-        fontFile = "Fonts\\FRIZQT__.TTF"
-    end
-    fontString:SetFont(fontFile, size, flags or "")
+    fontString:SetFont(fontFile or "Fonts\\FRIZQT__.TTF", size, flags or "")
 end
 
-function UF:ApplyDimensions()
-    if UF.playerFrame then
-        local w = UF:GetPlayerWidth()
-        local h = UF:GetPlayerHeight()
-        UF.playerFrame:SetWidth(w)
-        UF.playerFrame:SetHeight(h)
-        UF:LayoutBars(UF.playerFrame)
-    end
-    if UF.targetFrame then
-        local w = UF:GetTargetWidth()
-        local h = UF:GetTargetHeight()
-        UF.targetFrame:SetWidth(w)
-        UF.targetFrame:SetHeight(h)
-        UF:LayoutBars(UF.targetFrame)
-    end
-    if UF.totFrame then
-        local w = UF:GetToTWidth()
-        local h = UF:GetToTHeight()
-        UF.totFrame:SetWidth(w)
-        UF.totFrame:SetHeight(h)
-        UF:LayoutBars(UF.totFrame)
-    end
-end
+-- Look -------------------------------------------------------------------------
 
-function UF:ApplyFonts()
-    local nameSize = UF:GetFontNameSize()
-    local levelSize = UF:GetFontLevelSize()
-    local healthSize = UF:GetFontHealthSize()
-    local powerSize = UF:GetFontPowerSize()
-
-    if UF.playerFrame then
-        local hb = UF.playerFrame.healthBar
-        if hb then
-            if hb.nameText then UF.SetFontSize(hb.nameText, nameSize) end
-            if hb.levelText then UF.SetFontSize(hb.levelText, levelSize) end
-            if hb.healthText then UF.SetFontSize(hb.healthText, healthSize) end
-        end
-        local pb = UF.playerFrame.powerBar
-        if pb and pb.powerText then
-            UF.SetFontSize(pb.powerText, powerSize)
-        end
-    end
-
-    if UF.targetFrame then
-        local hb = UF.targetFrame.healthBar
-        if hb then
-            if hb.nameText then UF.SetFontSize(hb.nameText, nameSize) end
-            if hb.levelText then UF.SetFontSize(hb.levelText, levelSize) end
-            if hb.healthText then UF.SetFontSize(hb.healthText, healthSize) end
-        end
-        local pb = UF.targetFrame.powerBar
-        if pb then
-            if pb.leftText then UF.SetFontSize(pb.leftText, levelSize) end
-            if pb.powerText then UF.SetFontSize(pb.powerText, powerSize) end
-        end
-    end
-
-    if UF.totFrame then
-        local hb = UF.totFrame.healthBar
-        if hb then
-            if hb.nameText then UF.SetFontSize(hb.nameText, math.max(8, nameSize - 1)) end
-            if hb.healthText then UF.SetFontSize(hb.healthText, math.max(8, healthSize - 1)) end
-        end
-    end
-    for _, frame in pairs(UF.frames) do UF:LayoutText(frame) end
-end
-
--- Bound every text lane, then fit the requested font to its actual height/width.
--- Names may truncate; numeric and status text shrink only to a readable 8 px.
-local function FitText(text, width, height, requested, fitWidth)
-    if not text then return end
-    width, height = math.max(1, width), math.max(1, height)
-    -- Health and power events call this per update. Refit only when the lane,
-    -- requested size, content or externally applied font size has changed.
-    local content = fitWidth and text:GetText() or nil
-    local _, currentSize = text:GetFont()
-    if text.fctFitW == width and text.fctFitH == height and text.fctFitReq == requested
-        and text.fctFitText == content and text.fctFitSize == currentSize then return end
-    local size = math.max(8, math.min(requested, height))
-    UF.SetFontSize(text, size)
-    if fitWidth then
-        while size > 8 and text:GetStringWidth() > width do
-            size = size - 1
-            UF.SetFontSize(text, size)
-        end
-    end
-    if text.fctFitW ~= width then text:SetWidth(width) end
-    if text.fctFitH ~= height then text:SetHeight(height) end
-    local _, fittedSize = text:GetFont()
-    text.fctFitW, text.fctFitH, text.fctFitReq = width, height, requested
-    text.fctFitText, text.fctFitSize = content, fittedSize
-end
-
-function UF:LayoutText(frame)
-    local hb, pb = frame.healthBar, frame.powerBar
-    if not hb or not hb.nameText or not hb.healthText then return end
-    local width, height = hb:GetWidth() - 8, hb:GetHeight() - 2
-    local rows = height >= 18
-    local rowH = rows and math.floor(height / 2) or height
-    local classText = pb and pb.leftText
-    local hasClass = rows and classText and classText:GetText() and classText:GetText() ~= "" and true or false
-    local healthW = hasClass and math.floor(width * 0.6) or (rows and width or math.floor(width * 0.55))
-    -- Anchors depend only on the row mode.
-    if frame.fctTextRows ~= rows then
-        frame.fctTextRows = rows
-        hb.nameText:ClearAllPoints()
-        hb.nameText:SetPoint(rows and "TOPLEFT" or "LEFT", hb, rows and "TOPLEFT" or "LEFT", 4, rows and -1 or 0)
-        hb.healthText:ClearAllPoints()
-        hb.healthText:SetPoint(rows and "BOTTOMRIGHT" or "RIGHT", hb, rows and "BOTTOMRIGHT" or "RIGHT", -4, rows and 1 or 0)
-        if classText then
-            classText:ClearAllPoints()
-            classText:SetPoint("BOTTOMLEFT", hb, "BOTTOMLEFT", 4, 1)
-        end
-    end
-    FitText(hb.nameText, rows and width or width - healthW - 3, rowH, UF:GetFontNameSize(), false)
-    FitText(hb.healthText, healthW, rowH, UF:GetFontHealthSize(), true)
-    if classText then
-        FitText(classText, math.max(1, width - healthW - 3), rowH, UF:GetFontLevelSize(), false)
-        if hasClass ~= (classText:IsShown() and true or false) then
-            if hasClass then classText:Show() else classText:Hide() end
-        end
-    end
-    if pb and pb.powerText then
-        FitText(pb.powerText, pb:GetWidth() - 8, pb:GetHeight(), UF:GetFontPowerSize(), true)
-        local showPower = pb:GetHeight() >= 8
-        if showPower ~= (pb.powerText:IsShown() and true or false) then
-            if showPower then pb.powerText:Show() else pb.powerText:Hide() end
-        end
-    end
-    if frame.levelBadge then
-        local badge = frame.levelBadge
-        local side = frame.portrait:GetWidth()
-        local size = math.min(UF:GetFontLevelSize(), math.max(8, side - 18))
-        local label = badge.text:GetText()
-        local _, currentSize = badge.text:GetFont()
-        if badge.fctSide ~= side or badge.fctSize ~= size or badge.fctLabel ~= label
-            or currentSize ~= size then
-            badge.fctSide, badge.fctSize, badge.fctLabel = side, size, label
-            UF.SetFontSize(badge.text, size)
-            badge:SetWidth(math.min(side, math.max(20, badge.text:GetStringWidth() + 6)))
-            badge:SetHeight(math.min(side, size + 4))
-            if badge.skull then
-                local skullSize = math.min(14, badge:GetHeight() - 2)
-                badge.skull:SetWidth(skullSize); badge.skull:SetHeight(skullSize)
-            end
-            badge:ClearAllPoints()
-            local anchor = frame.portraitSide == "left" and "BOTTOMLEFT" or "BOTTOMRIGHT"
-            badge:SetPoint(anchor, frame.portrait, anchor, 0, 0)
-        end
-    end
-end
-
-function UF:IsImprovedStandardAuras()
-    return FT.IsEnabled("Improved Standard Auras", true)
-end
-
-function UF:IsShowPlayerBuffs()
-    return FT.IsEnabled("Show Player Buffs", true)
-end
-
-function UF:IsShowTargetBuffs()
-    return FT.IsEnabled("Show Target Buffs", true)
-end
-
-function UF:GetBuffSize()
-    if not FostercareTweaks_Config then return 20 end
-    local val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_buff_size"])
-    if not val then
-        val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_aura_size"])
-    end
-    if not val then return 20 end
-    if val < 14 then val = 14 end
-    if val > 32 then val = 32 end
-    return val
-end
-
-function UF:IsBuffSpin()
-    if not FostercareTweaks_Config then return true end
-    local val = FostercareTweaks_Config["Show Buff Cooldown Spiral"]
-    if val == nil then
-        val = FostercareTweaks_Config["Show Aura Cooldown Spiral"]
-    end
-    if val == nil then return true end
-    return val == 1
-end
-
-function UF:IsBuffText()
-    if not FostercareTweaks_Config then return true end
-    local val = FostercareTweaks_Config["Show Buff Duration Text"]
-    if val == nil then
-        val = FostercareTweaks_Config["Show Aura Duration Text"]
-    end
-    if val == nil then return true end
-    return val == 1
-end
-
-function UF:IsShowPlayerDebuffs()
-    return FT.IsEnabled("Show Player Debuffs", true)
-end
-
-function UF:IsShowTargetDebuffs()
-    return FT.IsEnabled("Show Target Debuffs", true)
-end
-
-function UF:GetDebuffSize()
-    if not FostercareTweaks_Config then return 20 end
-    local val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_debuff_size"])
-    if not val then
-        val = FostercareTweaks_Config.overwrites and tonumber(FostercareTweaks_Config.overwrites["uf_aura_size"])
-    end
-    if not val then return 20 end
-    if val < 14 then val = 14 end
-    if val > 32 then val = 32 end
-    return val
-end
-
-function UF:IsDebuffSpin()
-    if not FostercareTweaks_Config then return true end
-    local val = FostercareTweaks_Config["Show Debuff Cooldown Spiral"]
-    if val == nil then
-        val = FostercareTweaks_Config["Show Aura Cooldown Spiral"]
-    end
-    if val == nil then return true end
-    return val == 1
-end
-
-function UF:IsDebuffText()
-    if not FostercareTweaks_Config then return true end
-    local val = FostercareTweaks_Config["Show Debuff Duration Text"]
-    if val == nil then
-        val = FostercareTweaks_Config["Show Aura Duration Text"]
-    end
-    if val == nil then return true end
-    return val == 1
-end
-
-function UF:IsColorDebuffsByDispel()
-    return FT.IsEnabled("Color Debuffs by Dispel Type", true)
-end
-
-function UF:IsOnlyMyDebuffs()
-    return FT.IsEnabled("Only Show My Debuffs on Target", false)
-end
-
--- Backwards-compatible aliases
-UF.GetAuraSize = UF.GetBuffSize
-UF.IsAuraSpin = UF.IsBuffSpin
-UF.IsAuraText = UF.IsBuffText
-
-function UF:GetRaidHealthFormat()
-    if not FostercareTweaks_Config then return "deficit" end
-    local val = FostercareTweaks_Config.overwrites and FostercareTweaks_Config.overwrites["raid_health_format"]
-    return val or "deficit"
-end
-
-function UF:IsRaidShowAggro()
-    return FT.IsEnabled("Show Raid Aggro Indicator", true)
-end
-
-function UF:IsRaidShowHoT()
-    return FT.IsEnabled("Show Raid HoT Indicator", true)
-end
-
-function UF:IsRaidShowDebuffs()
-    return FT.IsEnabled("Show Raid Debuff Badges", true)
-end
-
-function UF:GetScale()
-    return FT.GetNumber("uf_scale", 1, 0.5, 2)
-end
-
-function UF:ApplyScale(scale)
-    scale = FT.ClampNumber(scale, UF:GetScale(), 0.5, 2)
-    if UF.playerFrame then UF.playerFrame:SetScale(scale) end
-    if UF.targetFrame then UF.targetFrame:SetScale(scale) end
-    if UF.totFrame then UF.totFrame:SetScale(scale) end
-    if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end
-    if FT.LayoutTargetCastbar then FT.LayoutTargetCastbar() end
-end
-
--- Visual Backdrop Configuration (Luna-style solid black border and fill)
+-- Solid black border and fill (Luna style).
 UF.backdrop = {
     bgFile = "Interface\\Buttons\\WHITE8X8",
     edgeFile = "Interface\\Buttons\\WHITE8X8",
     tile = false, tileSize = 0, edgeSize = 1,
     insets = { left = 0, right = 0, top = 0, bottom = 0 }
 }
-UF.backdropColor = { 0.00, 0.00, 0.00, 0.90 }
 UF.backdropBorderColor = { 0.00, 0.00, 0.00, 1.00 }
 
--- Exact Luna Unit Frames Class Colors
+-- Luna Unit Frames class, power and dispel colors.
 UF.ClassColors = {
     ["HUNTER"]  = { r = 0.67, g = 0.83, b = 0.45 },
     ["WARLOCK"] = { r = 0.58, g = 0.51, b = 0.79 },
@@ -690,36 +111,12 @@ UF.ClassColors = {
     ["WARRIOR"] = { r = 0.78, g = 0.61, b = 0.43 },
     ["PET"]     = { r = 0.20, g = 0.90, b = 0.20 },
 }
-
--- Exact Luna Unit Frames Power Colors
 UF.PowerColors = {
     [0] = { r = 0.30, g = 0.50, b = 0.85 }, -- MANA
     [1] = { r = 0.90, g = 0.20, b = 0.30 }, -- RAGE
     [2] = { r = 1.00, g = 0.50, b = 0.25 }, -- FOCUS
     [3] = { r = 1.00, g = 0.85, b = 0.10 }, -- ENERGY
 }
-
--- Exact Luna Unit Frames Health / Reaction Colors
-UF.ReactionColors = {
-    [1] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
-    [2] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
-    [3] = { r = 0.90, g = 0.00, b = 0.00 }, -- Hostile
-    [4] = { r = 0.93, g = 0.93, b = 0.00 }, -- Neutral
-    [5] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
-    [6] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
-    [7] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
-    [8] = { r = 0.20, g = 0.90, b = 0.20 }, -- Friendly
-}
-
-UF.HealthColors = {
-    ["tapped"]   = { r = 0.50, g = 0.50, b = 0.50 },
-    ["hostile"]  = { r = 0.90, g = 0.00, b = 0.00 },
-    ["friendly"] = { r = 0.20, g = 0.90, b = 0.20 },
-    ["neutral"]  = { r = 0.93, g = 0.93, b = 0.00 },
-    ["offline"]  = { r = 0.50, g = 0.50, b = 0.50 },
-}
-
--- Exact Luna Magic / Dispel Colors
 UF.DispelColors = {
     ["Magic"]   = { r = 0.20, g = 0.60, b = 1.00 },
     ["Curse"]   = { r = 0.60, g = 0.00, b = 1.00 },
@@ -728,482 +125,39 @@ UF.DispelColors = {
     ["None"]    = { r = 0.60, g = 0.15, b = 0.15 },
 }
 
-function UF.IsRealPlayer(unit)
-    if not unit or not UnitExists(unit) then return false end
-    if not UnitIsPlayer(unit) or not UnitPlayerControlled(unit) then
-        return false
-    end
-    return true
+local BAR_TEXTURE = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
+
+-- The bar's background follows its fill at a fifth of the brightness.
+local function SetBarColor(bar, r, g, b, a)
+    a = a or 1
+    if bar.fillR == r and bar.fillG == g and bar.fillB == b and bar.fillA == a then return end
+    bar.fillR, bar.fillG, bar.fillB, bar.fillA = r, g, b, a
+    bar:SetStatusBarColorNative(r, g, b, a)
+    bar.bg:SetVertexColor(r * 0.2, g * 0.2, b * 0.2, 1)
 end
 
--- Default status bar texture (Luna smooth bar)
-UF.defaultBarTexture = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
-
---------------------------------------------------------------------------------
--- 1. Custom StatusBar Implementation (CreateBar)
--- Replaces native 1.12 StatusBar with texture-clipped Frame widget to eliminate
--- stretching, shearing, and reverse-fill distortion.
---------------------------------------------------------------------------------
-
-local function BarGetMinMaxValues(self)
-    return self.minV, self.maxV
-end
-
-local function BarGetOrientation(self)
-    return self.orientation
-end
-
-local function BarGetStatusBarColor(self)
-    return self.texture:GetVertexColor()
-end
-
-local function BarGetStatusBarTexture(self)
-    return self.texture
-end
-
-local function BarGetValue(self)
-    return self.value
-end
-
-local function BarRefresh(self)
-    self = self or this
-    local range = (self.maxV or 1) - (self.minV or 0)
-    if range <= 0 then
-        self.texture:Hide()
-        return
-    end
-
-    local progress = ((self.value or 0) - (self.minV or 0)) / range
-    if progress < 0 then progress = 0 end
-    if progress > 1 then progress = 1 end
-
-    if progress <= 0 then
-        self.texture:Hide()
-        return
-    else
-        self.texture:Show()
-    end
-
-    local w = self:GetWidth() or 0
-    local h = self:GetHeight() or 0
-    if w <= 0 or h <= 0 then return end
-
-    self.texture:ClearAllPoints()
-    if self.reverse then
-        if self.orientation == "VERTICAL" then
-            self.texture:SetWidth(w)
-            self.texture:SetHeight(h * progress)
-            self.texture:SetPoint("TOP", self, "TOP")
-            self.texture:SetTexCoord(0, 1, 0, progress)
-        else
-            self.texture:SetWidth(w * progress)
-            self.texture:SetHeight(h)
-            self.texture:SetPoint("RIGHT", self, "RIGHT")
-            self.texture:SetTexCoord(1 - progress, 1, 0, 1)
-        end
-    else
-        if self.orientation == "VERTICAL" then
-            self.texture:SetWidth(w)
-            self.texture:SetHeight(h * progress)
-            self.texture:SetPoint("BOTTOM", self, "BOTTOM")
-            self.texture:SetTexCoord(0, 1, 1 - progress, 1)
-        else
-            self.texture:SetWidth(w * progress)
-            self.texture:SetHeight(h)
-            self.texture:SetPoint("LEFT", self, "LEFT")
-            self.texture:SetTexCoord(0, progress, 0, 1)
-        end
-    end
-end
-
-local function BarSetMinMaxValues(self, minV, maxV)
-    minV = tonumber(minV) or 0
-    maxV = tonumber(maxV) or 1
-    if maxV < minV then maxV = minV end
-    if self.minV == minV and self.maxV == maxV then return end
-    self.minV = minV
-    self.maxV = maxV
-    if self.value < minV then self.value = minV end
-    if self.value > maxV then self.value = maxV end
-    BarRefresh(self)
-end
-
-local function BarSetOrientation(self, orientation)
-    local o = string.upper(orientation or "HORIZONTAL")
-    if o == "HORIZONTAL" or o == "VERTICAL" then
-        if self.orientation ~= o then
-            self.orientation = o
-            BarRefresh(self)
-        end
-    end
-end
-
-local function BarSetStatusBarColor(self, r, g, b, alpha)
-    if not r or not g or not b then return end
-    alpha = alpha or 1
-    local bgOverride = self.bg and self.bg.overrideColor
-    if self.fillR == r and self.fillG == g and self.fillB == b and self.fillAlpha == alpha and
-        self.bgOverride == bgOverride then return end
-    self.fillR, self.fillG, self.fillB, self.fillAlpha = r, g, b, alpha
-    self.bgOverride = bgOverride
-    self.texture:SetVertexColor(r, g, b, alpha)
-    if self.bg and not self.bg.overrideColor then
-        self.bg:SetVertexColor(r * 0.20, g * 0.20, b * 0.20, 1.0)
-    end
-end
-
-local function BarSetStatusBarTexture(self, texture)
-    if not texture then return end
-    if type(texture) == "string" then
-        self.texture:SetTexture(texture)
-        if self.bg then self.bg:SetTexture(texture) end
-    elseif texture.GetTexture and texture:GetTexture() then
-        self.texture:SetTexture(texture:GetTexture())
-        if self.bg then self.bg:SetTexture(texture:GetTexture()) end
-    end
-    BarRefresh(self)
-end
-
-local function BarSetValue(self, value)
-    value = tonumber(value) or 0
-    if value < self.minV then value = self.minV end
-    if value > self.maxV then value = self.maxV end
-    if self.value ~= value then
-        self.value = value
-        BarRefresh(self)
-    end
-end
-
-local function BarSetReverse(self, value)
-    local reverse = value and true or nil
-    if self.reverse == reverse then return end
-    self.reverse = reverse
-    BarRefresh(self)
-end
-
+-- The engine's own StatusBar draws the fill; ClassicAPI gives it reverse fill
+-- and fill styles, which the old Lua-drawn bar existed for.
 function UF:CreateBar(name, parent)
-    local bar = CreateFrame("Frame", name, parent)
-    bar.minV = 0
-    bar.maxV = 1
-    bar.value = 1
-    bar.orientation = "HORIZONTAL"
-
-    -- Background layer (Luna style 20% tinted texture against dark backdrop)
+    local bar = CreateFrame("StatusBar", name, parent)
+    bar:SetStatusBarTexture(BAR_TEXTURE)
+    bar:SetMinMaxValues(0, 1)
+    bar:SetValue(1)
     bar.bg = bar:CreateTexture(nil, "BACKGROUND")
     bar.bg:SetAllPoints(bar)
-    bar.bg:SetTexture(UF.defaultBarTexture)
-    bar.bg:SetVertexColor(0.08, 0.08, 0.08, 1.0)
-
-    -- Status bar fill layer
-    bar.texture = bar:CreateTexture(nil, "ARTWORK")
-    bar.texture:SetTexture(UF.defaultBarTexture)
-
-    bar.GetMinMaxValues = BarGetMinMaxValues
-    bar.GetOrientation = BarGetOrientation
-    bar.GetStatusBarColor = BarGetStatusBarColor
-    bar.GetStatusBarTexture = BarGetStatusBarTexture
-    bar.GetValue = BarGetValue
-    bar.SetMinMaxValues = BarSetMinMaxValues
-    bar.SetOrientation = BarSetOrientation
-    bar.SetStatusBarColor = BarSetStatusBarColor
-    bar.SetStatusBarTexture = BarSetStatusBarTexture
-    bar.SetValue = BarSetValue
-    bar.SetReverse = BarSetReverse
-    bar.Refresh = BarRefresh
-
-    bar:SetScript("OnSizeChanged", BarRefresh)
+    bar.bg:SetTexture(BAR_TEXTURE)
+    bar.bg:SetVertexColor(0.08, 0.08, 0.08, 1)
+    bar.SetStatusBarColorNative = bar.SetStatusBarColor
+    bar.SetStatusBarColor = SetBarColor
     return bar
 end
 
---------------------------------------------------------------------------------
--- 2. Proportional Layout Engine
--- Stacks horizontal bars (Health, Power) vertically with pixel-perfect weighting
--- and allocates square space for side portraits.
---------------------------------------------------------------------------------
-
-function UF:LayoutBars(frame)
-    if not frame then return end
-
-    local totalW = frame:GetWidth() or 200
-    local totalH = frame:GetHeight() or 42
-    local borderInset = 1
-    local innerW = totalW - (borderInset * 2)
-    local innerH = totalH - (borderInset * 2)
-
-    local barXOffset = borderInset
-    local barW = innerW
-
-    -- Handle portrait positioning
-    if frame.portrait and frame.portrait:IsShown() then
-        -- Tall/narrow frames still need enough horizontal space for text.
-        local portraitSize = math.min(innerH, math.floor(innerW * 0.3))
-        if frame.portraitSide == "left" then
-            frame.portrait:ClearAllPoints()
-            frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", borderInset, -borderInset)
-            frame.portrait:SetWidth(portraitSize)
-            frame.portrait:SetHeight(portraitSize)
-            barXOffset = borderInset + portraitSize + 1
-            barW = innerW - portraitSize - 1
-        elseif frame.portraitSide == "right" then
-            frame.portrait:ClearAllPoints()
-            frame.portrait:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderInset, -borderInset)
-            frame.portrait:SetWidth(portraitSize)
-            frame.portrait:SetHeight(portraitSize)
-            barXOffset = borderInset
-            barW = innerW - portraitSize - 1
-        end
-
-        if frame.comboFrame then
-            local pSize = frame.portrait:GetWidth() or portraitSize
-            if pSize and pSize >= 35 and frame.comboFrame.pips then
-                frame.comboFrame:SetWidth(pSize)
-                local pipSpacing = 1
-                local totalSpacing = (5 - 1) * pipSpacing
-                local availablePipW = pSize - 2 - totalSpacing
-                local pipW = math.floor(availablePipW / 5)
-                if pipW < 4 then pipW = 4 end
-                for i = 1, 5 do
-                    local pip = frame.comboFrame.pips[i]
-                    if pip then
-                        pip:SetWidth(pipW)
-                        pip:SetPoint("LEFT", frame.comboFrame, "LEFT", 1 + (i - 1) * (pipW + pipSpacing), 0)
-                    end
-                end
-            end
-        end
-    end
-
-    -- Stack health and power bars
-    local powerShown = frame.powerBar and frame.powerBar:IsShown()
-    local separator = 1
-
-    if powerShown then
-        local availH = innerH - separator
-        local powerH = UF:GetPowerHeight()
-        local minHealthH = frame.unit == "targettarget" and 14 or 20
-        if powerH > availH - minHealthH then
-            powerH = math.max(4, availH - minHealthH)
-        end
-        local healthH = math.max(4, availH - powerH)
-
-        frame.healthBar:ClearAllPoints()
-        frame.healthBar:SetPoint("TOPLEFT", frame, "TOPLEFT", barXOffset, -borderInset)
-        frame.healthBar:SetWidth(barW)
-        frame.healthBar:SetHeight(healthH)
-
-        frame.powerBar:ClearAllPoints()
-        frame.powerBar:SetPoint("TOPLEFT", frame, "TOPLEFT", barXOffset, -borderInset - healthH - separator)
-        frame.powerBar:SetWidth(barW)
-        frame.powerBar:SetHeight(powerH)
-    else
-        frame.healthBar:ClearAllPoints()
-        frame.healthBar:SetPoint("TOPLEFT", frame, "TOPLEFT", barXOffset, -borderInset)
-        frame.healthBar:SetWidth(barW)
-        frame.healthBar:SetHeight(innerH)
-    end
-
-    if frame.healthBar and frame.healthBar.Refresh then frame.healthBar:Refresh() end
-    if frame.powerBar and frame.powerBar.Refresh then frame.powerBar:Refresh() end
-    UF:LayoutText(frame)
-end
-
---------------------------------------------------------------------------------
--- 3. Authoritative Health Query (native / SuperWoW)
---------------------------------------------------------------------------------
-
-UF.GetUnitHealthValues = FT.GetUnitHealthValues
-
---------------------------------------------------------------------------------
--- 4. Standard Unit Frame Factory
---------------------------------------------------------------------------------
-
-local function UnitFrame_OnClick()
-    if FCTweaksUnitFrameUnlocker and FCTweaksUnitFrameUnlocker.movable then
-        return
-    end
-    local unit = this.unit
-    if not unit then return end
-    local button = arg1 or "LeftButton"
-
-    if button == "LeftButton" then
-        if SpellIsTargeting() then
-            SpellTargetUnit(unit)
-        elseif CursorHasItem() then
-            DropItemOnUnit(unit)
-        else
-            TargetUnit(unit)
-        end
-    elseif button == "RightButton" then
-        if unit == "player" then
-            ToggleDropDownMenu(1, nil, PlayerFrameDropDown, "cursor")
-        elseif unit == "target" then
-            ToggleDropDownMenu(1, nil, TargetFrameDropDown, "cursor")
-        end
-    end
-end
-
-local function UnitFrame_OnEnter()
-    local unit = this.unit
-    if not unit then return end
-
-    if SetMouseoverUnit then
-        -- UNVERIFIED: test in game. SetMouseoverUnit is documented for GUIDs; unit-token use is not in the VanillaForge references.
-        SetMouseoverUnit(unit)
-    end
-
-    if SpellIsTargeting and SpellIsTargeting() then
-        SetCursor("CAST_CURSOR")
-    end
-
-    GameTooltip_SetDefaultAnchor(GameTooltip, this)
-    GameTooltip:SetUnit(unit)
-    local r, g, b = GameTooltip_UnitColor(unit)
-    if GameTooltipTextLeft1 and r and g and b then
-        GameTooltipTextLeft1:SetTextColor(r, g, b)
-    end
-    GameTooltip:Show()
-end
-
-local function UnitFrame_OnLeave()
-    if SetMouseoverUnit then
-        SetMouseoverUnit()
-    end
-    if SpellIsTargeting and SpellIsTargeting() then
-        SetCursor(nil)
-    end
-    GameTooltip:Hide()
-end
-
-function UF:CreateUnitFrame(unit, name, parent)
-    local frame = CreateFrame("Button", name, parent or UIParent)
-    frame.unit = unit
-    frame:SetFrameStrata("LOW")
-    frame:SetClampedToScreen(true)
-
-    frame:SetBackdrop(UF.backdrop)
-    frame:SetBackdropColor(0.08, 0.08, 0.08, 0.85)
-    frame:SetBackdropBorderColor(0.2, 0.2, 0.2, 1)
-
-    -- Interaction handling
-    frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    frame:SetScript("OnClick", UnitFrame_OnClick)
-    frame:SetScript("OnEnter", UnitFrame_OnEnter)
-    frame:SetScript("OnLeave", UnitFrame_OnLeave)
-
-    -- Draggable support: dynamically enabled by mods/move-unitframes.lua when Ctrl+Shift are held
-    frame:SetMovable(true)
-
-    if FT.RegisterFrameMover then
-        FT.RegisterFrameMover(frame, unit, unit == "player" and "Player" or (unit == "targettarget" and "Target of Target" or "Target"))
-    end
-    table.insert(UF.frames, frame)
-    return frame
-end
-
---------------------------------------------------------------------------------
--- 5. Subsystem Lifecycle & Native Blizzard Frame Suppression
---------------------------------------------------------------------------------
-
-
--- Native OnLoad/UnitFrame_Initialize own these registrations. Suppression
--- remembers exactly which were present; restoring re-registers only those.
-local NATIVE_FRAME_EVENTS = {
-    "UNIT_NAME_UPDATE", "UNIT_PORTRAIT_UPDATE", "UNIT_DISPLAYPOWER", "UNIT_LEVEL",
-    "UNIT_COMBAT", "UNIT_FACTION", "UNIT_CLASSIFICATION_CHANGED", "UNIT_AURA",
-    "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_FOCUS",
-    "UNIT_ENERGY", "UNIT_HAPPINESS", "UNIT_MAXMANA", "UNIT_MAXRAGE", "UNIT_MAXFOCUS",
-    "UNIT_MAXENERGY", "UNIT_MAXHAPPINESS", "PLAYER_ENTERING_WORLD",
-    "PLAYER_TARGET_CHANGED", "PLAYER_COMBO_POINTS", "PLAYER_ENTER_COMBAT",
-    "PLAYER_LEAVE_COMBAT", "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
-    "PLAYER_UPDATE_RESTING", "PLAYER_FLAGS_CHANGED", "PARTY_MEMBERS_CHANGED",
-    "PARTY_LEADER_CHANGED", "PARTY_LOOT_METHOD_CHANGED", "RAID_ROSTER_UPDATE",
-    "RAID_TARGET_UPDATE", "PLAYTIME_CHANGED",
-}
-local suppressedEvents = {}
-
-local function SuppressEvents(frame)
-    if not frame then return end
-    -- Repeated suppression keeps the first, native snapshot.
-    if not suppressedEvents[frame] then
-        local events = {}
-        for _, name in ipairs(NATIVE_FRAME_EVENTS) do
-            if frame:IsEventRegistered(name) then table.insert(events, name) end
-        end
-        suppressedEvents[frame] = events
-    end
-    frame:UnregisterAllEvents()
-end
-
-local function RestoreEvents(frame)
-    local events = frame and suppressedEvents[frame]
-    if not events then return end
-    for _, name in ipairs(events) do frame:RegisterEvent(name) end
-    suppressedEvents[frame] = nil
-end
-
-function UF:SuppressPlayerFrame()
-    if PlayerFrame then
-        PlayerFrame:Hide()
-        SuppressEvents(PlayerFrame)
-        SuppressEvents(PlayerFrameHealthBar)
-        SuppressEvents(PlayerFrameManaBar)
-    end
-end
-
-function UF:RestorePlayerFrame()
-    if not PlayerFrame then return end
-    RestoreEvents(PlayerFrame)
-    RestoreEvents(PlayerFrameHealthBar)
-    RestoreEvents(PlayerFrameManaBar)
-    PlayerFrame:Show()
-    local oldThis = this
-    this = PlayerFrame
-    if PlayerFrame_Update then PlayerFrame_Update() end
-    this = oldThis
-end
-
-function UF:SuppressTargetFrame()
-    if TargetFrame then
-        TargetFrame:Hide()
-        SuppressEvents(TargetFrame)
-        SuppressEvents(TargetFrameHealthBar)
-        SuppressEvents(TargetFrameManaBar)
-        if ComboFrame then
-            ComboFrame:Hide()
-            SuppressEvents(ComboFrame)
-        end
-    end
-end
-
-function UF:RestoreTargetFrame()
-    if not TargetFrame then return end
-    RestoreEvents(TargetFrame)
-    RestoreEvents(TargetFrameHealthBar)
-    RestoreEvents(TargetFrameManaBar)
-    RestoreEvents(ComboFrame)
-    if UnitExists("target") then
-        local oldThis = this
-        this = TargetFrame
-        TargetFrame:Show()
-        if TargetFrame_Update then TargetFrame_Update() end
-        if TargetFrame_CheckDead then TargetFrame_CheckDead() end
-        if ComboFrame_Update then
-            ComboFrame_Update()
-        elseif ComboPointsFrame_OnEvent then
-            ComboPointsFrame_OnEvent()
-        end
-        this = oldThis
-    else
-        TargetFrame:Hide()
-    end
-end
+-- Party frames -----------------------------------------------------------------
 
 function UF:SuppressPartyFrames()
     for i = 1, 4 do
         local pf = _G["PartyMemberFrame" .. i]
-        if pf then
-            pf:Hide()
-        end
+        if pf then pf:Hide() end
     end
 end
 
@@ -1222,122 +176,34 @@ function UF:RestorePartyFrames()
     end
 end
 
+for i = 1, 4 do
+    local pf = _G["PartyMemberFrame" .. i]
+    if pf then
+        FT.HookScript(pf, "OnShow", function(frame)
+            local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
+            if groupDims and groupDims.enabled then frame:Hide() end
+        end)
+    end
+end
+
+-- Applying settings --------------------------------------------------------------
+
 function UF:ApplyConfiguration()
-    UF.enabled = true
     local tick = FT.mods["Show Energy Ticks"]
     if tick and FostercareTweaks_Config["Show Energy Ticks"] ~= 0 then tick:enable() end
     local cast = FT.mods["Enemy Castbars"]
     if cast and FostercareTweaks_Config["Enemy Castbars"] ~= 0 then cast:enable() end
-    -- Dimensions & Fonts Live Application
-    if UF.ApplyDimensions then UF:ApplyDimensions() end
-    if UF.ApplyFonts then UF:ApplyFonts() end
 
-    -- Group/Raid Frames lifecycle (independent toggle via groupframe_dimensions.enabled)
-    local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
-    local raidEnabled = groupDims and groupDims.enabled
-    if raidEnabled then
+    -- One grid serves party and raid; its own switch lives in groupframe_dimensions.
+    if UF:GetGroupDimensions().enabled then
         UF:SuppressPartyFrames()
-        if UF.EnableRaidFrames then UF:EnableRaidFrames() end
+        UF:EnableRaidFrames()
     else
-        if UF.DisableRaidFrames then UF:DisableRaidFrames() end
+        UF:DisableRaidFrames()
         UF:RestorePartyFrames()
     end
 
-    -- Player Frame
-    if UF:IsModernPlayer() then
-        UF:SuppressPlayerFrame()
-        if UF.EnablePlayerFrame then UF:EnablePlayerFrame() end
-        if UF.playerFrame and UF.playerFrame:IsShown() then
-            if UF.UpdatePlayerPvP then UF.UpdatePlayerPvP(UF.playerFrame) end
-            if UF.UpdatePlayerHealth then UF.UpdatePlayerHealth(UF.playerFrame) end
-            if UF.UpdatePlayerPower then UF.UpdatePlayerPower(UF.playerFrame) end
-        end
-    else
-        if UF.DisablePlayerFrame then UF:DisablePlayerFrame() end
-        UF:RestorePlayerFrame()
-    end
-
-    -- Target Frame
-    if UF:IsModernTarget() then
-        UF:SuppressTargetFrame()
-        if UF.EnableTargetFrame then UF:EnableTargetFrame() end
-        if UF.targetFrame and UF.targetFrame:IsShown() then
-            if UF.UpdateTargetPvP then UF.UpdateTargetPvP(UF.targetFrame) end
-            if UF.UpdateTargetHealth then UF.UpdateTargetHealth(UF.targetFrame) end
-            if UF.UpdateTargetPower then UF.UpdateTargetPower(UF.targetFrame) end
-            if UF.UpdateComboPoints then UF.UpdateComboPoints(UF.targetFrame) end
-            if UF.UpdateRaidTarget then UF.UpdateRaidTarget(UF.targetFrame) end
-        end
-    else
-        if UF.DisableTargetFrame then UF:DisableTargetFrame() end
-        UF:RestoreTargetFrame()
-    end
-
-    -- Target of Target
-    if UF:IsModernToT() then
-        if TargetofTargetFrame then TargetofTargetFrame:Hide() end
-        if UF.EnableToTFrame then UF:EnableToTFrame() end
-        if UF.totFrame and UF.totFrame:IsShown() then
-            if UF.UpdateToTHealth then UF.UpdateToTHealth(UF.totFrame) end
-            if UF.UpdateToTPower then UF.UpdateToTPower(UF.totFrame) end
-        end
-    else
-        if UF.DisableToTFrame then UF:DisableToTFrame() end
-        if TargetofTargetFrame then
-            if TargetFrame and TargetFrame:IsShown() and UnitExists("targettarget") then
-                local oldThis = this
-                this = TargetofTargetFrame
-                TargetofTargetFrame:Show()
-                if TargetofTarget_Update then TargetofTarget_Update() end
-                this = oldThis
-            else
-                TargetofTargetFrame:Hide()
-            end
-        end
-    end
-
-    -- Auras Live Refresh
-    if UF.playerFrame and UF.playerFrame.auraContainer then
-        if UF.playerFrame.auraContainer.buffFrame then
-            if UF:IsShowPlayerBuffs() then
-                UF.playerFrame.auraContainer.buffFrame:Show()
-            else
-                UF.playerFrame.auraContainer.buffFrame:Hide()
-            end
-        end
-        if UF.playerFrame.auraContainer.debuffFrame then
-            if UF:IsShowPlayerDebuffs() then
-                UF.playerFrame.auraContainer.debuffFrame:Show()
-            else
-                UF.playerFrame.auraContainer.debuffFrame:Hide()
-            end
-        end
-        if UF.Auras and UF.Auras.UpdateContainer then
-            UF.Auras:UpdateContainer(UF.playerFrame.auraContainer)
-        end
-    end
-
-    if UF.targetFrame and UF.targetFrame.auraContainer then
-        if UF.targetFrame.auraContainer.buffFrame then
-            if UF:IsShowTargetBuffs() then
-                UF.targetFrame.auraContainer.buffFrame:Show()
-            else
-                UF.targetFrame.auraContainer.buffFrame:Hide()
-            end
-        end
-        if UF.targetFrame.auraContainer.debuffFrame then
-            if UF:IsShowTargetDebuffs() then
-                UF.targetFrame.auraContainer.debuffFrame:Show()
-            else
-                UF.targetFrame.auraContainer.debuffFrame:Hide()
-            end
-        end
-        if UF.Auras and UF.Auras.UpdateContainer then
-            UF.Auras:UpdateContainer(UF.targetFrame.auraContainer)
-        end
-    end
-
-    if UF.Auras and UF.Auras.UpdateBlizzTargetAuras then
+    if UF.Auras then
         UF.Auras:UpdateBlizzTargetAuras()
         UF.Auras:UpdateBlizzPlayerAuras()
     end
@@ -1351,52 +217,12 @@ function UF:ApplyConfiguration()
     if FT.RefreshTargetCastbar then FT.RefreshTargetCastbar() end
 end
 
-function UF:SuppressBlizzardFrames()
-    UF:ApplyConfiguration()
-end
-
-function UF:RestoreBlizzardFrames()
-    UF:RestorePlayerFrame()
-    UF:RestoreTargetFrame()
-    UF:RestorePartyFrames()
-end
-
--- Hook Blizzard frames so they respect user toggles
-if PlayerFrame then
-    FT.HookScript(PlayerFrame, "OnShow", function(frame)
-        if UF:IsModernPlayer() then frame:Hide() end
-    end)
-end
-
 if TargetFrame then
-    FT.HookScript(TargetFrame, "OnShow", function(frame)
-        if UF:IsModernTarget() then
-            frame:Hide()
-        elseif UF.Auras and UF.Auras.UpdateBlizzTargetAuras then
-            UF.Auras:UpdateBlizzTargetAuras()
-        end
+    FT.HookScript(TargetFrame, "OnShow", function()
+        if UF.Auras then UF.Auras:UpdateBlizzTargetAuras() end
     end)
 end
 
-if TargetofTargetFrame then
-    FT.HookScript(TargetofTargetFrame, "OnShow", function(frame)
-        if UF:IsModernToT() then frame:Hide() end
-    end)
-end
-
-for i = 1, 4 do
-    local pf = _G["PartyMemberFrame" .. i]
-    if pf then
-        FT.HookScript(pf, "OnShow", function(frame)
-            local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
-            if groupDims and groupDims.enabled then frame:Hide() end
-        end)
-    end
-end
-
--- Guaranteed configuration initialization on PLAYER_LOGIN
 local loginFrame = CreateFrame("Frame")
 loginFrame:RegisterEvent("PLAYER_LOGIN")
-FT.SetEventHandler(loginFrame, function()
-    UF:ApplyConfiguration()
-end)
+FT.SetEventHandler(loginFrame, function() UF:ApplyConfiguration() end)

@@ -2,14 +2,14 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (38 tests).
+VanillaForge (40 tests).
 
 | Area | Files |
 | --- | --- |
 | Core | `Core.lua` (module registry `FT:register`, `/ft`), `Helpers.lua` |
 | Settings | `Settings.lua` (one ForgeUI window, five tabs, AddOn Options entry), `ForgeUI.lua` and `Media/` (VanillaForge kit, copied unchanged) |
 | Action bars | `ActionBars.lua`, `ExtraActions.lua` (extra rows 2-7), `mods/actionbar-*.lua`, `mods/cooldown-numbers.lua`, `mods/reduced-actionbar.lua` |
-| Unit frames | `mods/unitframes/` (core, auras, player, target, tot, raid, native-group), `mods/unitframe*.lua`, `mods/health-numbers.lua`, `mods/target-*.lua`, `mods/raid-target-marks.lua` |
+| Unit frames | `mods/unitframes/` (core: shared settings, colors, bars; auras: improved auras on Blizzard frames and raid icons; raid; native-group), `mods/unitframe*.lua`, `mods/health-numbers.lua`, `mods/target-*.lua`, `mods/raid-target-marks.lua` |
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |
 | Bags and items | `mods/vendor-values.lua`, `mods/sell-junk.lua`, `mods/item-colors.lua`, `mods/equip-compare.lua` |
 | Chat | `mods/chat-tweaks.lua`, `mods/chat-class-colors.lua` |
@@ -17,6 +17,11 @@ VanillaForge (38 tests).
 
 Things to know:
 
+- The player, target and pet frames are Blizzard's; FostercareTweaks only
+  improves them. The Modern replacement frames were removed on 2026-10-25
+  (no character used them); `FT.MigrateFrameSettings` clears their settings.
+- Bars (`UF:CreateBar`) are native StatusBars; ClassicAPI supplies reverse
+  fill and fill styles.
 - Each `mods/` file registers one module with `FT:register({ title, category,
   enabled })` and an `enable` function. The load order is the TOC.
 - Settings: each control saves at once and calls the module's live update;

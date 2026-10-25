@@ -189,9 +189,6 @@ SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
             DEFAULT_CHAT_FRAME:AddMessage("|cffff5555Error:|r Overwrite |cffffcc00" .. index .. "|r does not exist.", 1, 1, 1)
         else
             FT.SetOverride(index, value)
-            if index == "uf_scale" and FT.UnitFrames and FT.UnitFrames.ApplyScale then
-                FT.UnitFrames:ApplyScale(value)
-            end
             DEFAULT_CHAT_FRAME:AddMessage("Overwrite |cffffcc00" .. index .. "|r is now set to: |cffffcc00" .. input .. "|r", 1, 1, 1)
         end
     end
