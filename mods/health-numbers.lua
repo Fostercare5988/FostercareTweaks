@@ -89,7 +89,9 @@ module.enable = function(self)
                 text = Abbreviate(cur)
             end
 
-            if max == 0 or (bar.unit == "target" and (UnitIsDead("target") or UnitIsGhost("target"))) then
+            -- The native "Dead" label shows at 0 health (TargetFrame_CheckDead),
+            -- which arrives before UnitIsDead turns true; hide both numbers then.
+            if max == 0 or (bar.unit == "target" and (UnitIsDeadOrGhost("target") or (UnitHealth("target") or 0) <= 0)) then
                 str:Hide()
                 if str:GetText() ~= "" then
                     str:SetText("")
@@ -105,4 +107,9 @@ module.enable = function(self)
     end
 
     FT.hooksecurefunc("TextStatusBar_UpdateTextString", UpdateHealthTextString)
+    -- Death changes no mana value, so the mana number needs this refresh too.
+    FT.hooksecurefunc("TargetFrame_CheckDead", function()
+        UpdateHealthTextString(TargetFrameHealthBar)
+        UpdateHealthTextString(TargetFrameManaBar)
+    end)
 end

@@ -44,7 +44,7 @@ Configure your preferred style under `/ft uf`:
 - **Modern Unit Frames**: Luna-inspired clean layout featuring 1px dark borders, class coloring and 2D portraits. Health uses native SuperWoW values.
 - Each **Modern Player / Target / Target's Target** checkbox selects that frame's style; unchecked uses Blizzard. Existing dimensions, scale, power-bar height and fonts apply live. Fonts shrink to their available lane; names truncate before covering health. Tall, narrow frames limit portrait width. Power numbers hide below an 8 px bar height.
 - Choose name, class/creature type and level visibility independently. Health and power offer **Smart**, **Current**, **Percent** and **Hidden**. Smart omits an unnecessary maximum and uses current energy/rage; Percent remains a percentage for every resource. Level badges use native difficulty colors; unknown-level bosses use the native skull.
-- Under **Combat details**, **Adjust unit-frame raid marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column. These controls affect unit-frame marks only.
+- Under **Combat details**, **Adjust unit-frame raid marks** enables support after Reload UI. Size and placement apply live. Target marks fit above the level badge or sit beside the portrait. Raid marks reserve a column. These controls affect unit-frame marks only. When you are not in a group, the raid mark keys set marks that only you can see.
 - **Target-frame castbar** under **Combat details** follows the selected target-frame style and applies live. On modern targets it sits below occupied debuff rows. The target castbar remains available with FostercareNameplates disabled. Disabling it stops its cast-event subscriptions and animation immediately.
 
 ### Aura Controls & Borders
@@ -65,6 +65,7 @@ Configure your preferred style under `/ft uf`:
 - **Priority & Overflow**: Debuffs with a dispel type come before other debuffs. Buff priority is recognized HoTs/shields, player/pet buffs, then other buffs; ties keep native aura order. Capacity gives debuffs priority while reserving a buff when both fit. The strip draws buffs, then debuffs. `+N` counts eligible icons that did not fit; nothing extends into another member frame.
 - **Consider every buff** considers every available buff and includes overflow in `+N`. Turning it off restores your saved 1–8 buff limit. Count limits intentionally exclude lower-priority candidates. Individual icons retain tooltips, stacks, available durations and the member frame's click actions.
 - Small stacked indicators show stacks and the sweep; remaining seconds move into the tooltip to avoid overlapping labels. Larger indicators can show both labels.
+- **Clicking**: Left-click a member to target them (with a spell or item on the cursor, it is used on them). Right-click opens their menu.
 - **Preview**: Type `/ft testraid` to display a 40-player mock raid frame to test your layout and positioning.
 - **Aggro Indicator**: The red corner updates while the group frame is visible.
   An available Banzai or threat provider keeps its own semantics. Without one,

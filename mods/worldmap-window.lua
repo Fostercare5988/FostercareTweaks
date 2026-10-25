@@ -247,8 +247,11 @@ local function UpdateButton(frame, defaultUnit)
         return
     end
 
-    local icon = _G[frame:GetName() .. "Icon"]
-    if icon then icon:SetTexture(nil) end
+    -- Looked up once: building the name every tick fed the garbage collector,
+    -- whose full pass took over 100 ms in raids (/lag, 2026-10-25).
+    local icon = frame.fctIcon
+    if icon == nil then icon = _G[frame:GetName() .. "Icon"] or false; frame.fctIcon = icon end
+    if icon and icon:GetTexture() then icon:SetTexture(nil) end
 
     if not frame.texture then
         frame.texture = frame:CreateTexture(nil, "OVERLAY")
@@ -281,16 +284,27 @@ local function UpdateButton(frame, defaultUnit)
     end
 end
 
+local PARTY_UNITS = { "party1", "party2", "party3", "party4" }
+local groupButtons = {}
+
+-- The map's party and raid buttons, collected once per map.
+local function GroupButtons(prefix)
+    local list = groupButtons[prefix]
+    if list then return list end
+    list = { party = {}, raid = {} }
+    for i = 1, 4 do list.party[i] = _G[prefix .. "Party" .. i] or false end
+    for i = 1, 40 do list.raid[i] = _G[prefix .. "Raid" .. i] or false end
+    groupButtons[prefix] = list
+    return list
+end
+
 local function UpdateGroupButtons(prefix)
-    local maxParty = MAX_PARTY_MEMBERS or 4
-    for i = 1, maxParty do
-        local btn = _G[prefix .. "Party" .. i]
-        if btn then UpdateButton(btn, "party" .. i) end
+    local list = GroupButtons(prefix)
+    for i = 1, 4 do
+        if list.party[i] then UpdateButton(list.party[i], PARTY_UNITS[i]) end
     end
-    local maxRaid = MAX_RAID_MEMBERS or 40
-    for i = 1, maxRaid do
-        local btn = _G[prefix .. "Raid" .. i]
-        if btn then UpdateButton(btn, nil) end
+    for i = 1, 40 do
+        if list.raid[i] then UpdateButton(list.raid[i], nil) end
     end
 end
 
@@ -307,7 +321,7 @@ local function UpdateWorldMapColors()
     table.wipe(myPartyNames)
 
     for i = 1, 4 do
-        local pname = UnitName("party" .. i)
+        local pname = UnitName(PARTY_UNITS[i])
         if pname then myPartyNames[pname] = true end
     end
     local playerName = UnitName("player")

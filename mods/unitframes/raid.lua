@@ -58,7 +58,11 @@ local function UpdateButtonHealth(btn)
     end
 
     -- FontString bounds handle long names at the current size.
-    local name = UnitName(unit) or btn.rosterName or ("Group" .. btn.index)
+    -- The raid roster knows every name; UnitName says "Unknown" until the
+    -- client has loaded that player.
+    local name = btn.rosterName
+    if not name or name == UNKNOWNOBJECT then name = UnitName(unit) end
+    name = name or ""
     if btn.nameText:GetText() ~= name then btn.nameText:SetText(name) end
 
     -- Health / Status text (Configurable: Deficit, Percentage, Current)
@@ -322,24 +326,21 @@ local function UpdateButtonAuras(btn)
     LayoutButtonAuras(btn)
 end
 
-local function UpdateButtonAggro(btn, nativeFallback, targetTargetGUID)
+-- targetTargetGUID: the enemy target's target, false when there is none,
+-- nil to look it up here.
+local function UpdateButtonAggro(btn, targetTargetGUID)
     local unit = btn.unit
     if not unit or not btn:IsShown() then return end
 
     -- Aggro Indicator (Red corner block on bottom-left)
     if btn.aggroSquare then
-        local showAggro = (UF.IsRaidShowAggro and UF:IsRaidShowAggro())
+        -- Aggro here means: your enemy target is targeting this member.
         local hasAggro = false
-        if showAggro then
-            if Banzai and Banzai.GetUnitAggroByUnitId then
-                hasAggro = Banzai:GetUnitAggroByUnitId(unit)
-            -- UNVERIFIED: test in game. UnitThreatSituation is not in the VanillaForge references.
-            elseif UnitThreatSituation then
-                hasAggro = (UnitThreatSituation(unit) or 0) >= 2
-            elseif nativeFallback then
+        if UF:IsRaidShowAggro() then
+            if targetTargetGUID ~= nil then
                 hasAggro = targetTargetGUID and UnitGUID(unit) == targetTargetGUID
-            elseif UnitExists("target") and UnitCanAttack("player", "target") and UnitIsUnit("targettarget", unit) then
-                hasAggro = true
+            else
+                hasAggro = UnitExists("target") and UnitCanAttack("player", "target") and UnitIsUnit("targettarget", unit)
             end
         end
         if hasAggro then
@@ -399,6 +400,9 @@ end
 -- 3. Button Factory & Mouse Interaction
 --------------------------------------------------------------------------------
 
+-- Aura badges cover part of a raid button and show their own tooltip, so
+-- they keep this click handler. The button itself clicks through ClassicAPI's
+-- unit attributes (SetUnit below).
 local function RaidButton_OnClick()
     if FCTweaksUnitFrameUnlocker and FCTweaksUnitFrameUnlocker.movable then
         return
@@ -435,19 +439,11 @@ local function RaidButton_OnClick()
     end
 end
 
+-- The unit attribute already makes hovering the button hover the unit
+-- (mouseover, cast cursor); this only colors the tooltip's name.
 local function RaidButton_OnEnter()
     local unit = this.unit
     if not unit then return end
-
-    if SetMouseoverUnit then
-        -- UNVERIFIED: test in game. SetMouseoverUnit is documented for GUIDs; unit-token use is not in the VanillaForge references.
-        SetMouseoverUnit(unit)
-    end
-
-    if SpellIsTargeting and SpellIsTargeting() then
-        SetCursor("CAST_CURSOR")
-    end
-
     GameTooltip_SetDefaultAnchor(GameTooltip, this)
     GameTooltip:SetUnit(unit)
     local r, g, b = GameTooltip_UnitColor(unit)
@@ -458,12 +454,6 @@ local function RaidButton_OnEnter()
 end
 
 local function RaidButton_OnLeave()
-    if SetMouseoverUnit then
-        SetMouseoverUnit()
-    end
-    if SpellIsTargeting and SpellIsTargeting() then
-        SetCursor(nil)
-    end
     GameTooltip:Hide()
 end
 
@@ -495,6 +485,14 @@ CreateRaidBuffBadge = function(btn, index)
     return btn.buffBadges[index]
 end
 
+-- ClassicAPI unit buttons: left click targets the unit (or casts the spell or
+-- drops the item on the cursor on it), right click opens its standard menu,
+-- and hovering makes it the mouseover unit.
+local function SetUnit(btn, unit)
+    btn.unit = unit
+    if btn:GetAttribute("unit") ~= unit then btn:SetAttribute("unit", unit) end
+end
+
 local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     local btnName = "FCTweaksRaidUnitG" .. groupNum .. "M" .. memberIdx
     local btn = CreateFrame("Button", btnName, groupFrame)
@@ -509,7 +507,8 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
 
     -- Interaction
     btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    btn:SetScript("OnClick", RaidButton_OnClick)
+    btn:SetAttribute("type1", "target")
+    btn:SetAttribute("type2", "menu")
     btn:SetScript("OnEnter", RaidButton_OnEnter)
     btn:SetScript("OnLeave", RaidButton_OnLeave)
 
@@ -621,17 +620,16 @@ end
 
 local rangeTicker
 local function CheckRanges()
-    local nativeFallback = not (Banzai and Banzai.GetUnitAggroByUnitId) and not UnitThreatSituation
-    local targetTargetGUID
-    if nativeFallback and UF:IsRaidShowAggro() and UnitExists("target") and UnitCanAttack("player", "target") then
-        -- The current enemy and its target are shared by this synchronous pass.
-        targetTargetGUID = UnitGUID("targettarget")
+    -- The current enemy and its target are shared by this synchronous pass.
+    local targetTargetGUID = false
+    if UF:IsRaidShowAggro() and UnitExists("target") and UnitCanAttack("player", "target") then
+        targetTargetGUID = UnitGUID("targettarget") or false
     end
     for _, button in pairs(unitToButton) do
         UpdateButtonRange(button)
         -- Aggro can change without a roster, leader or raid-mark event. Reuse
         -- the visible group's bounded reconciliation; do not reflow its text.
-        UpdateButtonAggro(button, nativeFallback, targetTargetGUID)
+        UpdateButtonAggro(button, targetTargetGUID)
     end
 end
 local function SyncRangeTicker()
@@ -820,7 +818,7 @@ function UF:UpdateGroupRoster()
                     local unit = "raid" .. i
 
                     btn.rangeAlpha = nil
-                    btn.unit = unit
+                    SetUnit(btn, unit)
                     btn.rosterName, btn.rosterClass = name, FT.NormalizeClass(fileName or class)
                     btn.index = i
                     btn.rank = rank
@@ -839,7 +837,7 @@ function UF:UpdateGroupRoster()
         local slot = 1
         local pbtn = groups[1].buttons[slot]
         pbtn.rangeAlpha = nil
-        pbtn.unit = "player"
+        SetUnit(pbtn, "player")
         pbtn.rosterName, pbtn.rosterClass = nil, nil
         pbtn.index = 0
         pbtn.rank = UnitIsPartyLeader("player") and 2 or 0
@@ -854,7 +852,7 @@ function UF:UpdateGroupRoster()
                 local btn = groups[1].buttons[slot]
                 local unit = "party" .. i
                 btn.rangeAlpha = nil
-                btn.unit = unit
+                SetUnit(btn, unit)
                 btn.rosterName, btn.rosterClass = nil, nil
                 btn.index = i
                 btn.rank = 0
@@ -881,7 +879,7 @@ function UF:UpdateGroupRoster()
         end
         for m = activeCount + 1, 5 do
             local btn = groups[g].buttons[m]
-            btn.unit = nil
+            SetUnit(btn, nil)
             btn.rosterName, btn.rosterClass = nil, nil
             for _, badge in ipairs(btn.buffBadges) do UF.Auras.ResetAuraButton(badge) end
             for _, badge in ipairs(btn.debuffBadges) do UF.Auras.ResetAuraButton(badge) end
@@ -949,7 +947,7 @@ function UF:ToggleRaidTest()
             groups[g].title:Show()
             for m = 1, 5 do
                 local btn = groups[g].buttons[m]
-                btn.unit = "player"
+                SetUnit(btn, "player")
                 btn.index = (g - 1) * 5 + m
                 btn.rank = (m == 1 and g == 1) and 2 or 0
 
@@ -1018,7 +1016,7 @@ function UF:ToggleRaidTest()
         for g = 1, 8 do
             for m = 1, 5 do
                 local btn = groups[g].buttons[m]
-                btn.unit = nil
+                SetUnit(btn, nil)
                 btn:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4] or 0.9)
                 for _, badge in ipairs(btn.buffBadges) do UF.Auras.ResetAuraButton(badge) end
                 for _, badge in ipairs(btn.debuffBadges) do UF.Auras.ResetAuraButton(badge) end
