@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (22 tests).
+VanillaForge (30 tests).
 
 | Area | Files |
 | --- | --- |
@@ -18,5 +18,11 @@ Things to know:
 
 - Each `mods/` file registers one module with `FT:register({ title, category,
   enabled })` and an `enable` function. The load order is the TOC.
+- Raid buttons click through ClassicAPI unit attributes (`SetUnit` in
+  raid.lua: `unit`, `type1` target, `type2` menu). Aura badges on them keep
+  their own click handler so their tooltips stay.
+- Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
+- Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
+  runs on a timer must not build strings or tables each tick.
 - On 2026-10-21 the stutter profiler showed no FostercareTweaks handler over
   5 ms during dungeon and battleground play, and under 1 ms per second overall.
