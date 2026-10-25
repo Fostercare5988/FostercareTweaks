@@ -14,29 +14,21 @@ function FT.GetRaidMarkSettings()
     return size, position == "outside" and "outside" or "portrait"
 end
 
-function FT.LayoutRaidMark(frame, icon, native)
-    if not frame or not icon then return end
+-- The target frame's mark: on the portrait, or beside the frame.
+local function LayoutTargetMark()
+    local icon = TargetRaidTargetIcon
+    if not icon or not TargetFrame or not TargetPortrait then return end
     local size, position = FT.GetRaidMarkSettings()
     icon:ClearAllPoints()
-    if position == "outside" then
-        if native then icon:SetPoint("LEFT", frame, "RIGHT", 2, 0)
-        elseif frame.portraitSide == "left" then icon:SetPoint("RIGHT", frame, "LEFT", -3, 0)
-        else icon:SetPoint("LEFT", frame, "RIGHT", 3, 0) end
-    elseif native then
-        icon:SetPoint("CENTER", TargetPortrait, "CENTER", 0, 0)
-    else
-        -- Leave the level badge at the bottom of the portrait unobscured.
-        size = math.min(size, math.max(12, frame.portrait:GetHeight() - frame.levelBadge:GetHeight() - 2))
-        icon:SetPoint("TOP", frame.portrait, "TOP", 0, -1)
-    end
+    if position == "outside" then icon:SetPoint("LEFT", TargetFrame, "RIGHT", 2, 0)
+    else icon:SetPoint("CENTER", TargetPortrait, "CENTER", 0, 0) end
     icon:SetWidth(size); icon:SetHeight(size)
     icon:SetVertexColor(1, 1, 1, 1)
 end
 
 function FT:RefreshRaidMarks(includeRaid)
+    LayoutTargetMark()
     local UF = self.UnitFrames
-    if UF and UF.targetFrame then self.LayoutRaidMark(UF.targetFrame, UF.targetFrame.raidIcon) end
-    if TargetRaidTargetIcon and TargetFrame and TargetPortrait then self.LayoutRaidMark(TargetFrame, TargetRaidTargetIcon, true) end
     if includeRaid ~= false and UF and UF.RefreshRaidMarks then UF:RefreshRaidMarks() end
 end
 
@@ -63,9 +55,7 @@ module.enable = function(self)
     InstallSoloMarks()
     local driver = CreateFrame("Frame", "FCTweaksRaidMarks", UIParent)
     self.frame = driver
-    FT.hooksecurefunc("TargetFrame_UpdateRaidTargetIcon", function()
-        FT.LayoutRaidMark(TargetFrame, TargetRaidTargetIcon, true)
-    end)
+    FT.hooksecurefunc("TargetFrame_UpdateRaidTargetIcon", LayoutTargetMark)
     driver:RegisterEvent("RAID_TARGET_UPDATE")
     driver:RegisterEvent("PLAYER_ENTERING_WORLD")
     driver:RegisterEvent("UI_SCALE_CHANGED")

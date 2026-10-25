@@ -2,39 +2,14 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/unitframes/auras.lua
--- World of Warcraft 1.12.1 Enhanced Client
--- Shared Unit Frame Aura Subsystem (Player, Target, ToT)
--- Powered natively by ClassicAPI C_UnitAuras and styled after Luna Unit Frames
+-- Aura buttons for the improved auras under Blizzard's player and target frames
+-- and for the raid frames, read with ClassicAPI C_UnitAuras.
 
 local UF = FT.UnitFrames
 if not UF then return end
 
 UF.Auras = UF.Auras or {}
 local Auras = UF.Auras
-
-FT:register({
-    title = "Larger Armor Debuffs", category = "Unit Frames", enabled = false,
-    description = "Enlarge Sunder Armor, Faerie Fire and Expose Armor on target aura rows.",
-    config = { uf_armor_debuff_scale = 1.5 },
-})
-
--- [SOURCE-VERIFIED] Active patch-O.mpq Spell.dbc: physical-resistance
--- Apply Aura records only. Training/unused name matches are excluded.
--- Rank and NPC/custom variants are recorded in tests/deployed-armor-spells.json.
-local armorDebuffs = {
-    [770]=true, [778]=true, [1069]=true, [2887]=true, [2888]=true, [6950]=true,
-    [7386]=true, [7405]=true, [8380]=true, [8647]=true, [8649]=true, [8650]=true,
-    [9749]=true, [9907]=true, [11197]=true, [11198]=true, [11596]=true, [11597]=true,
-    [11971]=true, [13424]=true, [13444]=true, [13752]=true, [15502]=true, [15572]=true,
-    [16145]=true, [16498]=true, [16857]=true, [17390]=true, [17391]=true, [17392]=true,
-    [20656]=true, [21081]=true, [21670]=true, [24317]=true, [25051]=true, [27991]=true,
-    [30965]=true, [47383]=true,
-}
-Auras.armorDebuffs = armorDebuffs
-
-function Auras:GetArmorDebuffScale()
-    return FT.GetNumber("uf_armor_debuff_scale", 1.5, 1.25, 2)
-end
 
 -- One policy for player, target, raid and preview aura buttons.
 function Auras.StyleBorder(btn, dispelType, colorDispel)
@@ -56,9 +31,8 @@ function Auras.StyleBorder(btn, dispelType, colorDispel)
 end
 
 function Auras:RefreshBorders()
-    for _, key in ipairs({ "playerFrame", "targetFrame", "blizzPlayerAuras", "blizzTargetAuras" }) do
-        local frame = UF[key]
-        local container = frame and (frame.auraContainer or frame)
+    for _, key in ipairs({ "blizzPlayerAuras", "blizzTargetAuras" }) do
+        local container = UF[key]
         if container then
             for _, kind in ipairs({ "buffButtons", "debuffButtons" }) do
                 for _, btn in ipairs(container[kind] or {}) do
@@ -440,10 +414,7 @@ Auras.UpdateAuraTiming = UpdateAuraTiming
 function Auras:UpdateContainer(container)
     if not container or not container.unit then return end
     local unit = container.unit
-    local owner = container:GetParent()
-    -- Explicit modern-frame ownership, not visibility: alt-Z and refresh before
-    -- Show must still retain/refresh authoritative aura state.
-    if (owner and owner.enabled == false) or not UnitExists(unit) then
+    if not UnitExists(unit) then
         self:ResetContainer(container)
         return
     end
@@ -504,7 +475,6 @@ function Auras:UpdateContainer(container)
             local countSlots = 0
             if maxBuffs > 0 then
                 local continuation
-                -- UNVERIFIED: test in game. GetAuraSlots out-table form and (token, count) returns are not in the VanillaForge references.
                 continuation, countSlots = C_UnitAuras.GetAuraSlots(unit, "HELPFUL", 48, nil, slots)
             end
             for i = 1, countSlots do
@@ -642,16 +612,13 @@ function Auras:LayoutContainer(container)
             for _, btn in ipairs(buttons) do if btn.isOccupied then count = count + 1 end end
             local size = container[kind .. "Size"]
             row.occupiedCount = count
-            local mixed = kind == "debuff" and container.unit == "target" and
-                FostercareTweaks_Config["Larger Armor Debuffs"] == 1
             local rowW, rowH = math.min(perRow, math.max(1, count)) * (size + spacing) - spacing,
                 math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing
             if kind == "debuff" then
-                local limit = mixed and math.max(size, math.min(perRow * (size + spacing) - spacing,
-                    container:GetParent():GetWidth())) or perRow * (size + spacing) - spacing
+                local limit = perRow * (size + spacing) - spacing
                 local x, y, lineH, widest = 0, 0, 0, 0
                 for i, btn in ipairs(buttons) do
-                    local iconSize = mixed and armorDebuffs[btn.spellId] and size * Auras:GetArmorDebuffScale() or size
+                    local iconSize = size
                     if btn:GetWidth() ~= iconSize then
                         btn:SetWidth(iconSize); btn:SetHeight(iconSize)
                         btn.border:SetWidth(iconSize + 2); btn.border:SetHeight(iconSize + 2)
@@ -732,7 +699,7 @@ function Auras:AttachToTargetFrame()
 end
 
 local function SuppressBlizzTargetAuras()
-    if not UF:IsImprovedStandardAuras() and not UF:IsModernTarget() then return end
+    if not UF:IsImprovedStandardAuras() then return end
     for i = 1, 5 do
         local btn = _G["TargetFrameBuff" .. i]
         if btn and btn:IsShown() then btn:Hide() end
@@ -755,14 +722,13 @@ function Auras:UpdateBlizzTargetAuras()
 
     local enabled = (UF.IsImprovedStandardAuras and UF:IsImprovedStandardAuras())
     local targetShown = TargetFrame and TargetFrame:IsShown() and UnitExists("target")
-    local isModernTarget = (UF.IsModernTarget and UF:IsModernTarget())
 
-    if not container or not enabled or not targetShown or isModernTarget then
+    if not container or not enabled or not targetShown then
         if container and container:IsShown() then
             container:Hide()
             for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
             for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
-            if not enabled and targetShown and not isModernTarget and TargetDebuffButton_Update then
+            if not enabled and targetShown and TargetDebuffButton_Update then
                 TargetDebuffButton_Update()
             end
         end
@@ -797,7 +763,7 @@ function Auras:UpdateBlizzPlayerAuras()
         })
         UF.blizzPlayerAuras = container
     end
-    if UF:IsModernPlayer() or not UF:IsImprovedStandardAuras() then
+    if not UF:IsImprovedStandardAuras() then
         container:Hide()
         for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
         for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end

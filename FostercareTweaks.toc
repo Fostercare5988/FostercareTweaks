@@ -28,14 +28,10 @@ mods\move-unitframes.lua
 mods\standard-player-auras.lua
 mods\unitframes\core.lua
 mods\unitframes\auras.lua
-mods\unitframes\player.lua
-mods\unitframes\target.lua
-mods\unitframes\tot.lua
 mods\unitframes\raid.lua
 mods\unitframes\native-group.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
-mods\unitframes-classportrait.lua
 mods\target-castbar.lua
 mods\target-debufftimer.lua
 mods\unitframe-energytick.lua

@@ -181,7 +181,6 @@ local function ReadRaidAuras(btn, kind, enabled)
         if testMode then count = kind == "buff" and 32 or (btn.memberIdx == 2 and 1 or (btn.memberIdx == 3 and 2 or 0))
         else
             local continuation
-            -- UNVERIFIED: test in game. GetAuraSlots out-table form and (token, count) returns are not in the VanillaForge references.
             continuation, count = C_UnitAuras.GetAuraSlots(btn.unit, kind == "buff" and "HELPFUL" or "HARMFUL", 0, nil, btn[kind .. "Slots"])
         end
         for i = 1, count do
@@ -764,8 +763,6 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
                     btn.powerBar:SetWidth(width - 2)
                     btn.powerBar:SetHeight(powerH)
 
-                    if btn.healthBar.Refresh then btn.healthBar:Refresh() end
-                    if btn.powerBar.Refresh then btn.powerBar:Refresh() end
                 end
             end
         end
