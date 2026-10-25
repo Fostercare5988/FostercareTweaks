@@ -31,7 +31,6 @@ module.enable = function(self)
         if actionType == "spell" then
             spellID = id
         elseif actionType == "macro" and id then
-            -- UNVERIFIED: test in game. GetMacroSpell is not in the VanillaForge references.
             local _, _, macroSpellID = GetMacroSpell(id)
             spellID = macroSpellID
         end
