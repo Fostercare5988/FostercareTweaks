@@ -87,7 +87,7 @@ module.enable = function(self)
         ReputationXPBarTexture0, ReputationXPBarTexture1, ReputationXPBarTexture2, ReputationXPBarTexture3,
         ReputationWatchBarTexture0, ReputationWatchBarTexture1, ReputationWatchBarTexture2, ReputationWatchBarTexture3,
         MainMenuBarTexture0, MainMenuBarTexture1, MainMenuBarTexture2, MainMenuBarTexture3,
-        BonusActionBarTexture1, BonusActionBarTexture0, BonusActionBarTexture2
+        BonusActionBarTexture0, BonusActionBarTexture1
     }
     for _, tex in ipairs(hideTextures) do
         if tex and tex.SetTexture then tex:SetTexture("") end

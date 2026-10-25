@@ -399,43 +399,12 @@ end
 -- 3. Button Factory & Mouse Interaction
 --------------------------------------------------------------------------------
 
--- Aura badges cover part of a raid button and show their own tooltip, so
--- they keep this click handler. The button itself clicks through ClassicAPI's
--- unit attributes (SetUnit below).
-local function RaidButton_OnClick()
-    if FCTweaksUnitFrameUnlocker and FCTweaksUnitFrameUnlocker.movable then
-        return
-    end
-    local unit = this.unit
-    if not unit then return end
-    local button = arg1 or "LeftButton"
-
-    if button == "LeftButton" then
-        if SpellIsTargeting and SpellIsTargeting() then
-            SpellTargetUnit(unit)
-        elseif CursorHasItem and CursorHasItem() then
-            DropItemOnUnit(unit)
-        else
-            TargetUnit(unit)
-        end
-    elseif button == "RightButton" then
-        if UnitIsUnit(unit, "player") then
-            ToggleDropDownMenu(1, nil, PlayerFrameDropDown, "cursor")
-        else
-            HideDropDownMenu(1)
-            local name = UnitName(unit)
-            local id = string.match(unit, "(%d+)")
-            local menuFrame = FriendsDropDown
-            if menuFrame then
-                menuFrame.displayMode = "MENU"
-                menuFrame.initialize = function()
-                    local openMenu = (type(UIDROPDOWNMENU_OPEN_MENU) == "string" and _G[UIDROPDOWNMENU_OPEN_MENU]) or UIDROPDOWNMENU_OPEN_MENU or menuFrame
-                    UnitPopup_ShowMenu(openMenu, "PARTY", unit, name, id)
-                end
-                ToggleDropDownMenu(1, nil, menuFrame, "cursor")
-            end
-        end
-    end
+-- Aura badges lie on top of their raid button and keep their own aura
+-- tooltip. A click on one is passed to the button underneath with the same
+-- mouse button, so ClassicAPI's unit attributes target or open the menu.
+local function AuraBadge_OnClick()
+    local owner = this:GetParent()
+    if owner and owner.unit then owner:Click(GetMouseButtonClicked()) end
 end
 
 -- The unit attribute already makes hovering the button hover the unit
@@ -458,9 +427,10 @@ end
 
 local function BindRaidAuraInteraction(badge)
     badge:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    badge:SetScript("OnClick", RaidButton_OnClick)
+    badge:SetScript("OnClick", AuraBadge_OnClick)
     local enter, leave = badge:GetScript("OnEnter"), badge:GetScript("OnLeave")
     badge:SetScript("OnEnter", function()
+        -- NamPower: the member stays the mouseover unit for mouseover casts.
         if this.unit then SetMouseoverUnit(this.unit) end
         enter()
         if this.fctHideDuration and this.expirationTime and this.expirationTime > GetTime() then

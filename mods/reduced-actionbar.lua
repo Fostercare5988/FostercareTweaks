@@ -70,7 +70,6 @@ module.enable = function(self)
         ShapeshiftButton5, ShapeshiftButton6,
         ShapeshiftButton7, ShapeshiftButton8,
         ShapeshiftButton9, ShapeshiftButton10,
-        ShapeshiftButton11, ShapeshiftButton12,
     }
 
     local resizes = {
