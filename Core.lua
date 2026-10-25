@@ -58,6 +58,16 @@ local function EnsureSavedTables()
             end
         end
     end
+    -- Nameplates moved to FostercareNameplates (2026-10-12); clear their old settings.
+    for _, key in ipairs({ "Nameplate Scale", "Nameplate Details", "Nameplate Class Colors",
+        "Nameplate Castbar", "Enemy Nameplate Cooldowns", "nameplatesEnabled", "nameplate_layout_version" }) do
+        FostercareTweaks_Config[key] = nil
+    end
+    for key in pairs(FostercareTweaks_Config.overwrites) do
+        if type(key) == "string" and string.sub(key, 1, 10) == "nameplate_" then
+            FostercareTweaks_Config.overwrites[key] = nil
+        end
+    end
 end
 
 -- ClassicAPI loads SavedVariables before source; modules also read them at load.
