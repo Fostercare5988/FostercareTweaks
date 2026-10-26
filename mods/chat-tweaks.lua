@@ -358,9 +358,11 @@ module.enable = function(self)
     local timeFormat = (clock == 24) and "%H:%M:%S" or "%I:%M:%S %p"
     local color = rgbhex and rgbhex({ rgb.r, rgb.g, rgb.b, rgb.a }) or "|cffcccccc"
 
+    -- Combat log windows stay unstamped, as the other chat modules leave them:
+    -- every combat line would build a new string.
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
-        if cf and cf.AddMessage then
+        if cf and cf.AddMessage and not FT.IsCombatChatFrame(cf) then
             local origAddMessage = cf.AddMessage
             cf.AddMessage = function(frame, msg, a1, a2, a3, a4, a5)
                 if not msg then return end

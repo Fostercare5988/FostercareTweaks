@@ -10,15 +10,19 @@ local module = FT:register({
 local areas
 local function StyleAuraIcon(button, weaponEnchant, force)
     local cfg = FostercareTweaks_Config or {}
-    local name = button:GetName()
-    local icon = _G[name .. "Icon"]
+    -- Looked up once: the native enchant updater calls this every frame.
+    local icon, nativeBorder = button.fctIcon, button.fctNativeBorder
+    if icon == nil then
+        local name = button:GetName()
+        icon, nativeBorder = _G[name .. "Icon"] or false, _G[name .. "Border"] or false
+        button.fctIcon, button.fctNativeBorder = icon, nativeBorder
+    end
     -- The native enchant updater changes textures, duration and flashing each
     -- frame, but never texture coordinates. Apply our crop once per icon.
     if icon and (not weaponEnchant or force or button.fctAuraCropped ~= icon) then
         icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
         if weaponEnchant then button.fctAuraCropped = icon end
     end
-    local nativeBorder = _G[name .. "Border"]
     if weaponEnchant then
         -- Quality belongs to the equipped item, not the enchant spell.
         if nativeBorder and nativeBorder:GetAlpha() ~= 0 then nativeBorder:SetAlpha(0) end

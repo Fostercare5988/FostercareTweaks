@@ -1,6 +1,6 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.5.0**.
+Configuration and controls for **FostercareTweaks 1.6.0**.
 
 Open the settings with `/ft`, or from **Game Menu > AddOn Options >
 FostercareTweaks**. The window has five pages: **General**, **Unit Frames**,
@@ -27,7 +27,8 @@ for a short explanation; a dimmed control waits for the switch above it.
   a **Sell Junk** button at merchants. Walking away cancels unsent sales.
 - **Minimap**: a 24-hour clock, a square minimap, tidy buttons and wheel zoom.
 - **Chat**: wheel scrolling and sticky channels, copyable web links, history
-  restored after a reload, timestamps, class-colored names and blue shamans.
+  restored after a reload, timestamps (not in the combat log), class-colored
+  names and blue shamans.
   Classes come from ClassicAPI, which knows your group, nearby players, friends
   and everyone seen this session. To remember players between sessions, turn on
   the player cache in **AddOn Options > ClassicAPI**.

@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (34 tests).
+VanillaForge (47 tests).
 
 | Area | Files |
 | --- | --- |
@@ -13,7 +13,7 @@ VanillaForge (34 tests).
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |
 | Bags and items | `mods/vendor-values.lua`, `mods/sell-junk.lua`, `mods/item-colors.lua`, `mods/equip-compare.lua` |
 | Chat | `mods/chat-tweaks.lua`, `mods/chat-class-colors.lua` |
-| Gameplay | `mods/gameplay.lua`, `mods/blue-shaman.lua`, `mods/custom.lua` |
+| Gameplay | `mods/gameplay.lua` (Auto Dismount, Auto Stance, stance bar), `mods/blue-shaman.lua` |
 
 Things to know:
 
@@ -36,6 +36,14 @@ Things to know:
 - No code for addons that are not installed (Cartographer, Gatherer, Prat,
   quest addons and the like); `tools/find_holes.py` reports any that return.
 - Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
+- Unit events: ClassicAPI fires each one once per token, including every
+  `nameplateN`, `markN` and `focus`. Register `UNIT_*` events with
+  `frame:RegisterUnitEvent(event, units...)` for the units the frame shows.
+- Script wrappers (`FT.SetEventHandler`, `FT.HookScript`) take fixed
+  parameters: in Lua 5.0 every call of a `...` function builds a table.
+- Auto Dismount covers what ClassicAPI's `autoDismount`/`autoUnshift`/
+  `autoStand` miss (they act before spell casts only): melee attack, flight
+  masters, NPCs and items in a form. Spell errors stay with ClassicAPI.
 - Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
   runs on a timer must not build strings or tables each tick.
 - On 2026-10-21 the stutter profiler showed no FostercareTweaks handler over
