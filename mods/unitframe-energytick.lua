@@ -167,10 +167,9 @@ module.enable = function(self)
         end
         if ev == "UI_SCALE_CHANGED" then Refresh(); return end
         if ev == "PLAYER_ENTERING_WORLD" or ev == "PLAYER_DEAD" or ev == "PLAYER_ALIVE" or
-            ev == "PLAYER_UNGHOST" or (ev == "UNIT_DISPLAYPOWER" and unit == "player") then
+            ev == "PLAYER_UNGHOST" or ev == "UNIT_DISPLAYPOWER" then
             Reset(); return
         end
-        if unit ~= "player" then return end
         local currentPower = UnitPowerType("player")
         if currentPower ~= power then Reset(); return end
         if UnitIsDeadOrGhost("player") then Reset(); return end
@@ -187,8 +186,11 @@ module.enable = function(self)
         end
         Refresh()
     end)
-    for _, ev in ipairs({"PLAYER_ENTERING_WORLD", "UNIT_DISPLAYPOWER", "UNIT_ENERGY", "UNIT_MANA",
-        "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST", "UI_SCALE_CHANGED"}) do driver:RegisterEvent(ev) end
+    for _, ev in ipairs({"PLAYER_ENTERING_WORLD", "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST",
+        "UI_SCALE_CHANGED"}) do driver:RegisterEvent(ev) end
+    -- The player's power only; ClassicAPI also fires these for every group,
+    -- nameplate and mark token.
+    for _, ev in ipairs({"UNIT_DISPLAYPOWER", "UNIT_ENERGY", "UNIT_MANA"}) do driver:RegisterUnitEvent(ev, "player") end
     if GetNampowerVersion then
         local major, minor, patch = GetNampowerVersion()
         if type(major) == "number" and type(minor) == "number" and type(patch) == "number" and

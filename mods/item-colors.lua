@@ -116,8 +116,9 @@ module.enable = function()
         end)
     end
     local controller = CreateFrame("Frame", "FCTweaksItemBorders", UIParent)
-    for _, ev in ipairs({"BAG_UPDATE_DELAYED", "BAG_UPDATE", "UNIT_INVENTORY_CHANGED",
-        "PLAYERBANKSLOTS_CHANGED", "GET_ITEM_INFO_RECEIVED"}) do controller:RegisterEvent(ev) end
+    for _, ev in ipairs({"BAG_UPDATE_DELAYED", "BAG_UPDATE", "PLAYERBANKSLOTS_CHANGED",
+        "GET_ITEM_INFO_RECEIVED"}) do controller:RegisterEvent(ev) end
+    controller:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player", "target")
     FT.SetEventHandler(controller, function(_, ev, unitOrBag)
         if ev == "BAG_UPDATE_DELAYED" or (ev == "BAG_UPDATE" and unitOrBag == -2) then RefreshBags()
         elseif ev == "UNIT_INVENTORY_CHANGED" then

@@ -107,8 +107,8 @@ function FT:Initialize()
 end
 
 -- Helpers load before either initialization event is delivered.
-local function InitializeOnEvent(...)
-    local ev = FT.EventArgs(...)
+local function InitializeOnEvent(first, second)
+    local ev = FT.EventArgs(first, second)
     if ev == "VARIABLES_LOADED" or ev == "PLAYER_LOGIN" then FT:Initialize() end
 end
 

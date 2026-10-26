@@ -15,7 +15,7 @@ local events = {
     "START_AUTOREPEAT_SPELL", "STOP_AUTOREPEAT_SPELL", "SPELLS_CHANGED",
     "UPDATE_BINDINGS", "MODIFIER_STATE_CHANGED", "PLAYER_TARGET_CHANGED", "PLAYER_AURAS_CHANGED",
     "ACTIONBAR_UPDATE_STATE", "ACTIONBAR_UPDATE_USABLE", "ACTIONBAR_UPDATE_COOLDOWN",
-    "SPELL_UPDATE_COOLDOWN", "BAG_UPDATE_DELAYED", "UNIT_INVENTORY_CHANGED", "ITEM_DATA_LOAD_RESULT", "CURSOR_CHANGED",
+    "SPELL_UPDATE_COOLDOWN", "BAG_UPDATE_DELAYED", "ITEM_DATA_LOAD_RESULT", "CURSOR_CHANGED",
 }
 
 local function Actions(bar)
@@ -471,6 +471,7 @@ local function SyncOwner()
     if anyVisible and not EA.listening then
         EA.listening = true
         for _, ev in ipairs(events) do EA.controller:RegisterEvent(ev) end
+        EA.controller:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
         table.wipe(itemCounts)
         table.wipe(castCounts)
     elseif not anyVisible and EA.listening then
@@ -540,14 +541,12 @@ end
 local function InitializeController()
     if EA.controller then return end
     EA.controller = CreateFrame("Frame", "FCTweaksExtraActionController", UIParent)
-    FT.SetEventHandler(EA.controller, function(_, ev, unit, isPlayer)
+    FT.SetEventHandler(EA.controller, function(_, ev, unit)
         if ev == "PLAYER_ENTER_COMBAT" then EA.meleeActive = true
         elseif ev == "PLAYER_LEAVE_COMBAT" then EA.meleeActive = false
         elseif ev == "START_AUTOREPEAT_SPELL" then EA.rangedActive = true
         elseif ev == "STOP_AUTOREPEAT_SPELL" then EA.rangedActive = false end
         if not EA.listening then return end
-        if ev == "UNIT_INVENTORY_CHANGED" and unit ~= "player" and isPlayer ~= 1 and isPlayer ~= true
-            and unit ~= UnitGUID("player") then return end
         if ev == "ITEM_DATA_LOAD_RESULT" then
             local used = false
             for bar in pairs(EA.visible) do

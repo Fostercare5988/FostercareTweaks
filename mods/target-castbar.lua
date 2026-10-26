@@ -65,9 +65,6 @@ castbar.text:SetPoint("CENTER", castbar, "CENTER", 0, 0)
 local font, size = castbar.text:GetFont()
 castbar.text:SetFont(font, (size or 12) - 2, "THINOUTLINE")
 
--- Current target identity, refreshed on target changes and when listening starts.
-local targetGUID
-
 local function GetCastingInfo(unit)
     return C_Spell.UnitCastingInfo(unit)
 end
@@ -221,6 +218,18 @@ local function UpdateCast()
     end
 end
 
+-- ClassicAPI fires these once per token pointing at the caster; the "target"
+-- copy is the one this bar shows. INTERRUPTIBLE / NOT_INTERRUPTIBLE re-read
+-- notInterruptible when it flips mid-cast.
+local CAST_EVENTS = {
+    "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP",
+    "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
+}
+local STOP_EVENTS = { UNIT_SPELLCAST_STOP = true, UNIT_SPELLCAST_FAILED = true,
+    UNIT_SPELLCAST_INTERRUPTED = true, UNIT_SPELLCAST_CHANNEL_STOP = true }
+
 module.enable = function(self)
     if self.frame then self:apply(); return end
     FT.RefreshTargetCastbar = function() self:apply() end
@@ -228,30 +237,9 @@ module.enable = function(self)
     local eventFrame = CreateFrame("Frame", "FCTweaksTargetCastbarEvents", UIParent)
     self.frame = eventFrame
 
-    FT.SetEventHandler(eventFrame, function(_, ev, a1, a2, a3, a4, a5)
-        if not ev then return end
-
-        if ev == "PLAYER_TARGET_CHANGED" or ev == "PLAYER_ENTERING_WORLD" then
-            targetGUID = UnitGUID("target")
-            UpdateCast()
-        elseif ev == "UNIT_CASTEVENT" then
-            -- Fires for every nearby cast and swing; compare with the cached target.
-            if targetGUID and a1 == targetGUID then
-                if a3 == "START" or a3 == "CHANNEL" then
-                    UpdateCast()
-                elseif a3 == "FAIL" or a3 == "INTERRUPT" then
-                    StopCast()
-                end
-            end
-        elseif string.find(ev, "^UNIT_SPELLCAST_") then
-            if a1 == "target" or (a1 and (a1 == targetGUID or UnitIsUnit(a1, "target"))) then
-                if ev == "UNIT_SPELLCAST_STOP" or ev == "UNIT_SPELLCAST_FAILED" or ev == "UNIT_SPELLCAST_INTERRUPTED" or ev == "UNIT_SPELLCAST_CHANNEL_STOP" then
-                    StopCast()
-                else
-                    UpdateCast()
-                end
-            end
-        end
+    -- Cast events arrive for the "target" token only (module.apply).
+    FT.SetEventHandler(eventFrame, function(_, ev)
+        if STOP_EVENTS[ev] then StopCast() else UpdateCast() end
     end)
 
     FT.hooksecurefunc("TargetDebuffButton_Update", function()
@@ -281,21 +269,9 @@ module.apply = function(self)
         if active then
             self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
             self.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_START")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_STOP")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_DELAYED")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_UPDATE")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-            -- Target and focus only: a mid-cast flip re-reads notInterruptible.
-            self.frame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTIBLE")
-            self.frame:RegisterEvent("UNIT_SPELLCAST_NOT_INTERRUPTIBLE")
-            self.frame:RegisterEvent("UNIT_CASTEVENT")
+            for _, ev in ipairs(CAST_EVENTS) do self.frame:RegisterUnitEvent(ev, "target") end
         end
     end
-    targetGUID = UnitGUID("target")
     UpdateCast()
 end
 end
