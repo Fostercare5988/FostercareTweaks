@@ -748,7 +748,9 @@ FT.hooksecurefunc("TargetDebuffButton_Update", SuppressBlizzTargetAuras)
 -- Independent event dispatcher for standard target aura updating
 local auraEventFrame = CreateFrame("Frame", "FCTweaksAuraEventFrame", UIParent)
 auraEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-auraEventFrame:RegisterEvent("UNIT_AURA")
+-- Player and target only: ClassicAPI also fires UNIT_AURA for the target's
+-- raid, nameplate and mark tokens, which would rescan it again.
+auraEventFrame:RegisterUnitEvent("UNIT_AURA", "player", "target")
 
 function Auras:UpdateBlizzPlayerAuras()
     if not PlayerFrame then return end
@@ -789,8 +791,7 @@ FT.SetEventHandler(auraEventFrame, function(_, ev, unit)
     if ev == "PLAYER_TARGET_CHANGED" then
         Auras:UpdateBlizzTargetAuras()
     elseif ev == "UNIT_AURA" then
-        if unit and UnitIsUnit(unit, "target") then Auras:UpdateBlizzTargetAuras() end
-        if unit and UnitIsUnit(unit, "player") then QueuePlayerAuras() end
+        if unit == "target" then Auras:UpdateBlizzTargetAuras() else QueuePlayerAuras() end
     elseif ev == "PLAYER_AURAS_CHANGED" then
         QueuePlayerAuras()
     elseif ev == "PLAYER_ENTERING_WORLD" then

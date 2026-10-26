@@ -156,10 +156,10 @@ module.enable = function()
     end)
     FT.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
     local inventory = CreateFrame("Frame", nil, UIParent)
-    inventory:RegisterEvent("UNIT_INVENTORY_CHANGED")
+    inventory:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
     inventory:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     FT.SetEventHandler(inventory, function(_, ev, unitOrItem)
-        if ev == "UNIT_INVENTORY_CHANGED" and unitOrItem == "player" then
+        if ev == "UNIT_INVENTORY_CHANGED" then
             StyleWeaponEnchants(true)
         elseif ev == "GET_ITEM_INFO_RECEIVED" then
             for _, button in ipairs(areas[3].buttons) do

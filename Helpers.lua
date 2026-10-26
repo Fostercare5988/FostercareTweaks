@@ -7,34 +7,40 @@ if not FT then return end
 -- Required ClassicAPI posthooks preserve native return values and ownership.
 FT.hooksecurefunc = hooksecurefunc
 
+-- Script wrappers take fixed parameters, never `...`: Lua 5.0 builds a table
+-- for every call of a vararg function (ClassicAPI docs/LuaCAPI.md,
+-- adjust_varargs), and these run for every event. Events carry at most nine
+-- arguments.
+
+-- ClassicAPI may dispatch positional arguments or native globals. Decode once
+-- at the event boundary; module logic always receives (frame, event, payload).
+local function EventArgs(first, second, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+    if type(first) == "table" then return second, a1, a2, a3, a4, a5, a6, a7, a8, a9 end
+    if type(first) == "string" then return first, second, a1, a2, a3, a4, a5, a6, a7, a8 end
+    return event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
+end
+FT.EventArgs = EventArgs
+
 -- ClassicAPI HookScript invokes the previous script without positional args.
 -- Preserve modern owners too: forward the original call to them, and normalize
 -- only our posthook. Native FrameXML still receives its original globals.
 FT.HookScript = function(frame, script, func)
     if not frame or not func then return end
     local previous = frame:GetScript(script)
-    frame:SetScript(script, function(...)
-        if previous then previous(...) end
+    frame:SetScript(script, function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)
+        if previous then previous(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) end
         if script == "OnEvent" then
-            return func(frame, FT.EventArgs(...))
-        elseif select(1, ...) == frame then
-            return func(...)
+            return func(frame, EventArgs(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11))
+        elseif a1 == frame then
+            return func(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)
         end
         return func(frame, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
     end)
 end
 
--- ClassicAPI may dispatch positional arguments or native globals. Decode once
--- at the event boundary; module logic always receives (frame, event, payload).
-function FT.EventArgs(first, second, ...)
-    if type(first) == "table" then return second, ... end
-    if type(first) == "string" then return first, second, ... end
-    return event, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
-end
-
 function FT.SetEventHandler(frame, handler)
-    frame:SetScript("OnEvent", function(...)
-        return handler(frame, FT.EventArgs(...))
+    frame:SetScript("OnEvent", function(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)
+        return handler(frame, EventArgs(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11))
     end)
 end
 
@@ -243,11 +249,9 @@ local function CompileFormat(template)
     parts[#parts + 1] = "$"
     return { pattern = table.concat(parts), positions = positions }
 end
-local function Capture(index, ...)
-    if index then
-        local value = select(index, ...)
-        return value
-    end
+local function Capture(index, a, b, c, d, e)
+    if index == 1 then return a elseif index == 2 then return b elseif index == 3 then return c
+    elseif index == 4 then return d elseif index == 5 then return e end
 end
 function FT.cmatch(message, template)
     if type(message) ~= "string" or type(template) ~= "string" then return end

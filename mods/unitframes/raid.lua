@@ -1075,6 +1075,13 @@ end
 -- 10. Subsystem Lifecycle & Event Registration
 --------------------------------------------------------------------------------
 
+-- Members only: ClassicAPI also fires unit events for every nameplate, raid
+-- mark and focus token, which these buttons never show.
+local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_ENERGY",
+    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_AURA", "UNIT_NAME_UPDATE", "UNIT_LEVEL" }
+local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
+for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = "raid" .. i end
+
 function UF:EnableRaidFrames(deferRoster)
     local dims = UF:GetGroupDimensions()
     if UF.SyncNativeGroupFrames then UF:SyncNativeGroupFrames(dims.enabled) end
@@ -1090,17 +1097,8 @@ function UF:EnableRaidFrames(deferRoster)
     raidFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
     raidFrame:RegisterEvent("PARTY_LEADER_CHANGED")
     raidFrame:RegisterEvent("RAID_TARGET_UPDATE")
-    raidFrame:RegisterEvent("UNIT_HEALTH")
-    raidFrame:RegisterEvent("UNIT_MAXHEALTH")
-    raidFrame:RegisterEvent("UNIT_MANA")
-    raidFrame:RegisterEvent("UNIT_RAGE")
-    raidFrame:RegisterEvent("UNIT_ENERGY")
-    raidFrame:RegisterEvent("UNIT_MAXMANA")
-    raidFrame:RegisterEvent("UNIT_DISPLAYPOWER")
-    raidFrame:RegisterEvent("UNIT_AURA")
-    raidFrame:RegisterEvent("UNIT_NAME_UPDATE")
-    raidFrame:RegisterEvent("UNIT_LEVEL")
     raidFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    for _, ev in ipairs(MEMBER_EVENTS) do raidFrame:RegisterUnitEvent(ev, unpack(MEMBER_UNITS)) end
     FT.SetEventHandler(raidFrame, RaidFrame_OnEvent)
 
     -- Dimension edits must size the buttons before refreshing the roster once.
