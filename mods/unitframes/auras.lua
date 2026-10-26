@@ -77,6 +77,16 @@ local function FormatAuraTime(remaining)
     end
 end
 
+-- Which label FormatAuraTime would show: tenths under 5 s, then seconds,
+-- minutes, hours and days. The label is built only when this changes.
+local function AuraTimeKey(remaining)
+    if remaining < 5 then return math.floor(remaining * 10 + 0.5) - 100 end
+    if remaining < 60 then return math.ceil(remaining) end
+    if remaining < 3600 then return 100 + math.ceil(remaining / 60) end
+    if remaining < 86400 then return 1000 + math.ceil(remaining / 3600) end
+    return 10000 + math.ceil(remaining / 86400)
+end
+
 local timedButtons = {}
 local auraTicker
 local tickerGeneration = 0
@@ -97,7 +107,7 @@ local function ResetAuraButton(btn)
     btn.spellId = nil
     btn.expirationTime = nil
     btn.duration = nil
-    btn.lastTimeText = nil
+    btn.lastTimeText, btn.lastTimeKey = nil, nil
     btn.timerUnitGUID, btn.timerSpellID, btn.timerSourceGUID = nil, nil, nil
     btn.sweepStart, btn.sweepDuration = nil, nil
     btn.isOccupied = false
@@ -144,17 +154,22 @@ local function UpdateAuraTimes()
                 btn.lastTimeText = ""
                 btn.durationText:SetText("")
             end
+            btn.lastTimeKey = false
             btn.durationText:Hide()
             CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
             btn.cooldown:Hide()
             btn.sweepStart, btn.sweepDuration = nil, nil
         elseif btn:IsVisible() then
-            local text = not btn.fctHideDuration and FormatAuraTime(remaining) or ""
-            if btn.lastTimeText ~= text then
-                btn.lastTimeText = text
-                btn.durationText:SetText(text)
+            local key = not btn.fctHideDuration and AuraTimeKey(remaining) or false
+            if btn.lastTimeKey ~= key then
+                btn.lastTimeKey = key
+                local text = key and FormatAuraTime(remaining) or ""
+                if btn.lastTimeText ~= text then
+                    btn.lastTimeText = text
+                    btn.durationText:SetText(text)
+                end
+                if text ~= "" then btn.durationText:Show() else btn.durationText:Hide() end
             end
-            if text ~= "" then btn.durationText:Show() else btn.durationText:Hide() end
         end
     end
     StopIdleAuraTicker()
@@ -396,7 +411,9 @@ local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expira
         btn.cooldown:Hide()
     end
     -- Presence comes from the aura query. Unknown remote timing stays unknown.
-    local label = timed and not btn.fctHideDuration and FormatAuraTime(expiration - now) or ""
+    local key = timed and not btn.fctHideDuration and AuraTimeKey(expiration - now) or false
+    btn.lastTimeKey = key
+    local label = key and FormatAuraTime(expiration - now) or ""
     if btn.lastTimeText ~= label then
         btn.lastTimeText = label
         btn.durationText:SetText(label)

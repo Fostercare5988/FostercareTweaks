@@ -14,6 +14,9 @@ local groups = {}
 local unitToButton = {}
 local testMode = false
 local wipe = table.wipe
+local RAID_UNITS = {}
+for i = 1, 40 do RAID_UNITS[i] = "raid" .. i end
+local groupCounters = {}
 
 --------------------------------------------------------------------------------
 -- 1. Dimension Settings Management
@@ -27,12 +30,14 @@ local function GroupNumber(key, value, default)
     local bounds = groupLimits[key]
     return FT.ClampNumber(value, default or bounds[1], bounds[2], bounds[3])
 end
+-- One result table, refilled by every call: read it before calling again.
+local dims, noSettings = {}, {}
 function UF:GetGroupDimensions()
     local cfg = FostercareTweaks_Config.groupframe_dimensions
-    if type(cfg) ~= "table" then cfg = {} end
-    local result = {enabled = cfg.enabled == nil or cfg.enabled == true or cfg.enabled == 1}
-    for key in pairs(groupLimits) do result[key] = GroupNumber(key, cfg[key]) end
-    return result
+    if type(cfg) ~= "table" then cfg = noSettings end
+    dims.enabled = cfg.enabled == nil or cfg.enabled == true or cfg.enabled == 1
+    for key in pairs(groupLimits) do dims[key] = GroupNumber(key, cfg[key]) end
+    return dims
 end
 
 --------------------------------------------------------------------------------
@@ -740,7 +745,8 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
         raidFrame:Show()
         UF:UpdateAllRaidFrames()
     else
-        UF:UpdateGroupRoster()
+        -- New sizes: every button lays out again.
+        UF:UpdateGroupRoster(true)
     end
 end
 
@@ -748,12 +754,13 @@ end
 -- 6. Roster Update & Unified Group Dispatcher (Party + Raid)
 --------------------------------------------------------------------------------
 
-function UF:UpdateGroupRoster()
+-- force: rebuild every button, not only the ones whose member changed.
+function UF:UpdateGroupRoster(force)
     if not raidFrame then return end
     if testMode then return end
 
     if wipe then wipe(unitToButton) end
-    local groupCounters = { 0, 0, 0, 0, 0, 0, 0, 0 }
+    for g = 1, 8 do groupCounters[g] = 0 end
 
     local numRaid = GetNumRaidMembers() or 0
     local numParty = GetNumPartyMembers() or 0
@@ -780,17 +787,20 @@ function UF:UpdateGroupRoster()
                 if slot <= 5 then
                     groupCounters[subgroup] = slot
                     local btn = groups[subgroup].buttons[slot]
-                    local unit = "raid" .. i
-
-                    btn.rangeAlpha = nil
-                    SetUnit(btn, unit)
-                    btn.rosterName, btn.rosterClass = name, FT.NormalizeClass(fileName or class)
-                    btn.index = i
-                    btn.rank = rank
+                    local unit = RAID_UNITS[i]
                     unitToButton[unit] = btn
-
-                    btn:Show()
-                    UpdateButtonAll(btn)
+                    -- Unit events keep a member current. In a battleground the
+                    -- roster changes all the time; rebuild only the buttons
+                    -- whose member, rank or online state changed.
+                    if force or btn.unit ~= unit or btn.rosterName ~= name or btn.rank ~= rank
+                        or btn.rosterOnline ~= online or not btn:IsShown() then
+                        btn.rangeAlpha = nil
+                        SetUnit(btn, unit)
+                        btn.rosterName, btn.rosterClass = name, FT.NormalizeClass(fileName or class)
+                        btn.index, btn.rank, btn.rosterOnline = i, rank, online
+                        btn:Show()
+                        UpdateButtonAll(btn)
+                    end
                 end
             end
         end
@@ -861,10 +871,21 @@ function UF:UpdateGroupRoster()
     SyncRangeTicker()
 end
 
+-- Roster events come in bursts (a battleground filling, members zoning);
+-- rebuild once, on the next frame.
+local rosterPending
+local function FlushRoster()
+    rosterPending = nil
+    UF:UpdateGroupRoster()
+end
+
 local function RaidFrame_OnEvent(_, ev, a1)
 
     if ev == "RAID_ROSTER_UPDATE" or ev == "PARTY_MEMBERS_CHANGED" or ev == "PLAYER_ENTERING_WORLD" then
-        UF:UpdateGroupRoster()
+        if not rosterPending then
+            rosterPending = true
+            C_Timer.After(0, FlushRoster)
+        end
     elseif ev == "RAID_TARGET_UPDATE" or ev == "PARTY_LEADER_CHANGED" then
         for _, btn in pairs(unitToButton) do
             UpdateButtonIndicators(btn)
@@ -1078,7 +1099,7 @@ end
 local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_ENERGY",
     "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_AURA", "UNIT_NAME_UPDATE", "UNIT_LEVEL" }
 local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
-for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = "raid" .. i end
+for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = RAID_UNITS[i] end
 
 function UF:EnableRaidFrames(deferRoster)
     local dims = UF:GetGroupDimensions()
