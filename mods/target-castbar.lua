@@ -91,23 +91,9 @@ end
 local function UpdateAnchor()
     if castbar:GetParent() ~= TargetFrame then castbar:SetParent(TargetFrame); castbar.lastYOffset = nil end
     castbar:SetWidth(140)
-    local yOffset = -4
-    local targetOfTarget = TargetofTargetFrame and TargetofTargetFrame:IsShown()
-    local debuff11 = TargetFrameDebuff11 and TargetFrameDebuff11:IsShown()
-    local debuff7 = TargetFrameDebuff7 and TargetFrameDebuff7:IsShown()
-    local buff1 = TargetFrameBuff1 and TargetFrameBuff1:IsShown()
-
-    if targetOfTarget then
-        if debuff11 and buff1 then
-            yOffset = -65
-        elseif debuff11 then
-            yOffset = -45
-        else
-            yOffset = -24
-        end
-    elseif debuff7 then
-        yOffset = -24
-    end
+    -- Blizzard's own target auras are always replaced by the improved ones, so
+    -- only the target-of-target frame moves the bar down.
+    local yOffset = TargetofTargetFrame and TargetofTargetFrame:IsShown() and -24 or -4
 
     if castbar.lastYOffset ~= yOffset then
         castbar:ClearAllPoints()
@@ -174,9 +160,8 @@ local function UpdateCast()
 
         castbar:SetMinMaxValues(0, duration)
 
-        -- Visual styling for interruptible vs uninterruptible casts
-        local showUninterruptible = (not FostercareTweaks_Config or FostercareTweaks_Config["Uninterruptible Castbars"] ~= 0)
-        local isUninterruptible = showUninterruptible and notInterruptible
+        -- Casts you cannot interrupt show in grey.
+        local isUninterruptible = notInterruptible and true or false
 
         if castbar.lastInterruptible ~= isUninterruptible then
             castbar.lastInterruptible = isUninterruptible
@@ -242,10 +227,6 @@ module.enable = function(self)
         if STOP_EVENTS[ev] then StopCast() else UpdateCast() end
     end)
 
-    FT.hooksecurefunc("TargetDebuffButton_Update", function()
-        if castbar:IsShown() then UpdateAnchor() end
-    end)
-
     if TargetofTarget_Update then
         FT.hooksecurefunc("TargetofTarget_Update", function()
             if castbar:IsShown() then UpdateAnchor() end
@@ -274,16 +255,4 @@ module.apply = function(self)
     end
     UpdateCast()
 end
-end
-
-do
--- Configuration toggle for uninterruptible castbar styling (Rule AP-10, Rule C3 compliant)
-
-
-local module = FT:register({
-    title = "Uninterruptible Castbars",
-    description = "Changes castbar color to silver for spells that cannot be interrupted (target frame).",
-    category = "Unit Frames",
-    enabled = true,
-})
 end

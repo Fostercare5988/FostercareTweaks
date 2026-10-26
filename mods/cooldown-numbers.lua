@@ -8,7 +8,7 @@ local module = FT:register({
     title = "Cooldown Numbers",
     description = "Show remaining cooldown time; GearRack keeps its own enabled counters.",
     category = "Action Bar",
-    enabled = true,
+    always = true,
 })
 
 local active = {}

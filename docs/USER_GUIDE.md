@@ -41,7 +41,7 @@ These improve Blizzard's player, target and pet frames.
 
 - **Class colors behind names**, exact **health numbers** (they hide when the
   target dies, under Blizzard's "Dead").
-- **Move with Ctrl+Shift**: hold both keys to show handles on the frames, aura
+- **Ctrl+Shift moves things**: hold both keys to show handles on the frames, aura
   areas and raid frames, and drag them. **Reset positions** puts them back after
   a reload; `/ft resetuf` does both at once.
 - **Target castbar**: your target's casts under its frame; grey when they cannot
@@ -55,10 +55,9 @@ These improve Blizzard's player, target and pet frames.
 
 ## Auras
 
-- **Improved auras** under the player and target frames: sweeps, countdowns and
-  dispel colors. Choose player/target buffs and debuffs and icon sizes.
-  **Timers on Blizzard debuffs** is for when the improved auras are off.
-- **Timers**: sweeps, countdowns and dispel colors also apply to the raid frames.
+- **Player and target**: buffs and debuffs under the player and target frames,
+  with sweeps, countdowns and dispel colors (also on the raid frames). Choose
+  which rows show, and the icon sizes.
 - **Top right of the screen**: show or hide Blizzard's buffs, debuffs and weapon
   enchants; **Ctrl+Shift** moves them.
 - **Borders** for buffs, debuffs and weapon enchants (the weapon's quality color).

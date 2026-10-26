@@ -5,7 +5,7 @@ if not FT then return end
 local module = FT:register({
     title = "Movable Unit Frames",
     description = "Hold Ctrl+Shift to move unit frames and their buff/debuff areas.",
-    category = "Unit Frames", enabled = true,
+    category = "Unit Frames", always = true,
 })
 local movers = {}
 local unlocker = CreateFrame("Frame", "FCTweaksUnitFrameUnlocker", UIParent)
@@ -52,13 +52,11 @@ local function StopDrag(mover)
 end
 
 function FT.UpdateFrameMovers()
-    local cfg = FostercareTweaks_Config
-    local enabled = not cfg or cfg["Movable Unit Frames"] ~= 0
     -- ClassicAPI fires from the message hook before native merged key state
     -- catches up. Its left/right queries read the bitmap updated before firing.
     local shiftDown = IsLeftShiftKeyDown() or IsRightShiftKeyDown()
     local controlDown = IsLeftControlKeyDown() or IsRightControlKeyDown()
-    local unlocked = enabled and shiftDown and controlDown
+    local unlocked = shiftDown and controlDown
     unlocker.movable = unlocked and true or nil
     if unlocker.grid then
         if unlocked then unlocker.grid:Show() else unlocker.grid:Hide() end

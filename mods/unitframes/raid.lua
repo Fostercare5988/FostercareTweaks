@@ -262,10 +262,8 @@ local function ShowRaidAura(btn, badge, a, size, x, y)
     badge.icon:SetTexture(a.icon)
     badge.countText:SetText(stacked and a.stacks or "")
     if stacked then badge.countText:Show() else badge.countText:Hide() end
-    UF.Auras.UpdateAuraTiming(badge, UnitGUID(btn.unit), a.id, a.source, a.duration, a.expiration,
-        badge.isDebuff and UF:IsDebuffSpin() or (not badge.isDebuff and UF:IsBuffSpin()),
-        badge.isDebuff and UF:IsDebuffText() or (not badge.isDebuff and UF:IsBuffText()), GetTime())
-    UF.Auras.StyleBorder(badge, a.dtype, badge.isDebuff and UF:IsColorDebuffsByDispel())
+    UF.Auras.UpdateAuraTiming(badge, UnitGUID(btn.unit), a.id, a.source, a.duration, a.expiration, GetTime())
+    UF.Auras.StyleBorder(badge, a.dtype)
     badge:Show()
 end
 
@@ -1007,7 +1005,7 @@ function UF:RefreshRaidAuraBorders()
             for _, kind in ipairs({ "buffBadges", "debuffBadges" }) do
                 for _, badge in ipairs(btn[kind]) do
                     if badge:IsShown() then
-                        UF.Auras.StyleBorder(badge, badge.borderDispelType, badge.borderColorDispel)
+                        UF.Auras.StyleBorder(badge, badge.borderDispelType)
                     end
                 end
             end

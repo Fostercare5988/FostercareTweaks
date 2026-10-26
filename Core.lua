@@ -49,8 +49,12 @@ local function EnsureSavedTables()
         FostercareTweaks_Config["Social Colors"] = nil
     end
     FostercareTweaks_Config["Hide Errors"] = nil
-    -- Retired 2026-10-26: no character had them on.
-    for _, key in ipairs({ "Hide Default Cast Bar", "Only Show My Debuffs on Target", "Show Bags", "Show Micro Menu" }) do
+    -- Retired 2026-10-26: no character had them on, or every character had them
+    -- on and they are now permanent.
+    for _, key in ipairs({ "Hide Default Cast Bar", "Only Show My Debuffs on Target", "Show Bags", "Show Micro Menu",
+        "Improved Standard Auras", "Debuff Timer", "Show Buff Cooldown Spiral", "Show Buff Duration Text",
+        "Show Debuff Cooldown Spiral", "Show Debuff Duration Text", "Color Debuffs by Dispel Type",
+        "Uninterruptible Castbars" }) do
         FostercareTweaks_Config[key] = nil
     end
     FostercareTweaks_Config.overwrites["panelbag.scale"] = nil
@@ -81,7 +85,10 @@ function FT:Initialize()
     -- order defines layout and hook order; hash iteration must not decide it.
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
-        if FostercareTweaks_Config[title] == nil then
+        -- `always` modules have no switch, so they keep no saved key.
+        if mod.always then
+            FostercareTweaks_Config[title] = nil
+        elseif FostercareTweaks_Config[title] == nil then
             FostercareTweaks_Config[title] = mod.enabled and 1 or 0
         end
 
@@ -96,7 +103,7 @@ function FT:Initialize()
     end
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
-        if FostercareTweaks_Config[title] == 1 and mod.enable then
+        if (mod.always or FostercareTweaks_Config[title] == 1) and mod.enable then
             local success, err = pcall(mod.enable, mod)
             if not success and DEFAULT_CHAT_FRAME then
                 DEFAULT_CHAT_FRAME:AddMessage("|cffff2020[FostercareTweaks Error]|r Failed to enable '" .. tostring(title) .. "': " .. tostring(err), 1, 0.3, 0.3)
