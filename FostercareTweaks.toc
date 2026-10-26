@@ -33,7 +33,6 @@ mods\unitframes\native-group.lua
 mods\health-numbers.lua
 mods\unitframes-classcolor.lua
 mods\target-castbar.lua
-mods\target-debufftimer.lua
 mods\unitframe-energytick.lua
 mods\raid-target-marks.lua
 

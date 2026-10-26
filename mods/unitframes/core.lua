@@ -6,16 +6,10 @@ if not FT then return end
 -- Blizzard's player and target frames and for the party and raid frames.
 
 for _, spec in ipairs({
-    { "Improved Standard Auras", "Timers, sweeps and dispel colors under the player and target frames.", true },
     { "Show Player Buffs", "Player buffs under the player frame.", true },
     { "Show Target Buffs", "Target buffs under the target frame.", true },
     { "Show Player Debuffs", "Player debuffs under the player frame.", true },
     { "Show Target Debuffs", "Target debuffs under the target frame.", true },
-    { "Show Buff Cooldown Spiral", "The clock sweep on buffs.", true },
-    { "Show Buff Duration Text", "Time left on buffs.", true },
-    { "Show Debuff Cooldown Spiral", "The clock sweep on debuffs.", true },
-    { "Show Debuff Duration Text", "Time left on debuffs.", true },
-    { "Color Debuffs by Dispel Type", "Dispel-type colors on debuff borders.", true },
     { "Show Raid Aggro Indicator", "A red corner on the member your enemy target attacks.", true },
     { "Show Raid HoT Indicator", "A corner icon for heals over time and shields.", true },
     { "Show Raid Debuff Badges", "Debuff icons inside raid members.", true },
@@ -27,16 +21,9 @@ FT.UnitFrames = FT.UnitFrames or {}
 local UF = FT.UnitFrames
 
 -- The Modern player, target and target-of-target frames were removed on
--- 2026-10-25 (no character used them). Clear their saved settings once; the
--- old "Show Aura" switches carry over to the buff/debuff pair first.
+-- 2026-10-25 (no character used them). Clear their saved settings once.
 function FT.MigrateFrameSettings()
     local cfg = FostercareTweaks_Config
-    for _, kind in ipairs({ "Buff", "Debuff" }) do
-        for _, suffix in ipairs({ "Cooldown Spiral", "Duration Text" }) do
-            local old, new = "Show Aura " .. suffix, "Show " .. kind .. " " .. suffix
-            if cfg[new] == nil and cfg[old] ~= nil then cfg[new] = cfg[old] end
-        end
-    end
     for _, key in ipairs({ "Show Aura Cooldown Spiral", "Show Aura Duration Text", "Unit Frames (Modern)",
         "Modern Player Frame", "Modern Target Frame", "Modern Combo Points", "Modern Target's Target",
         "Use Standard Player Frame", "Use Standard Target Frame", "Use Standard Target's Target",
@@ -59,16 +46,10 @@ end
 
 -- Settings ---------------------------------------------------------------------
 
-function UF:IsImprovedStandardAuras() return FT.IsEnabled("Improved Standard Auras", true) end
 function UF:IsShowPlayerBuffs() return FT.IsEnabled("Show Player Buffs", true) end
 function UF:IsShowTargetBuffs() return FT.IsEnabled("Show Target Buffs", true) end
 function UF:IsShowPlayerDebuffs() return FT.IsEnabled("Show Player Debuffs", true) end
 function UF:IsShowTargetDebuffs() return FT.IsEnabled("Show Target Debuffs", true) end
-function UF:IsBuffSpin() return FT.IsEnabled("Show Buff Cooldown Spiral", true) end
-function UF:IsBuffText() return FT.IsEnabled("Show Buff Duration Text", true) end
-function UF:IsDebuffSpin() return FT.IsEnabled("Show Debuff Cooldown Spiral", true) end
-function UF:IsDebuffText() return FT.IsEnabled("Show Debuff Duration Text", true) end
-function UF:IsColorDebuffsByDispel() return FT.IsEnabled("Color Debuffs by Dispel Type", true) end
 function UF:IsRaidShowAggro() return FT.IsEnabled("Show Raid Aggro Indicator", true) end
 function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator", true) end
 function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges", true) end
@@ -204,12 +185,6 @@ function UF:ApplyConfiguration()
     if UF.Auras then
         UF.Auras:UpdateBlizzTargetAuras()
         UF.Auras:UpdateBlizzPlayerAuras()
-    end
-    local movement = FT.mods["Movable Unit Frames"]
-    if movement and FostercareTweaks_Config["Movable Unit Frames"] ~= 0 then
-        movement:enable()
-    elseif FT.UpdateFrameMovers then
-        FT.UpdateFrameMovers()
     end
     if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end
     if FT.RefreshTargetCastbar then FT.RefreshTargetCastbar() end

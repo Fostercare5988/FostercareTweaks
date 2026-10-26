@@ -84,7 +84,7 @@ local TABS = { "general", "unit", "auras", "raid", "bars" }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
     { label = "General", height = 520 },
     { label = "Unit Frames", height = 452 },
-    { label = "Auras", height = 520 },
+    { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
     { label = "Action Bars", height = 574 },
 }, function(index) tab = index; Refresh() end)
@@ -135,7 +135,6 @@ Hint(general, "For spells, dismounting, leaving forms and standing up are Classi
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
-local function Castbars() if FT.RefreshTargetCastbar then FT.RefreshTargetCastbar() end end
 local function Marks() if FT.RefreshRaidMarks then FT:RefreshRaidMarks() end end
 local function Ticks() if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end end
 local function On(title, default) return function() return FT.IsEnabled(title, default) end end
@@ -143,22 +142,19 @@ UI.Heading(unit, "Player and target", LEFT, -98)
 Feature(unit, "Unit Frame Class Colors", "Class colors behind names", "Players' names on a bar in their class color.",
     LEFT, -118, function() FT.mods["Unit Frame Class Colors"]:apply() end)
 Feature(unit, "Real Health Numbers", "Health numbers", "Exact health and mana numbers on the player, target and pet frames.", LEFT, -144)
-Feature(unit, "Movable Unit Frames", "Move with Ctrl+Shift", "Hold Ctrl+Shift to drag frames, aura areas and the raid frames.",
-    LEFT, -170, ApplyUnitFrames)
-UI.Heading(unit, "Target castbar", LEFT, -210)
-Feature(unit, "Enemy Castbars", "Castbar under the target", "Your target's casts under the target frame.",
-    LEFT, -230, function() FT.mods["Enemy Castbars"]:apply() end)
-Feature(unit, "Uninterruptible Castbars", "Grey if it can't be interrupted", "Casts you cannot interrupt show in grey.",
-    INDENT, -256, Castbars, On("Enemy Castbars", true))
-UI.Heading(unit, "Raid marks", LEFT, -296)
-Feature(unit, "Clear Raid Target Marks", "Bigger marks on frames", "Larger raid marks on the target and raid frames.", LEFT, -316)
+UI.Heading(unit, "Target castbar", LEFT, -184)
+Feature(unit, "Enemy Castbars", "Castbar under the target", "Your target's casts under the target frame; grey when you cannot interrupt them.",
+    LEFT, -204, function() FT.mods["Enemy Castbars"]:apply() end)
+UI.Heading(unit, "Raid marks", LEFT, -244)
+Feature(unit, "Clear Raid Target Marks", "Bigger marks on frames", "Larger raid marks on the target and raid frames.", LEFT, -264)
 local marks = On("Clear Raid Target Marks", true)
 local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait", "The target's mark outside its portrait.",
-    INDENT, -342, function(value)
+    INDENT, -290, function(value)
         FT.SetOverride("raidmark_position", value and "outside" or "portrait"); Marks(); Refresh()
     end, 172)
 table.insert(syncs, function() UI.Sync(outside, FT.GetOverride("raidmark_position") == "outside", marks()) end)
-Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", LEFT, -372, Marks, marks)
+Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", LEFT, -320, Marks, marks)
+Hint(unit, "Hold Ctrl+Shift to move frames, aura areas, the raid frames and action bars.", LEFT, -372, 444)
 UI.Heading(unit, "Energy ticks", RIGHT, -98)
 Feature(unit, "Show Energy Ticks", "Energy and mana ticks",
     "Estimated energy ticks and the five-second mana rule on your power bar.", RIGHT, -118, ApplyUnitFrames)
@@ -176,16 +172,11 @@ local function StandardAuras()
     if FT.ApplyStandardAuraSettings then FT.ApplyStandardAuraSettings() end
     if UF() and UF().Auras then UF().Auras:RefreshBorders() end
 end
-local improved = On("Improved Standard Auras", true)
 UI.Heading(auras, "Player and target", LEFT, -98)
-Feature(auras, "Improved Standard Auras", "Improved auras", "Timers, sweeps and dispel colors under the player and target frames.",
-    LEFT, -118, ApplyUnitFrames)
-Feature(auras, "Show Player Buffs", "Player buffs", nil, INDENT, -144, ApplyUnitFrames, improved)
-Feature(auras, "Show Player Debuffs", "Player debuffs", nil, INDENT, -170, ApplyUnitFrames, improved)
-Feature(auras, "Show Target Buffs", "Target buffs", nil, INDENT, -196, ApplyUnitFrames, improved)
-Feature(auras, "Show Target Debuffs", "Target debuffs", nil, INDENT, -222, ApplyUnitFrames, improved)
-Feature(auras, "Debuff Timer", "Timers on Blizzard debuffs", "Countdowns on the target frame's own debuffs, when improved auras are off.",
-    LEFT, -248, nil, function() return not improved() end)
+Feature(auras, "Show Player Buffs", "Player buffs", "Under the player frame, with sweeps and countdowns.", LEFT, -118, ApplyUnitFrames)
+Feature(auras, "Show Player Debuffs", "Player debuffs", "Under the player frame; dispel colors on the border.", LEFT, -144, ApplyUnitFrames)
+Feature(auras, "Show Target Buffs", "Target buffs", nil, LEFT, -170, ApplyUnitFrames)
+Feature(auras, "Show Target Debuffs", "Target debuffs", nil, LEFT, -196, ApplyUnitFrames)
 local function AuraSize(kind)
     return function(value)
         local apply = UF().Auras["Apply" .. kind .. "Size"]
@@ -195,25 +186,19 @@ local function AuraSize(kind)
         ApplyUnitFrames()
     end
 end
-UI.Heading(auras, "Size", LEFT, -288)
-Slider(auras, "uf_buff_size", 20, 14, 32, 1, "Buffs", LEFT, -308, AuraSize("Buff"), improved)
-Slider(auras, "uf_debuff_size", 20, 14, 32, 1, "Debuffs", LEFT, -350, AuraSize("Debuff"), improved)
-UI.Heading(auras, "Timers", RIGHT, -98)
-Feature(auras, "Show Buff Cooldown Spiral", "Buff sweep", "The clock sweep on buffs. Raid frames too.", RIGHT, -118, ApplyUnitFrames)
-Feature(auras, "Show Buff Duration Text", "Buff countdown", "Time left on buffs. Raid frames too.", RIGHT, -144, ApplyUnitFrames)
-Feature(auras, "Show Debuff Cooldown Spiral", "Debuff sweep", "The clock sweep on debuffs. Raid frames too.", RIGHT, -170, ApplyUnitFrames)
-Feature(auras, "Show Debuff Duration Text", "Debuff countdown", "Time left on debuffs. Raid frames too.", RIGHT, -196, ApplyUnitFrames)
-Feature(auras, "Color Debuffs by Dispel Type", "Dispel colors", "Magic, curse, disease and poison colors on debuff borders.",
-    RIGHT, -222, function() ApplyUnitFrames(); StandardAuras(); RefreshRaid() end)
-UI.Heading(auras, "Top right of the screen", RIGHT, -262)
-Feature(auras, "Show Standard Buffs", "Buffs", "Blizzard's buff icons. Hold Ctrl+Shift to move them.", RIGHT, -282, StandardAuras, nil, true)
-Feature(auras, "Show Standard Debuffs", "Debuffs", "Blizzard's debuff icons.", RIGHT, -308, StandardAuras, nil, true)
-Feature(auras, "Show Weapon Enchants", "Weapon enchants", "Poisons, oils and other weapon enchants.", RIGHT, -334, StandardAuras, nil, true)
-UI.Heading(auras, "Borders", RIGHT, -374)
-Feature(auras, "Show Buff Borders", "Buff borders", "A dark border around buffs everywhere.", RIGHT, -394, StandardAuras, nil, false)
-Feature(auras, "Show Debuff Borders", "Debuff borders", "A border around debuffs everywhere.", RIGHT, -420, StandardAuras, nil, false)
+UI.Heading(auras, "Size", LEFT, -236)
+Slider(auras, "uf_buff_size", 20, 14, 32, 1, "Buffs", LEFT, -256, AuraSize("Buff"))
+Slider(auras, "uf_debuff_size", 20, 14, 32, 1, "Debuffs", LEFT, -298, AuraSize("Debuff"))
+UI.Heading(auras, "Top right of the screen", RIGHT, -98)
+Feature(auras, "Show Standard Buffs", "Buffs", "Blizzard's buff icons. Hold Ctrl+Shift to move them.", RIGHT, -118, StandardAuras, nil, true)
+Feature(auras, "Show Standard Debuffs", "Debuffs", "Blizzard's debuff icons.", RIGHT, -144, StandardAuras, nil, true)
+Feature(auras, "Show Weapon Enchants", "Weapon enchants", "Poisons, oils and other weapon enchants, in their own movable area.",
+    RIGHT, -170, StandardAuras, nil, true)
+UI.Heading(auras, "Borders", RIGHT, -210)
+Feature(auras, "Show Buff Borders", "Buff borders", "A dark border around buffs everywhere.", RIGHT, -230, StandardAuras, nil, false)
+Feature(auras, "Show Debuff Borders", "Debuff borders", "A dispel-colored border around debuffs everywhere.", RIGHT, -256, StandardAuras, nil, false)
 Feature(auras, "Show Weapon Enchant Borders", "Enchant borders", "The weapon's quality color around its enchant.",
-    RIGHT, -446, StandardAuras, nil, true)
+    RIGHT, -282, StandardAuras, nil, true)
 
 -- Raid --------------------------------------------------------------------------
 local raid = pages[4]
@@ -298,8 +283,7 @@ Feature(bars, "Hide Gryphons", "Hide gryphons", "Remove the gryphons at both end
 Feature(bars, "Floating Actionbar", "No bar background", "Remove the bar's background art.", LEFT, -144)
 Feature(bars, "Reduced Actionbar Size", "Short main bar", "A shorter main bar without the bag and game menu buttons.", LEFT, -170)
 Feature(bars, "Center Vertical Actionbar", "Center the right bars", "Center the right-side bars vertically.", LEFT, -196)
-Feature(bars, "Cooldown Numbers", "Cooldown numbers", "Time left on button cooldowns.", LEFT, -222)
-Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", LEFT, -248)
+Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", LEFT, -222)
 UI.Heading(bars, "Layouts", LEFT, -288)
 local layouts = UI.Switch("FTOpt_Layouts", bars, "Custom layouts", "Move and reshape bars. Off keeps the game's layout.",
     LEFT, -308, function(value) AB:SetEnabled(value); Refresh() end)

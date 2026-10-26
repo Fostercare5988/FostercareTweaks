@@ -12,12 +12,12 @@ UF.Auras = UF.Auras or {}
 local Auras = UF.Auras
 
 -- One policy for player, target, raid and preview aura buttons.
-function Auras.StyleBorder(btn, dispelType, colorDispel)
-    btn.borderDispelType, btn.borderColorDispel = dispelType, colorDispel
+function Auras.StyleBorder(btn, dispelType)
+    btn.borderDispelType = dispelType
     local cfg = FostercareTweaks_Config or {}
     local setting = btn.isDebuff and "Show Debuff Borders" or "Show Buff Borders"
     if cfg[setting] ~= 1 then btn.border:Hide(); return end
-    if btn.isDebuff and colorDispel then
+    if btn.isDebuff then
         local dc = UF.DispelColors[dispelType] or UF.DispelColors["None"]
         btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
         btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
@@ -36,7 +36,7 @@ function Auras:RefreshBorders()
         if container then
             for _, kind in ipairs({ "buffButtons", "debuffButtons" }) do
                 for _, btn in ipairs(container[kind] or {}) do
-                    if btn:IsShown() then Auras.StyleBorder(btn, btn.borderDispelType, btn.borderColorDispel) end
+                    if btn:IsShown() then Auras.StyleBorder(btn, btn.borderDispelType) end
                 end
             end
         end
@@ -149,9 +149,7 @@ local function UpdateAuraTimes()
             btn.cooldown:Hide()
             btn.sweepStart, btn.sweepDuration = nil, nil
         elseif btn:IsVisible() then
-            local showText = not btn.fctHideDuration and ((btn.isDebuff and UF:IsDebuffText()) or
-                (not btn.isDebuff and UF:IsBuffText()))
-            local text = showText and FormatAuraTime(remaining) or ""
+            local text = not btn.fctHideDuration and FormatAuraTime(remaining) or ""
             if btn.lastTimeText ~= text then
                 btn.lastTimeText = text
                 btn.durationText:SetText(text)
@@ -379,14 +377,14 @@ end
 
 -- Preserve a running sweep until its actual aura identity/timing changes.
 -- CooldownFrame_SetTimer restarts the sweep on every call.
-local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expiration, spin, text, now)
+local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expiration, now)
     local sourceGUID = source and UnitGUID(source)
     local changedIdentity = btn.timerUnitGUID ~= unitGUID or btn.timerSpellID ~= spellID or
         btn.timerSourceGUID ~= sourceGUID
     btn.timerUnitGUID, btn.timerSpellID, btn.timerSourceGUID = unitGUID, spellID, sourceGUID
     local timed = expiration and expiration > now and duration and duration > 0
     local start = timed and expiration - duration
-    if timed and spin then
+    if timed then
         if changedIdentity or btn.sweepStart ~= start or btn.sweepDuration ~= duration then
             CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
             btn.sweepStart, btn.sweepDuration = start, duration
@@ -398,7 +396,7 @@ local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expira
         btn.cooldown:Hide()
     end
     -- Presence comes from the aura query. Unknown remote timing stays unknown.
-    local label = timed and text and not btn.fctHideDuration and FormatAuraTime(expiration - now) or ""
+    local label = timed and not btn.fctHideDuration and FormatAuraTime(expiration - now) or ""
     if btn.lastTimeText ~= label then
         btn.lastTimeText = label
         btn.durationText:SetText(label)
@@ -434,9 +432,6 @@ function Auras:UpdateContainer(container)
         end
     end
 
-    local showBuffSpin = (UF.IsBuffSpin and UF:IsBuffSpin())
-    local showBuffText = (UF.IsBuffText and UF:IsBuffText())
-
     local showDebuffs = true
     if unit == "player" and UF.IsShowPlayerDebuffs and not UF:IsShowPlayerDebuffs() then
         showDebuffs = false
@@ -452,9 +447,6 @@ function Auras:UpdateContainer(container)
         end
     end
 
-    local showDebuffSpin = (UF.IsDebuffSpin and UF:IsDebuffSpin())
-    local showDebuffText = (UF.IsDebuffText and UF:IsDebuffText())
-    local colorDispel = (UF.IsColorDebuffsByDispel and UF:IsColorDebuffsByDispel())
 
     local now = GetTime()
     local unitGUID = UnitGUID(unit)
@@ -501,8 +493,7 @@ function Auras:UpdateContainer(container)
                             btn.countText:Hide()
                         end
 
-                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime,
-                            showBuffSpin, showBuffText, now)
+                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
 
                         Auras.StyleBorder(btn)
                         btn:Show()
@@ -560,10 +551,9 @@ function Auras:UpdateContainer(container)
                             btn.countText:Hide()
                         end
 
-                        Auras.StyleBorder(btn, dispelType, colorDispel)
+                        Auras.StyleBorder(btn, dispelType)
 
-                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime,
-                            showDebuffSpin, showDebuffText, now)
+                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
 
                         btn:Show()
                         btnIdx = btnIdx + 1
@@ -696,7 +686,6 @@ function Auras:AttachToTargetFrame()
 end
 
 local function SuppressBlizzTargetAuras()
-    if not UF:IsImprovedStandardAuras() then return end
     for i = 1, 5 do
         local btn = _G["TargetFrameBuff" .. i]
         if btn and btn:IsShown() then btn:Hide() end
@@ -717,17 +706,13 @@ function Auras:UpdateBlizzTargetAuras()
         container = Auras:AttachToTargetFrame()
     end
 
-    local enabled = (UF.IsImprovedStandardAuras and UF:IsImprovedStandardAuras())
     local targetShown = TargetFrame and TargetFrame:IsShown() and UnitExists("target")
 
-    if not container or not enabled or not targetShown then
+    if not container or not targetShown then
         if container and container:IsShown() then
             container:Hide()
             for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
             for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
-            if not enabled and targetShown and TargetDebuffButton_Update then
-                TargetDebuffButton_Update()
-            end
         end
         isUpdatingBlizzAuras = false
         return
@@ -761,12 +746,6 @@ function Auras:UpdateBlizzPlayerAuras()
             buffAnchor = "BOTTOM", debuffAnchor = "BOTTOM",
         })
         UF.blizzPlayerAuras = container
-    end
-    if not UF:IsImprovedStandardAuras() then
-        container:Hide()
-        for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
-        for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
-        return
     end
     container:Show()
     Auras:UpdateContainer(container)
