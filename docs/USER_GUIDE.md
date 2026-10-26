@@ -16,7 +16,7 @@ for a short explanation; a dimmed control waits for the switch above it.
 ## General
 
 - **Gameplay**: **Switch stance for spells** changes a warrior's stance or a
-  druid's form when a spell needs it. Hide the stance bar or your cast bar.
+  druid's form when a spell needs it. Hide the stance bar.
 - **Dismount, leave form, stand up when casting** are ClassicAPI settings:
   **Game Menu > AddOn Options > ClassicAPI**. Characters that had Auto Dismount
   on get them turned on once.
@@ -53,9 +53,8 @@ These improve Blizzard's player, target and pet frames.
 ## Auras
 
 - **Improved auras** under the player and target frames: sweeps, countdowns and
-  dispel colors. Choose player/target buffs and debuffs, only your own debuffs on
-  the target, and icon sizes. **Timers on Blizzard debuffs** is for when the
-  improved auras are off.
+  dispel colors. Choose player/target buffs and debuffs and icon sizes.
+  **Timers on Blizzard debuffs** is for when the improved auras are off.
 - **Timers**: sweeps, countdowns and dispel colors also apply to the raid frames.
 - **Top right of the screen**: show or hide Blizzard's buffs, debuffs and weapon
   enchants; **Ctrl+Shift** moves them.
@@ -80,10 +79,9 @@ One grid serves both parties and raids.
 
 ## Action Bars
 
-- **Look**: hide the gryphons, remove the bar background, a short main bar (bags
-  and game menu move off it, optional and movable with **Ctrl+Shift**), centered
-  right-side bars, cooldown numbers and reagent counts (how many casts your
-  reagents allow).
+- **Look**: hide the gryphons, remove the bar background, a short main bar
+  (without the bag and game menu buttons), centered right-side bars, cooldown
+  numbers and reagent counts (how many casts your reagents allow).
 - **Custom layouts** lets you move and reshape bars. Off keeps the game's layout.
 - **Move bars** shows a handle on each bar; drag it, then click again or close
   the window to lock. Not in combat.

@@ -55,6 +55,12 @@ local function EnsureSavedTables()
     end
     FostercareTweaks_Config["Auto Dismount"] = nil
     FostercareTweaks_Config["Hide Errors"] = nil
+    -- Retired 2026-10-26: no character had them on.
+    for _, key in ipairs({ "Hide Default Cast Bar", "Only Show My Debuffs on Target", "Show Bags", "Show Micro Menu" }) do
+        FostercareTweaks_Config[key] = nil
+    end
+    FostercareTweaks_Config.overwrites["panelbag.scale"] = nil
+    FostercareTweaks_Config.overwrites["panelmicro.scale"] = nil
     -- Nameplates moved to FostercareNameplates (2026-10-12); clear their old settings.
     for _, key in ipairs({ "Nameplate Scale", "Nameplate Details", "Nameplate Class Colors",
         "Nameplate Castbar", "Enemy Nameplate Cooldowns", "nameplatesEnabled", "nameplate_layout_version" }) do
