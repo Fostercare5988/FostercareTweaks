@@ -15,7 +15,7 @@ local ACTION_BARS = {
 }
 
 module.enable = function(self)
-    local spells, counts, macroSlots, buttons = {}, {}, {}, {}
+    local spells, counts, macroSlots, buttons, hasReagents = {}, {}, {}, {}, {}
     for _, prefix in ipairs(ACTION_BARS) do
         for i = 1, NUM_ACTIONBAR_BUTTONS do
             local button = _G[prefix .. "Button" .. i]
@@ -35,10 +35,16 @@ module.enable = function(self)
             spellID = macroSpellID
         end
         -- An empty reagent list is authoritative. A shared icon never supplies
-        -- a reagent for a different spell, item or equipment set.
-        local reagents = spellID and C_Spell.GetSpellReagents(spellID)
+        -- a reagent for a different spell, item or equipment set. Spell.dbc
+        -- never changes, so each spell's list is read once.
+        local reagents = spellID and hasReagents[spellID]
+        if spellID and reagents == nil then
+            local list = C_Spell.GetSpellReagents(spellID)
+            reagents = list and list[1] and true or false
+            hasReagents[spellID] = reagents
+        end
         local previous = spells[slot]
-        spells[slot] = reagents and reagents[1] and spellID or nil
+        spells[slot] = reagents and spellID or nil
         return spells[slot] ~= previous
     end
 

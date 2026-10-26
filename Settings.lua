@@ -122,7 +122,7 @@ Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
     "Scroll with the mouse wheel, keep the last channel, repeat messages with the arrow keys.", RIGHT, -118)
 Feature(general, "Chat Hyperlinks", "Copyable links", "Click web links to copy them; quest and item links open.", RIGHT, -144)
 Feature(general, "Chat History", "Keep chat history", "Restore chat windows after a reload or login.", RIGHT, -170)
-Feature(general, "Chat Timestamps", "Timestamps", "The time before each message.", RIGHT, -196)
+Feature(general, "Chat Timestamps", "Timestamps", "The time before each chat message. The combat log has none.", RIGHT, -196)
 Feature(general, "Chat Class Colors", "Class colors for names",
     "Player names in their class color. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.", RIGHT, -222)
 Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue instead of pink.", RIGHT, -248)
