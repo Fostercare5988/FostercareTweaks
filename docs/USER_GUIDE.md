@@ -15,11 +15,13 @@ for a short explanation; a dimmed control waits for the switch above it.
 
 ## General
 
-- **Gameplay**: **Switch stance for spells** changes a warrior's stance or a
-  druid's form when a spell needs it. Hide the stance bar.
+- **Gameplay**: **Dismount for everything else** dismounts or leaves your form
+  when you attack, take a flight, talk to an NPC or use an item. **Switch stance
+  for spells** changes a warrior's stance or a druid's form when a spell needs
+  it. Hide the stance bar.
 - **Dismount, leave form, stand up when casting** are ClassicAPI settings:
-  **Game Menu > AddOn Options > ClassicAPI**. Characters that had Auto Dismount
-  on get them turned on once.
+  **Game Menu > AddOn Options > ClassicAPI**. They dismount and cast on the same
+  press, when the cast can go off.
 - **Items**: sell prices on tooltips (times the stack), **Shift** to compare
   with what you wear, quality borders in bags, bank, character and inspect, and
   a **Sell Junk** button at merchants. Walking away cancels unsent sales.

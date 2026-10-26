@@ -48,12 +48,6 @@ local function EnsureSavedTables()
         end
         FostercareTweaks_Config["Social Colors"] = nil
     end
-    -- Auto Dismount moved to ClassicAPI's cast settings (AddOn Options > ClassicAPI).
-    -- A character that had it on turns them on once.
-    if FostercareTweaks_Config["Auto Dismount"] == 1 then
-        SetCVar("autoDismount", "1"); SetCVar("autoUnshift", "1"); SetCVar("autoStand", "1")
-    end
-    FostercareTweaks_Config["Auto Dismount"] = nil
     FostercareTweaks_Config["Hide Errors"] = nil
     -- Retired 2026-10-26: no character had them on.
     for _, key in ipairs({ "Hide Default Cast Bar", "Only Show My Debuffs on Target", "Show Bags", "Show Micro Menu" }) do

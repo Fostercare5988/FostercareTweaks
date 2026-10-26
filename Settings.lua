@@ -101,10 +101,13 @@ end
 -- General ---------------------------------------------------------------------
 local general = pages[1]
 UI.Heading(general, "Gameplay", LEFT, -98)
+Feature(general, "Auto Dismount", "Dismount for everything else",
+    "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item. Spells do this in ClassicAPI.",
+    LEFT, -118)
 Feature(general, "Auto Stance", "Switch stance for spells",
-    "A warrior or druid spell that needs another stance or form switches to the first one you can use.", LEFT, -118)
+    "A warrior or druid spell that needs another stance or form switches to the first one you can use.", LEFT, -144)
 Feature(general, "Hide Stealth / Stance Bar", "Hide the stance bar", "Hide the stealth, stance and form buttons.",
-    LEFT, -144, function(value) FT.mods["Hide Stealth / Stance Bar"]:apply(value) end)
+    LEFT, -170, function(value) FT.mods["Hide Stealth / Stance Bar"]:apply(value) end)
 UI.Heading(general, "Items", LEFT, -210)
 Feature(general, "Vendor Values", "Sell prices on tooltips", "Show what a merchant pays for an item.", LEFT, -230)
 Feature(general, "Equip Compare", "Compare with Shift", "Hold Shift over an item to see what you wear in its slot.", LEFT, -256)
@@ -127,7 +130,7 @@ UI.Heading(general, "World map", RIGHT, -288)
 Feature(general, "WorldMap Window", "Map in a window", "A movable map window. Ctrl + mouse wheel resizes it.", RIGHT, -308)
 Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -334)
 Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -360)
-Hint(general, "Dismounting, leaving forms and standing up when you cast are ClassicAPI settings: AddOn Options > ClassicAPI.",
+Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
     LEFT, -456, 444)
 
 -- Unit Frames -------------------------------------------------------------------
