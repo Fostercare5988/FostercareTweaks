@@ -48,7 +48,7 @@ end
 local function AuraButton_OnEnter()
     if not this.unit or not this.auraIndex then return end
     GameTooltip:SetOwner(this, "ANCHOR_BOTTOMRIGHT")
-    -- Always store the plain polarity index, including with the own-debuff filter.
+    -- Tooltips take the plain polarity index.
     GameTooltip:SetUnitAura(this.unit, this.auraIndex, this.isDebuff and "HARMFUL" or "HELPFUL")
     GameTooltip:Show()
 end
@@ -455,7 +455,6 @@ function Auras:UpdateContainer(container)
     local showDebuffSpin = (UF.IsDebuffSpin and UF:IsDebuffSpin())
     local showDebuffText = (UF.IsDebuffText and UF:IsDebuffText())
     local colorDispel = (UF.IsColorDebuffsByDispel and UF:IsColorDebuffsByDispel())
-    local onlyMine = (unit == "target" and UF.IsOnlyMyDebuffs and UF:IsOnlyMyDebuffs())
 
     local now = GetTime()
     local unitGUID = UnitGUID(unit)
@@ -541,9 +540,7 @@ function Auras:UpdateContainer(container)
                 local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, castByPlayer = C_UnitAuras.UnitAuraBySlot(unit, slots[i])
                 if not name then break end -- end of debuffs
 
-
-                local isMine = source and (UnitIsUnit(source, "player") or UnitIsUnit(source, "pet"))
-                if icon and (not onlyMine or isMine) then
+                if icon then
                     local btn = container.debuffButtons[btnIdx]
                     if btn then
                         btn.unit = unit

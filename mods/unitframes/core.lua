@@ -16,7 +16,6 @@ for _, spec in ipairs({
     { "Show Debuff Cooldown Spiral", "The clock sweep on debuffs.", true },
     { "Show Debuff Duration Text", "Time left on debuffs.", true },
     { "Color Debuffs by Dispel Type", "Dispel-type colors on debuff borders.", true },
-    { "Only Show My Debuffs on Target", "Only your own debuffs on the target.", false },
     { "Show Raid Aggro Indicator", "A red corner on the member your enemy target attacks.", true },
     { "Show Raid HoT Indicator", "A corner icon for heals over time and shields.", true },
     { "Show Raid Debuff Badges", "Debuff icons inside raid members.", true },
@@ -70,7 +69,6 @@ function UF:IsBuffText() return FT.IsEnabled("Show Buff Duration Text", true) en
 function UF:IsDebuffSpin() return FT.IsEnabled("Show Debuff Cooldown Spiral", true) end
 function UF:IsDebuffText() return FT.IsEnabled("Show Debuff Duration Text", true) end
 function UF:IsColorDebuffsByDispel() return FT.IsEnabled("Color Debuffs by Dispel Type", true) end
-function UF:IsOnlyMyDebuffs() return FT.IsEnabled("Only Show My Debuffs on Target", false) end
 function UF:IsRaidShowAggro() return FT.IsEnabled("Show Raid Aggro Indicator", true) end
 function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator", true) end
 function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges", true) end
