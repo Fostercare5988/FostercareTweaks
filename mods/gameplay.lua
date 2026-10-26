@@ -72,3 +72,42 @@ module.enable = function(self)
     end)
 end
 end
+
+do
+-- ClassicAPI's autoDismount, autoUnshift and autoStand act before spell casts
+-- only (docs/API.md, "Cast settings"). This covers the other actions: melee
+-- attack, flight masters, talking to NPCs and items in a form. Spell errors
+-- stay with ClassicAPI, so nothing dismounts twice.
+
+local module = FT:register({
+    title = "Auto Dismount",
+    description = "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item.",
+    category = "General",
+    enabled = true,
+})
+
+local MOUNTED, SHIFTED = {}, {}
+for _, key in ipairs({ "ERR_ATTACK_MOUNTED", "ERR_TAXIPLAYERALREADYMOUNTED" }) do
+    if _G[key] then MOUNTED[_G[key]] = true end
+end
+for _, key in ipairs({ "ERR_TAXIPLAYERSHAPESHIFTED", "ERR_CANT_INTERACT_SHAPESHIFTED",
+    "ERR_NO_ITEMS_WHILE_SHAPESHIFTED", "SPELL_FAILED_NO_ITEMS_WHILE_SHAPESHIFTED",
+    "ERR_MOUNT_SHAPESHIFTED", "ERR_NOT_WHILE_SHAPESHIFTED", "SPELL_NOT_SHAPESHIFTED" }) do
+    if _G[key] then SHIFTED[_G[key]] = true end
+end
+
+module.enable = function(self)
+    local frame = CreateFrame("Frame", "FCTweaksAutoDismount")
+    frame:RegisterEvent("UI_ERROR_MESSAGE")
+    -- Only the player's own actions raise these errors. Act on the current
+    -- state, so an error that arrives after a dismount does nothing.
+    FT.SetEventHandler(frame, function(_, ev, message)
+        if MOUNTED[message] then
+            if IsMounted() then Dismount() end
+        elseif SHIFTED[message] then
+            -- CancelShapeshiftForm also ends Stealth; a rogue keeps it.
+            if GetShapeshiftFormID() ~= 0 and not IsStealthed() then CancelShapeshiftForm() end
+        end
+    end)
+end
+end

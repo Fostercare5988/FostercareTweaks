@@ -18,8 +18,9 @@ WoW 1.12.1 build 5875 with **ClassicAPI 1.17.7+**, **SuperWoW 2.2+**, **NamPower
 and **UnitXP SP3 v89+** loaded.
 
 FostercareTweaks leaves to ClassicAPI what ClassicAPI does: dismounting when you
-cast (its AddOn Options), remembering players' classes (its player cache) and the
-raid frames' click actions.
+cast (its AddOn Options; FostercareTweaks covers attacks, flights, NPCs and
+items), remembering players' classes (its player cache) and the raid frames'
+click actions.
 
 ## Installation
 
