@@ -328,6 +328,36 @@ local function UpdateButtonAuras(btn)
     LayoutButtonAuras(btn)
 end
 
+-- ClassicAPI 1.17.10 UNIT_AURA_DELTA: a refresh or stack change rewrites its
+-- own entry and badge; neither moves it in the priority order. A new or lost
+-- aura, or a change with no entry, reads the button's auras again.
+local deltaAura = {}
+local function PatchCandidate(btn, kind, d)
+    local list = btn[kind .. "Candidates"]
+    for i = 1, #list do
+        local a = list[i]
+        if a.id == d.spellId and a.source == d.sourceUnit then
+            a.stacks, a.duration, a.expiration = d.applications, d.duration, d.expirationTime
+            local badge = btn[kind .. "Badges"][i]
+            if badge and badge:IsShown() and badge.spellId == a.id then
+                ShowRaidAura(btn, badge, a, badge.fctSize, badge.fctX, badge.fctY)
+            end
+            return true
+        end
+    end
+end
+
+local function UpdateChangedRaidAuras(btn, info)
+    local ids = info.updatedAuraInstanceIDs
+    if testMode or not ids or info.isFullUpdate or info.addedAuraInstanceIDs or info.removedAuraInstanceIDs
+        or not btn.unit or not btn:IsShown() then return false end
+    for i = 1, #ids do
+        local d = C_UnitAuras.GetAuraDataByAuraInstanceID(btn.unit, ids[i], deltaAura)
+        if not d or not PatchCandidate(btn, d.isHelpful and "buff" or "debuff", d) then return false end
+    end
+    return true
+end
+
 -- targetTargetGUID: the enemy target's target, false when there is none,
 -- nil to look it up here.
 local function UpdateButtonAggro(btn, targetTargetGUID)
@@ -879,7 +909,7 @@ local function FlushRoster()
     UF:UpdateGroupRoster()
 end
 
-local function RaidFrame_OnEvent(_, ev, a1)
+local function RaidFrame_OnEvent(_, ev, a1, a2)
 
     if ev == "RAID_ROSTER_UPDATE" or ev == "PARTY_MEMBERS_CHANGED" or ev == "PLAYER_ENTERING_WORLD" then
         if not rosterPending then
@@ -899,8 +929,8 @@ local function RaidFrame_OnEvent(_, ev, a1)
         elseif ev == "UNIT_MANA" or ev == "UNIT_RAGE" or ev == "UNIT_ENERGY" or ev == "UNIT_FOCUS" or
                ev == "UNIT_MAXMANA" or ev == "UNIT_DISPLAYPOWER" then
             UpdateButtonPower(btn)
-        elseif ev == "UNIT_AURA" then
-            UpdateButtonAuras(btn)
+        elseif ev == "UNIT_AURA_DELTA" then
+            if not UpdateChangedRaidAuras(btn, a2) then UpdateButtonAuras(btn) end
         elseif ev == "UNIT_NAME_UPDATE" or ev == "UNIT_LEVEL" then
             UpdateButtonHealth(btn)
         end
@@ -1095,9 +1125,11 @@ end
 --------------------------------------------------------------------------------
 
 -- Members only: ClassicAPI also fires unit events for every nameplate, raid
--- mark and focus token, which these buttons never show.
+-- mark and focus token, which these buttons never show. UNIT_AURA_DELTA is a
+-- ClassicAPI event that RegisterUnitEvent is not documented to filter; the
+-- handler's unitToButton lookup drops other tokens.
 local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_ENERGY",
-    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_AURA", "UNIT_NAME_UPDATE", "UNIT_LEVEL" }
+    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL" }
 local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
 for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = RAID_UNITS[i] end
 
@@ -1118,6 +1150,7 @@ function UF:EnableRaidFrames(deferRoster)
     raidFrame:RegisterEvent("RAID_TARGET_UPDATE")
     raidFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     for _, ev in ipairs(MEMBER_EVENTS) do raidFrame:RegisterUnitEvent(ev, unpack(MEMBER_UNITS)) end
+    raidFrame:RegisterEvent("UNIT_AURA_DELTA")
     FT.SetEventHandler(raidFrame, RaidFrame_OnEvent)
 
     -- Dimension edits must size the buttons before refreshing the roster once.

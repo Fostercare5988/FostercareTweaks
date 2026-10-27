@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (58 tests).
+VanillaForge (66 tests).
 
 | Area | Files |
 | --- | --- |
@@ -39,6 +39,11 @@ Things to know:
   with no native numbers. On a native `Cooldown` it stands aside while the
   player's `countdownForCooldowns` CVar is 1 (read, never set). Frames with
   their own timer text call `SetHideCountdownNumbers(true)` (aura buttons).
+- Auras follow ClassicAPI's `UNIT_AURA_DELTA` (1.17.10), not `UNIT_AURA`: a
+  refresh or stack change rewrites only its own button or raid badge, matched
+  by spell and caster; a new or lost aura, a full update or an unmatched change
+  reads the row again. Registered with `RegisterEvent`: `RegisterUnitEvent` is
+  not documented to filter it, so the handlers drop other tokens.
 - Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
 - Unit events: ClassicAPI fires each one once per token, including every
   `nameplateN`, `markN` and `focus`. Register `UNIT_*` events with

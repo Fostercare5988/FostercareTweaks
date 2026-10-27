@@ -1,13 +1,13 @@
 ## X-Website: https://github.com/Fostercare5988
 ## X-Maintainer: Fostercare5988
 ## Interface: 11200
-## X-ClassicAPI-Min-Version: 1.17.9
+## X-ClassicAPI-Min-Version: 1.17.10
 ## Dependencies: !!!ClassicAPI
 ## Title: |cffff9e38FostercareTweaks|r |cffffd6a8[Fostercare5988]|r
-## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.17.9+, SuperWoW 2.2+, NamPower 4.6.2+ and UnitXP SP3 v89+.
+## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI 1.17.10+, SuperWoW 2.2+, NamPower 4.6.2+ and UnitXP SP3 v89+.
 ## OptionalDeps: GearRack, AutoBG, AtlasLoot, Turtle_GroupUI
 ## Author: Fostercare5988
-## Version: 1.6.0
+## Version: 1.6.1
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 

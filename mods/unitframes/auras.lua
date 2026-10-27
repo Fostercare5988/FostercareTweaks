@@ -425,6 +425,16 @@ end
 
 Auras.UpdateAuraTiming = UpdateAuraTiming
 
+local function SetCount(btn, count)
+    if count and count > 1 then
+        btn.countText:SetText(count)
+        btn.countText:Show()
+    else
+        btn.countText:SetText("")
+        btn.countText:Hide()
+    end
+end
+
 function Auras:UpdateContainer(container)
     if not container or not container.unit then return end
     local unit = container.unit
@@ -500,15 +510,7 @@ function Auras:UpdateContainer(container)
                         btn.icon:SetTexture(icon)
                         btn.icon:SetVertexColor(1, 1, 1, 1)
                         btn:SetAlpha(1.0)
-
-                        if count and count > 1 then
-                            btn.countText:SetText(count)
-                            btn.countText:Show()
-                        else
-                            btn.countText:SetText("")
-                            btn.countText:Hide()
-                        end
-
+                        SetCount(btn, count)
                         UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
 
                         Auras.StyleBorder(btn)
@@ -558,15 +560,7 @@ function Auras:UpdateContainer(container)
                         btn.icon:SetTexture(icon)
                         btn.icon:SetVertexColor(1, 1, 1, 1)
                         btn:SetAlpha(1.0)
-
-                        if count and count > 1 then
-                            btn.countText:SetText(count)
-                            btn.countText:Show()
-                        else
-                            btn.countText:SetText("")
-                            btn.countText:Hide()
-                        end
-
+                        SetCount(btn, count)
                         Auras.StyleBorder(btn, dispelType)
 
                         UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
@@ -749,9 +743,10 @@ FT.hooksecurefunc("TargetDebuffButton_Update", SuppressBlizzTargetAuras)
 -- Independent event dispatcher for standard target aura updating
 local auraEventFrame = CreateFrame("Frame", "FCTweaksAuraEventFrame", UIParent)
 auraEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
--- Player and target only: ClassicAPI also fires UNIT_AURA for the target's
--- raid, nameplate and mark tokens, which would rescan it again.
-auraEventFrame:RegisterUnitEvent("UNIT_AURA", "player", "target")
+-- ClassicAPI 1.17.10 sends UNIT_AURA_DELTA once per unit token per frame with
+-- the changed aura instance IDs. Only "player" and "target" are read; the
+-- target's raid, nameplate and mark copies are ignored.
+auraEventFrame:RegisterEvent("UNIT_AURA_DELTA")
 
 function Auras:UpdateBlizzPlayerAuras()
     if not PlayerFrame then return end
@@ -767,28 +762,40 @@ function Auras:UpdateBlizzPlayerAuras()
     Auras:UpdateContainer(container)
 end
 
--- UNIT_AURA(player) and PLAYER_AURAS_CHANGED can report the same change.
--- Rescan the player's auras once, on the next frame.
-local playerAurasPending
-local function FlushPlayerAuras()
-    playerAurasPending = nil
-    Auras:UpdateBlizzPlayerAuras()
-end
-local function QueuePlayerAuras()
-    if playerAurasPending then return end
-    playerAurasPending = true
-    C_Timer.After(0, FlushPlayerAuras)
+-- A refresh or stack change rewrites only its own button. A new or lost aura
+-- moves the others, so the row is read again; so is a change with no button.
+local deltaAura = {}
+local function UpdateChangedAuras(container, unit, ids)
+    local now, unitGUID = GetTime(), UnitGUID(unit)
+    for i = 1, #ids do
+        local d = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, ids[i], deltaAura)
+        if not d then return false end
+        local found
+        for _, btn in ipairs(d.isHelpful and container.buffButtons or container.debuffButtons) do
+            if btn.isOccupied and btn.spellId == d.spellId and btn.timerSourceGUID == d.sourceGUID then
+                SetCount(btn, d.applications)
+                UpdateAuraTiming(btn, unitGUID, d.spellId, d.sourceUnit, d.duration, d.expirationTime, now)
+                found = true
+                break
+            end
+        end
+        if not found then return false end
+    end
+    return true
 end
 
-auraEventFrame:RegisterEvent("PLAYER_AURAS_CHANGED")
 auraEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-FT.SetEventHandler(auraEventFrame, function(_, ev, unit)
-    if ev == "PLAYER_TARGET_CHANGED" then
+FT.SetEventHandler(auraEventFrame, function(_, ev, unit, info)
+    if ev == "UNIT_AURA_DELTA" then
+        if unit ~= "player" and unit ~= "target" then return end
+        local container = unit == "player" and UF.blizzPlayerAuras or UF.blizzTargetAuras
+        local updated = info.updatedAuraInstanceIDs
+        if container and container:IsShown() and updated and not info.isFullUpdate
+            and not info.addedAuraInstanceIDs and not info.removedAuraInstanceIDs
+            and UpdateChangedAuras(container, unit, updated) then return end
+        if unit == "player" then Auras:UpdateBlizzPlayerAuras() else Auras:UpdateBlizzTargetAuras() end
+    elseif ev == "PLAYER_TARGET_CHANGED" then
         Auras:UpdateBlizzTargetAuras()
-    elseif ev == "UNIT_AURA" then
-        if unit == "target" then Auras:UpdateBlizzTargetAuras() else QueuePlayerAuras() end
-    elseif ev == "PLAYER_AURAS_CHANGED" then
-        QueuePlayerAuras()
     elseif ev == "PLAYER_ENTERING_WORLD" then
         Auras:UpdateBlizzPlayerAuras()
         Auras:UpdateBlizzTargetAuras()
