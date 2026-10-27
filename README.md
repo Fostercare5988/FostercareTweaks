@@ -14,7 +14,7 @@ interface tweaks for World of Warcraft 1.12.1.
 
 ## Requirements
 
-WoW 1.12.1 build 5875 with **ClassicAPI 1.17.7+**, **SuperWoW 2.2+**, **NamPower 4.6.2+**
+WoW 1.12.1 build 5875 with **ClassicAPI 1.17.9+**, **SuperWoW 2.2+**, **NamPower 4.6.2+**
 and **UnitXP SP3 v89+** loaded.
 
 FostercareTweaks leaves to ClassicAPI what ClassicAPI does: dismounting when you
