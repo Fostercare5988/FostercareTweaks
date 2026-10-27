@@ -2,30 +2,29 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/cooldown-numbers.lua
+-- The stock buttons' cooldowns are 1.12 Models, which get no native numbers.
+-- A native Cooldown draws its own while the player's countdownForCooldowns
+-- CVar is 1 (ClassicAPI 1.17.9); ours stand aside there.
 local TimeConvert = FT.TimeConvert
 
 local module = FT:register({
     title = "Cooldown Numbers",
-    description = "Show remaining cooldown time; GearRack keeps its own enabled counters.",
+    description = "Show remaining cooldown time; GearRack keeps its own counters.",
     category = "Action Bar",
     always = true,
 })
 
 local active = {}
-local owned = setmetatable({}, { __mode = "k" })
 local ticker
 local enabled
-local function NumberOwner(cooldown)
-    local name = cooldown:GetName()
-    if not name then return end
-    -- Remember native timer state even if GearRack has not finished loading yet.
-    if string.match(name,"^GearRackUIInv%d+Cooldown$") or string.match(name,"^GearRackUIMenu%d+Cooldown$")
-        or string.match(name,"^GearRackTrinkets_Trinket[01]Cooldown$") or string.match(name,"^GearRackTrinkets_Menu%d+Cooldown$") then
-        return name
-    end
+
+-- GearRack always draws the numbers on its equipment and trinket buttons.
+local function GearRackNumbers(cooldown)
+    return GearRack and type(GearRack.HasCooldownNumbers)=="function" and GearRack.HasCooldownNumbers(cooldown:GetName())
 end
-local function OwnerHasNumbers(owner)
-    return owner and GearRack and type(GearRack.HasCooldownNumbers)=="function" and GearRack.HasCooldownNumbers(owner)
+local function NativeNumbers(cooldown)
+    return cooldown:GetObjectType() == "Cooldown" and not cooldown:GetHideCountdownNumbers()
+        and GetCVar("countdownForCooldowns") == "1"
 end
 local function StopNumber(frame)
     active[frame] = nil
@@ -40,7 +39,7 @@ local function UpdateNumber(frame, now)
         StopNumber(frame)
         return
     end
-    if parent.noCooldownCount or parent.readable or OwnerHasNumbers(frame.numberOwner) then
+    if parent.noCooldownCount or parent.readable then
         StopNumber(frame)
         return
     end
@@ -108,23 +107,9 @@ end
 
 local function SetCooldown(cdFrame, start, duration, enable)
     if not cdFrame then return end
-    local owner = NumberOwner(cdFrame)
-    if owner then
-        -- Remember only native cooldown arguments, never another addon's queue
-        -- or text. A live option change can hand the same timer back to us.
-        local state = owned[cdFrame]
-        if not state then state = {}; owned[cdFrame] = state end
-        state.owner, state.start, state.duration, state.enable = owner, start, duration, enable
-    end
-    if cdFrame.noCooldownCount or cdFrame.readable or OwnerHasNumbers(owner) then
+    if not duration or duration < 2 or cdFrame.noCooldownCount or cdFrame.readable
+        or NativeNumbers(cdFrame) or GearRackNumbers(cdFrame) then
         if cdFrame.cooldowntext then StopNumber(cdFrame.cooldowntext) end
-        return
-    end
-
-    if not duration or duration < 2 then
-        if cdFrame.cooldowntext then
-            StopNumber(cdFrame.cooldowntext)
-        end
         return
     end
 
@@ -133,8 +118,7 @@ local function SetCooldown(cdFrame, start, duration, enable)
     end
 
     if cdFrame.cooldowntext then
-        cdFrame.cooldowntext.numberOwner = owner
-        if start and start > 0 and duration and duration > 0 and (not enable or enable > 0) then
+        if start and start > 0 and (not enable or enable > 0) then
             cdFrame.cooldowntext.start = start
             cdFrame.cooldowntext.duration = duration
             active[cdFrame.cooldowntext] = true
@@ -144,12 +128,6 @@ local function SetCooldown(cdFrame, start, duration, enable)
         else
             StopNumber(cdFrame.cooldowntext)
         end
-    end
-end
-
-local function ReconcileOwner()
-    for cooldown, state in pairs(owned) do
-        SetCooldown(cooldown, state.start, state.duration, state.enable)
     end
 end
 
@@ -178,32 +156,12 @@ local function SyncActiveCooldowns()
             end
         end
     end
-
-    -- Sync GearRack trinket buttons when GearRack delegates number rendering.
-    if _G["GearRackTrinkets_Trinket0Cooldown"] and not OwnerHasNumbers("GearRackTrinkets_Trinket0Cooldown") then
-        local start, duration, enable = GetInventoryItemCooldown("player", 13)
-        if start and duration and duration >= 2 and enable and enable > 0 then
-            SetCooldown(_G["GearRackTrinkets_Trinket0Cooldown"], start, duration, enable)
-        end
-    end
-    if _G["GearRackTrinkets_Trinket1Cooldown"] and not OwnerHasNumbers("GearRackTrinkets_Trinket1Cooldown") then
-        local start, duration, enable = GetInventoryItemCooldown("player", 14)
-        if start and duration and duration >= 2 and enable and enable > 0 then
-            SetCooldown(_G["GearRackTrinkets_Trinket1Cooldown"], start, duration, enable)
-        end
-    end
 end
 
 module.enable = function(self)
     if enabled then return end
     enabled = true
     FT.hooksecurefunc("CooldownFrame_SetTimer", SetCooldown)
-    FT.HookAddonOrVariable("GearRack", function()
-        if type(GearRack.CooldownOptionsChanged)=="function" then
-            FT.hooksecurefunc(GearRack,"CooldownOptionsChanged",ReconcileOwner)
-        end
-        ReconcileOwner()
-    end)
 
     local syncFrame = CreateFrame("Frame", "FCTweaksCooldownSync", UIParent)
     syncFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

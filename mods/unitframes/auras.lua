@@ -125,8 +125,7 @@ local function ResetAuraButton(btn)
     end
 
     if btn.cooldown then
-        CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-        btn.cooldown:Hide()
+        btn.cooldown:Clear()
     end
 
     if btn.icon then
@@ -156,8 +155,7 @@ local function UpdateAuraTimes()
             end
             btn.lastTimeKey = false
             btn.durationText:Hide()
-            CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0)
-            btn.cooldown:Hide()
+            btn.cooldown:Clear()
             btn.sweepStart, btn.sweepDuration = nil, nil
         elseif btn:IsVisible() then
             local key = not btn.fctHideDuration and AuraTimeKey(remaining) or false
@@ -214,6 +212,8 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.cooldown:SetReverse(true)
     btn.cooldown:EnableMouse(false)
     btn.cooldown.noCooldownCount = true
+    -- The duration text is ours; native numbers would print over it.
+    btn.cooldown:SetHideCountdownNumbers(true)
     btn.cooldown:Hide()
 
     -- Overlay text frame (drawn above cooldown)
@@ -391,7 +391,7 @@ function Auras:ApplyAuraSize(container, newSize)
 end
 
 -- Preserve a running sweep until its actual aura identity/timing changes.
--- CooldownFrame_SetTimer restarts the sweep on every call.
+-- SetCooldown restarts the sweep on every call.
 local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expiration, now)
     local sourceGUID = source and UnitGUID(source)
     local changedIdentity = btn.timerUnitGUID ~= unitGUID or btn.timerSpellID ~= spellID or
@@ -401,14 +401,13 @@ local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expira
     local start = timed and expiration - duration
     if timed then
         if changedIdentity or btn.sweepStart ~= start or btn.sweepDuration ~= duration then
-            CooldownFrame_SetTimer(btn.cooldown, start, duration, 1)
+            btn.cooldown:SetCooldown(start, duration)
             btn.sweepStart, btn.sweepDuration = start, duration
         end
         btn.cooldown:Show()
     else
-        if btn.sweepStart then CooldownFrame_SetTimer(btn.cooldown, 0, 0, 0) end
+        btn.cooldown:Clear()
         btn.sweepStart, btn.sweepDuration = nil, nil
-        btn.cooldown:Hide()
     end
     -- Presence comes from the aura query. Unknown remote timing stays unknown.
     local key = timed and not btn.fctHideDuration and AuraTimeKey(expiration - now) or false

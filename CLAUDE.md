@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (47 tests).
+VanillaForge (58 tests).
 
 | Area | Files |
 | --- | --- |
@@ -35,6 +35,10 @@ Things to know:
   of them; restore unchanged lines' endings before committing.
 - No code for addons that are not installed (Cartographer, Gatherer, Prat,
   quest addons and the like); `tools/find_holes.py` reports any that return.
+- Cooldown Numbers is for the stock buttons' cooldowns, which are 1.12 Models
+  with no native numbers. On a native `Cooldown` it stands aside while the
+  player's `countdownForCooldowns` CVar is 1 (read, never set). Frames with
+  their own timer text call `SetHideCountdownNumbers(true)` (aura buttons).
 - Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
 - Unit events: ClassicAPI fires each one once per token, including every
   `nameplateN`, `markN` and `focus`. Register `UNIT_*` events with
