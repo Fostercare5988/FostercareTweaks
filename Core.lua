@@ -2,8 +2,8 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Requires ClassicAPI 1.17.10+ (UNIT_AURA_DELTA, Cooldown methods) and SuperWoW 2.2+.
-local MIN_CLASSIC_API = 11710
+-- Requires ClassicAPI 1.17.11+ (UNIT_AURA_DELTA, Cooldown methods) and SuperWoW 2.2+.
+local MIN_CLASSIC_API = 11711
 local superMajor, superMinor = string.match(tostring(SUPERWOW_VERSION or ""), "^(%d+)%.(%d+)")
 superMajor, superMinor = tonumber(superMajor), tonumber(superMinor)
 local hasSuperWoW = superMajor and (superMajor > 2 or (superMajor == 2 and superMinor >= 2))
@@ -12,7 +12,7 @@ if type(CLASSIC_API_VERSION) ~= "number" or not hasSuperWoW or
    CLASSIC_API_VERSION < MIN_CLASSIC_API then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.17.10+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI (v1.17.11+) & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -129,7 +129,7 @@ SLASH_FOSTERCARETWEAKS2 = "/ftweaks"
 SLASH_FOSTERCARETWEAKS3 = "/fostercaretweaks"
 
 SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
-    local cmd = { strsplit(" ", msg or "") }
+    local cmd = strsplittable(" ", msg or "")
     if cmd[1] == "reset" then
         FostercareTweaks_Config.overwrites = {}
         ReloadUI()
