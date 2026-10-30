@@ -206,7 +206,7 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.border:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
     btn.border:Hide()
 
-    -- Native cooldown sweep (ClassicAPI 1.17.1+); it follows the button's size.
+    -- Native cooldown sweep (ClassicAPI); it follows the button's size.
     btn.cooldown = CreateFrame("Cooldown", name .. "CD", btn, "CooldownFrameTemplate")
     btn.cooldown:SetAllPoints(btn)
     btn.cooldown:SetReverse(true)
