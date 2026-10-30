@@ -371,7 +371,7 @@ function FT.OpenSettings(name)
     end
 end
 
--- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI 1.17.2+).
+-- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI).
 local entry = CreateFrame("Frame", "FostercareTweaksOptionsEntry")
 entry.name = "FostercareTweaks"
 local entryTitle = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
