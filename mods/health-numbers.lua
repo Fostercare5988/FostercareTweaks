@@ -67,7 +67,7 @@ module.enable = function(self)
         local str = bar.TextString
         local unit = bar.unit or ((bar == PlayerFrameHealthBar or bar == PlayerFrameManaBar) and "player")
         if str and unit then
-            bar.lockShow = 42
+            bar.lockShow = 1
             bar:Show()
 
             local cur, max, minVal

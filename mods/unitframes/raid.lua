@@ -114,8 +114,7 @@ local function UpdateButtonPower(btn)
     btn.powerBar:SetStatusBarColor(pc.r, pc.g, pc.b, 1)
 end
 
--- Healing and protective buffs, matched by English client names. Spell IDs
--- would be locale-proof but are not yet verified against the deployed DBC.
+-- Healing and protective buffs, matched by client name (the client is English only).
 local HOT_NAMES = {
     ["Renew"] = true, ["Rejuvenation"] = true, ["Regrowth"] = true,
     ["Power Word: Shield"] = true, ["Healing Way"] = true,
