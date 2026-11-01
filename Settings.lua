@@ -117,6 +117,8 @@ UI.Heading(general, "Minimap", LEFT, -348)
 Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", LEFT, -368)
 Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", LEFT, -394)
 Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", LEFT, -420)
+Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", LEFT, -454,
+    function(value) FT.ApplyMinimapScale(value, true) end, nil, Times)
 UI.Heading(general, "Chat", RIGHT, -98)
 Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
     "Scroll with the mouse wheel, keep the last channel, repeat messages with the arrow keys.", RIGHT, -118)

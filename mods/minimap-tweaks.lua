@@ -4,6 +4,52 @@ if not FT then return end
 -- Related modules; settings remain independent.
 
 do
+-- Minimap size: the whole cluster (map, zone text, clock, buttons) scales.
+local module = FT:register({
+    title = "MiniMap Size",
+    description = "Scale the mini map and the buttons around it.",
+    category = "World & MiniMap", always = true,
+})
+
+-- The icons that Ctrl+Shift can move, with their saved-position keys.
+local MOVED = {
+    { "FCTweaksMinimapClock", "minimap_clock" }, { "MiniMapMailFrame", "minimap_mail" },
+    { "MiniMapBattlefieldFrame", "minimap_bg" }, { "MiniMapTrackingFrame", "minimap_tracking" },
+}
+
+-- keep: the player changed the size now, so moved icons stay where they are on
+-- screen (their saved offsets are in the cluster's own units). At login the
+-- saved offsets already match the saved size.
+function FT.ApplyMinimapScale(scale, keep)
+    if math.abs(MinimapCluster:GetScale() - scale) < 0.001 then return end
+    local saved = FostercareTweaks_Config.unitframe_positions
+    local spots = {}
+    if keep and saved then
+        for _, entry in ipairs(MOVED) do
+            local frame = _G[entry[1]]
+            if frame and saved[entry[2]] and frame:GetLeft() then
+                local eff = frame:GetEffectiveScale()
+                spots[entry[2]] = { frame, frame:GetLeft() * eff, frame:GetTop() * eff }
+            end
+        end
+    end
+    MinimapCluster:SetScale(scale)
+    for key, spot in pairs(spots) do
+        local frame = spot[1]
+        local eff = frame:GetEffectiveScale()
+        local ratio = UIParent:GetEffectiveScale() / eff
+        saved[key] = { point = "TOPLEFT", relPoint = "TOPLEFT",
+            x = spot[2] / eff - UIParent:GetLeft() * ratio, y = spot[3] / eff - UIParent:GetTop() * ratio }
+        FT.RestoreFramePosition(frame, key)
+    end
+end
+
+module.enable = function(self)
+    FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
+end
+end
+
+do
 -- Adds a 24h clock to the MiniMap (Rule AP-10, Rule C3 compliant)
 
 
