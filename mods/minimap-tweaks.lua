@@ -29,12 +29,27 @@ end
 -- These children of the map keep their own size when the map is scaled.
 local FIXED_SIZE = { "FCTweaksMinimapClock", "MiniMapMailFrame", "MiniMapBattlefieldFrame", "MiniMapTrackingFrame" }
 
+-- The map, not the larger cluster frame behind it, is what must stay on screen.
+-- The cluster has a gap above and beside the map that would otherwise stop the map
+-- short of the screen edge. Each inset is the map's edge minus the cluster's edge,
+-- in the cluster's units (ClassicAPI frame:SetClampRectInsets).
+function FT.ClampMinimapToMap()
+    if not Minimap:GetLeft() or not MinimapCluster:GetLeft() then return end
+    local e = Minimap:GetEffectiveScale() / MinimapCluster:GetEffectiveScale()
+    MinimapCluster:SetClampRectInsets(
+        Minimap:GetLeft() * e - MinimapCluster:GetLeft(),
+        Minimap:GetRight() * e - MinimapCluster:GetRight(),
+        Minimap:GetTop() * e - MinimapCluster:GetTop(),
+        Minimap:GetBottom() * e - MinimapCluster:GetBottom())
+end
+
 function FT.ApplyMinimapScale(scale)
     Minimap:SetScale(scale)
     for _, name in ipairs(FIXED_SIZE) do
         local frame = _G[name]
         if frame then frame:SetScale(1 / scale) end
     end
+    FT.ClampMinimapToMap()
 end
 
 module.enable = function(self)
@@ -47,6 +62,8 @@ module.enable = function(self)
     FT.RegisterFrameMover(MinimapCluster, "minimap", "Minimap")
     MinimapCluster.fctMover:ClearAllPoints()
     MinimapCluster.fctMover:SetAllPoints(Minimap)
+    -- Once the map's own layout is final (the square map re-anchors it).
+    C_Timer.After(0, FT.ClampMinimapToMap)
 end
 end
 
