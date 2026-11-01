@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (93 tests).
+VanillaForge (100 tests).
 
 | Area | Files |
 | --- | --- |
@@ -33,6 +33,11 @@ Things to know:
   `owner:Click(GetMouseButtonClicked())`.
 - `mods/unitframes/raid.lua` mixes CRLF and LF lines. Editors may rewrite all
   of them; restore unchanged lines' endings before committing.
+- A character with no saved settings starts from `Defaults.lua`, the author's own
+  settings (Core.lua copies it once and leaves out pixel positions this screen
+  cannot hold). Generated, never edited by hand: after changing settings in game and
+  `/reload`, run `python -B tools/export_defaults.py --tweaks "<SavedVariables>/FostercareTweaks.lua"`
+  in VanillaForge. Chat history and the extra bars' spell lists are not included.
 - No code for addons that are not installed (Cartographer, Gatherer, Prat,
   quest addons and the like); `tools/find_holes.py` reports any that return.
 - Cooldown Numbers is for the stock buttons' cooldowns, which are 1.12 Models

@@ -33,8 +33,35 @@ FT.register = function(self, mod)
     return mod
 end
 
+-- A character with no saved settings starts from Defaults.lua (the author's own
+-- settings). Pixel positions that would fall outside this screen are left out, so
+-- a smaller screen never gets a frame it cannot reach.
+local function DeepCopy(value)
+    if type(value) ~= "table" then return value end
+    local copy = {}
+    for key, inner in pairs(value) do copy[key] = DeepCopy(inner) end
+    return copy
+end
+
+local function NewConfig()
+    local config = DeepCopy(FostercareTweaks_Defaults)
+    if type(config) ~= "table" then return {} end
+    local width, height = GetScreenWidth(), GetScreenHeight()
+    for key, p in pairs(config.unitframe_positions or {}) do
+        if not (math.abs(p.x) <= width - 20 and p.y > 20 - height and p.y < 150) then
+            config.unitframe_positions[key] = nil
+        end
+    end
+    for _, bar in pairs(config.actionbars and config.actionbars.bars or {}) do
+        if bar.x and not (bar.y and bar.x >= 0 and bar.x <= width - 20 and bar.y >= 0 and bar.y <= height - 20) then
+            bar.x, bar.y = nil, nil
+        end
+    end
+    return config
+end
+
 local function EnsureSavedTables()
-    if type(FostercareTweaks_Config) ~= "table" then FostercareTweaks_Config = {} end
+    if type(FostercareTweaks_Config) ~= "table" then FostercareTweaks_Config = NewConfig() end
     if type(FostercareTweaks_Config.overwrites) ~= "table" then FostercareTweaks_Config.overwrites = {} end
     if type(FostercareTweaks_Cache) ~= "table" then FostercareTweaks_Cache = {} end
     -- Player classes come from ClassicAPI's C_PlayerCache; drop our saved list.
