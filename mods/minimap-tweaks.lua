@@ -4,11 +4,12 @@ if not FT then return end
 -- Related modules; settings remain independent.
 
 do
--- Minimap size: the map (and its border) scales; the clock and the icons keep
--- their own size and sit where the player put them.
+-- Minimap size: the map frame itself is resized (140 px at 1x). Everything on it
+-- (the clock, the buttons, the tray's addon buttons) keeps its own size, which a
+-- scale would have changed.
 local module = FT:register({
     title = "MiniMap Size",
-    description = "Scale the mini map. Its clock and buttons keep their size.",
+    description = "Make the mini map larger or smaller. Its clock and buttons keep their size.",
     category = "World & MiniMap", always = true,
 })
 
@@ -26,9 +27,6 @@ function FT.PlaceOnMinimap(frame, key, oldKey, label)
     FT.RegisterFrameMover(frame, key, label, Minimap)
 end
 
--- These children of the map keep their own size when the map is scaled.
-local FIXED_SIZE = { "FCTweaksMinimapClock", "MiniMapMailFrame", "MiniMapBattlefieldFrame", "MiniMapTrackingFrame" }
-
 -- The map, not the larger cluster frame behind it, is what must stay on screen.
 -- The cluster has a gap above and beside the map that would otherwise stop the map
 -- short of the screen edge. Each inset is the map's edge minus the cluster's edge,
@@ -44,10 +42,10 @@ function FT.ClampMinimapToMap()
 end
 
 function FT.ApplyMinimapScale(scale)
-    Minimap:SetScale(scale)
-    for _, name in ipairs(FIXED_SIZE) do
-        local frame = _G[name]
-        if frame then frame:SetScale(1 / scale) end
+    local size = 140 * scale
+    if math.abs(Minimap:GetWidth() - size) >= 0.5 then
+        Minimap:SetWidth(size); Minimap:SetHeight(size)
+        Minimap:SetZoom(Minimap:GetZoom())   -- redraw at the new size
     end
     FT.ClampMinimapToMap()
 end
@@ -86,7 +84,6 @@ module.enable = function(self)
     clock:SetWidth(50)
     clock:SetHeight(23)
     clock:EnableMouse(true)
-    clock:SetScale(1 / Minimap:GetScale())
 
     -- Plain text in the zone text's font and gold: no border, no background.
     clock.text = clock:CreateFontString(nil, "OVERLAY", "GameFontNormal")
