@@ -253,14 +253,16 @@ local function ShowRaidAura(btn, badge, a, size, x, y)
         -- Keep two labels apart on larger indicators. On tiny indicators preserve
         -- stacks and the sweep; expose remaining seconds in the aura tooltip.
         badge.fctHideDuration = size < 8 or (stacked and size < 14)
+        badge.cooldown:SetHideCountdownNumbers(badge.fctHideDuration)
         local font = math.min(size, math.max(6, math.min(9, stacked and math.floor(size / 2) or size - 1)))
-        UF.SetFontSize(badge.countText, font); UF.SetFontSize(badge.durationText, font)
+        local number = badge.cooldown:GetCountdownFontString()
+        UF.SetFontSize(badge.countText, font); UF.SetFontSize(number, font)
         badge.countText:ClearAllPoints(); badge.countText:SetPoint("BOTTOMRIGHT", badge, "BOTTOMRIGHT", 0, 0)
         badge.countText:SetWidth(size); badge.countText:SetHeight(font)
-        badge.durationText:ClearAllPoints()
-        if stacked then badge.durationText:SetPoint("TOP", badge, "TOP", 0, 0)
-        else badge.durationText:SetPoint("CENTER", badge, "CENTER", 0, 0) end
-        badge.durationText:SetWidth(size); badge.durationText:SetHeight(font)
+        number:ClearAllPoints()
+        if stacked then number:SetPoint("TOP", badge, "TOP", 0, 0)
+        else number:SetPoint("CENTER", badge, "CENTER", 0, 0) end
+        number:SetWidth(size); number:SetHeight(font)
     end
     badge.unit, badge.auraIndex, badge.spellId = btn.unit, a.index, a.id
     badge.icon:SetTexture(a.icon)

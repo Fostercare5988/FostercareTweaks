@@ -61,42 +61,20 @@ local function AuraButton_OnClick()
     end
 end
 
-local function FormatAuraTime(remaining)
-    if remaining < 5 then
-        return "|cffff4444" .. string.format("%.1f", remaining) .. "|r"
-    elseif remaining < 10 then
-        return "|cffffff33" .. math.ceil(remaining) .. "|r"
-    elseif remaining < 60 then
-        return "|cffffffff" .. math.ceil(remaining) .. "|r"
-    elseif remaining < 3600 then
-        return "|cffffffff" .. math.ceil(remaining / 60) .. "m|r"
-    elseif remaining < 86400 then
-        return "|cffffffff" .. math.ceil(remaining / 3600) .. "h|r"
-    else
-        return "|cffffffff" .. math.ceil(remaining / 86400) .. "d|r"
-    end
-end
-
--- Which label FormatAuraTime would show: tenths under 5 s, then seconds,
--- minutes, hours and days. The label is built only when this changes.
-local function AuraTimeKey(remaining)
-    if remaining < 5 then return math.floor(remaining * 10 + 0.5) - 100 end
-    if remaining < 60 then return math.ceil(remaining) end
-    if remaining < 3600 then return 100 + math.ceil(remaining / 60) end
-    if remaining < 86400 then return 1000 + math.ceil(remaining / 3600) end
-    return 10000 + math.ceil(remaining / 86400)
-end
-
-local timedButtons = {}
-local auraTicker
-local tickerGeneration = 0
-
-local function StopIdleAuraTicker()
-    if auraTicker and not next(timedButtons) then
-        auraTicker:Cancel()
-        auraTicker = nil
-        tickerGeneration = tickerGeneration + 1
-    end
+-- The client counts the aura time down on each button's Cooldown (CVar
+-- countdownForCooldowns 1): tenths in red under 5 s, yellow under 10 s, then
+-- whole seconds, minutes, hours and days. One formatter serves every button.
+local AURA_TIME = C_StringUtil.CreateNumericRuleFormatter()
+do
+    local Up = Enum.NumericRuleFormatRounding.Up
+    AURA_TIME:SetBreakpoints({
+        { threshold = 0, step = 0.1, rounding = Up, format = "|cffff4444%.1f|r" },
+        { threshold = 5, step = 1, rounding = Up, format = "|cffffff33%d|r" },
+        { threshold = 10, step = 1, rounding = Up, format = "|cffffffff%d|r" },
+        { threshold = 60, format = "|cffffffff%dm|r", components = { { div = 60, step = 1, rounding = Up } } },
+        { threshold = 3600, format = "|cffffffff%dh|r", components = { { div = 3600, step = 1, rounding = Up } } },
+        { threshold = 86400, format = "|cffffffff%dd|r", components = { { div = 86400, step = 1, rounding = Up } } },
+    })
 end
 
 local function ResetAuraButton(btn)
@@ -107,17 +85,9 @@ local function ResetAuraButton(btn)
     btn.spellId = nil
     btn.expirationTime = nil
     btn.duration = nil
-    btn.lastTimeText, btn.lastTimeKey = nil, nil
     btn.timerUnitGUID, btn.timerSpellID, btn.timerSourceGUID = nil, nil, nil
     btn.sweepStart, btn.sweepDuration = nil, nil
     btn.isOccupied = false
-    timedButtons[btn] = nil
-    StopIdleAuraTicker()
-
-    if btn.durationText then
-        btn.durationText:SetText("")
-        btn.durationText:Hide()
-    end
 
     if btn.countText then
         btn.countText:SetText("")
@@ -139,49 +109,6 @@ local function ResetAuraButton(btn)
 
     btn:SetAlpha(1.0)
     btn:Hide()
-end
-
-local function UpdateAuraTimes()
-    local now = GetTime()
-    for btn in pairs(timedButtons) do
-        local remaining = (btn.expirationTime or 0) - now
-        if remaining <= 0 then
-            -- Hidden containers must release expired timers too. Aura presence
-            -- still belongs to the next authoritative query, not this clock.
-            timedButtons[btn] = nil
-            if btn.lastTimeText ~= "" then
-                btn.lastTimeText = ""
-                btn.durationText:SetText("")
-            end
-            btn.lastTimeKey = false
-            btn.durationText:Hide()
-            btn.cooldown:Clear()
-            btn.sweepStart, btn.sweepDuration = nil, nil
-        elseif btn:IsVisible() then
-            local key = not btn.fctHideDuration and AuraTimeKey(remaining) or false
-            if btn.lastTimeKey ~= key then
-                btn.lastTimeKey = key
-                local text = key and FormatAuraTime(remaining) or ""
-                if btn.lastTimeText ~= text then
-                    btn.lastTimeText = text
-                    btn.durationText:SetText(text)
-                end
-                if text ~= "" then btn.durationText:Show() else btn.durationText:Hide() end
-            end
-        end
-    end
-    StopIdleAuraTicker()
-end
-
-local function EnsureAuraTicker()
-    if auraTicker then return end
-    tickerGeneration = tickerGeneration + 1
-    local generation = tickerGeneration
-    auraTicker = C_Timer.NewTicker(0.1, function()
-        -- A cancelled callback may already have been dispatched by the host.
-        if generation ~= tickerGeneration then return end
-        UpdateAuraTimes()
-    end)
 end
 
 local function CreateAuraButton(parent, name, size, isDebuff)
@@ -212,8 +139,14 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.cooldown:SetReverse(true)
     btn.cooldown:EnableMouse(false)
     btn.cooldown.noCooldownCount = true
-    -- The duration text is ours; native numbers would print over it.
-    btn.cooldown:SetHideCountdownNumbers(true)
+    -- No flash at the end; the countdown numbers come from AURA_TIME.
+    btn.cooldown:SetDrawBling(false)
+    btn.cooldown:SetCountdownFormatter(AURA_TIME)
+    local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+    local number = btn.cooldown:GetCountdownFontString()
+    number:SetFont(font, (size <= 20 and 9 or 11), "OUTLINE")
+    number:SetShadowColor(0, 0, 0, 1)
+    number:SetShadowOffset(0.8, -0.8)
     btn.cooldown:Hide()
 
     -- Overlay text frame (drawn above cooldown)
@@ -221,14 +154,6 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.textFrame:SetAllPoints(btn)
     btn.textFrame:EnableMouse(false)
     btn.textFrame:SetFrameLevel(btn:GetFrameLevel() + 5)
-
-    btn.durationText = btn.textFrame:CreateFontString(nil, "OVERLAY")
-    local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-    btn.durationText:SetFont(font, (size <= 20 and 9 or 11), "OUTLINE")
-    btn.durationText:SetPoint("CENTER", btn.textFrame, "CENTER", 0, 0)
-    btn.durationText:SetJustifyH("CENTER")
-    btn.durationText:SetShadowColor(0, 0, 0, 1)
-    btn.durationText:SetShadowOffset(0.8, -0.8)
 
     btn.countText = btn.textFrame:CreateFontString(nil, "OVERLAY")
     btn.countText:SetFont(font, (size <= 20 and 9 or 10), "OUTLINE")
@@ -410,17 +335,7 @@ local function UpdateAuraTiming(btn, unitGUID, spellID, source, duration, expira
         btn.sweepStart, btn.sweepDuration = nil, nil
     end
     -- Presence comes from the aura query. Unknown remote timing stays unknown.
-    local key = timed and not btn.fctHideDuration and AuraTimeKey(expiration - now) or false
-    btn.lastTimeKey = key
-    local label = key and FormatAuraTime(expiration - now) or ""
-    if btn.lastTimeText ~= label then
-        btn.lastTimeText = label
-        btn.durationText:SetText(label)
-    end
-    if label ~= "" then btn.durationText:Show() else btn.durationText:Hide() end
     btn.expirationTime, btn.duration = timed and expiration or 0, timed and duration or 0
-    timedButtons[btn] = timed and true or nil
-    if timed then EnsureAuraTicker() else StopIdleAuraTicker() end
 end
 
 Auras.UpdateAuraTiming = UpdateAuraTiming
