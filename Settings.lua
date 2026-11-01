@@ -83,7 +83,7 @@ end
 local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
-    { label = "General", height = 572 },
+    { label = "General", height = 590 },
     { label = "Unit Frames", height = 452 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
@@ -131,10 +131,12 @@ Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue in
 UI.Heading(general, "World map", RIGHT, -288)
 Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -308)
 Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -334)
-UI.Heading(general, "Moving", RIGHT, -374)
-Hint(general, MOVE_HINT, RIGHT, -394)
+Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel", RIGHT, -364,
+    function() FT.ApplyWorldMapScale() end, nil, Times)
+UI.Heading(general, "Moving", RIGHT, -420)
+Hint(general, MOVE_HINT, RIGHT, -440)
 Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
-    LEFT, -500, 444)
+    LEFT, -518, 444)
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]

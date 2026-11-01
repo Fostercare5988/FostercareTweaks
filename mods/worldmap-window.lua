@@ -5,6 +5,47 @@ if not FT then return end
 -- button) replaced our own map window on 2026-11-01.
 
 do
+-- The client's windowed map draws at a fixed size (WORLDMAP_WINDOWED_SCALE).
+-- Its size is a setting: the slider in the window, or Ctrl + mouse wheel on
+-- the map. The full-screen map is never scaled.
+local module = FT:register({
+    title = "WorldMap Window Size",
+    description = "Size of the game's windowed world map.",
+    category = "World & MiniMap", always = true,
+    config = { worldmap_scale = 1 },
+})
+local MIN, MAX = 0.6, 2
+
+-- Native Minimize/Maximize keep the frame's own scale; set it after them.
+-- A size change keeps the window's centre where it is on screen.
+local function Apply()
+    local scale = WORLDMAP_WINDOWED == 1 and FT.GetNumber("worldmap_scale", 1, MIN, MAX) or 1
+    local old = WorldMapFrame:GetScale()
+    if old == scale then return end
+    local x, y = WorldMapFrame:GetCenter()
+    WorldMapFrame:SetScale(scale)
+    if x and WORLDMAP_WINDOWED == 1 then
+        WorldMapFrame:ClearAllPoints()
+        WorldMapFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x * old / scale, y * old / scale)
+    end
+end
+FT.ApplyWorldMapScale = Apply
+
+module.enable = function()
+    FT.hooksecurefunc("WorldMapFrame_Minimize", Apply)
+    FT.hooksecurefunc("WorldMapFrame_Maximize", Apply)
+    WorldMapFrame:EnableMouseWheel(true)
+    FT.HookScript(WorldMapFrame, "OnMouseWheel", function(_, delta)
+        if WORLDMAP_WINDOWED ~= 1 or not IsControlKeyDown() then return end
+        local value = FT.GetNumber("worldmap_scale", 1, MIN, MAX) + (delta or 0) * 0.05
+        FT.SetOverride("worldmap_scale", math.max(MIN, math.min(MAX, math.floor(value * 20 + 0.5) / 20)))
+        Apply()
+    end)
+    Apply()
+end
+end
+
+do
 -- Adds player and cursor coordinates to the World Map (Rule AP-10, Rule C3, Rule C12 compliant)
 
 
