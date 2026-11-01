@@ -82,8 +82,8 @@ FostercareTweaks_Defaults = {
                 columns = 4,
                 scale = 0.9,
                 visible = true,
-                x = 1555.11,
-                y = 208.95,
+                x = 1108,
+                y = 116.67,
             },
             left = {
                 scale = 0.9,
@@ -115,7 +115,7 @@ FostercareTweaks_Defaults = {
         energytick_contrast = 1,
         energytick_flash = 1,
         energytick_width = 6,
-        minimap_scale = 1.35,
+        minimap_scale = 1.6,
         raid_aura_spacing = 2,
         raid_buff_count = 8,
         raid_buff_size = 14,
@@ -130,38 +130,38 @@ FostercareTweaks_Defaults = {
         minimap = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1511,
-            y = 116.08,
+            x = 1495,
+            y = 34.52,
         },
-        minimap_bg_r = {
+        minimap_bg_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 42.59,
-            y = -220.19,
+            x = 1476.65,
+            y = -224.29,
         },
-        minimap_clock_r = {
+        minimap_clock_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 65.14,
-            y = -195.63,
+            x = 1541.86,
+            y = -223.51,
         },
-        minimap_mail_r = {
+        minimap_mail_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 4.9,
-            y = -198.22,
+            x = 1449.62,
+            y = -35.82,
         },
-        minimap_tracking_r = {
+        minimap_tracking_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = -75.92,
-            y = 19.16,
+            x = 1446.13,
+            y = 0.95,
         },
-        minimap_zone = {
+        minimap_zone_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 8.89,
-            y = -270.04,
+            x = 1589.61,
+            y = -228.47,
         },
         raid = {
             point = "TOPLEFT",
@@ -172,20 +172,20 @@ FostercareTweaks_Defaults = {
         standard_global_buffs = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1195.11,
-            y = -52.01,
+            x = 1164.89,
+            y = -52.96,
         },
         standard_global_debuffs = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1193.89,
-            y = -213.37,
+            x = 1164.56,
+            y = -238.1,
         },
         standard_player = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 592.22,
-            y = -618.71,
+            x = 594.67,
+            y = -595.21,
         },
         standard_player_buffs = {
             point = "TOPLEFT",
@@ -196,14 +196,14 @@ FostercareTweaks_Defaults = {
         standard_target = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 872.89,
-            y = -619.66,
+            x = 871.22,
+            y = -596.21,
         },
         standard_target_buffs = {
             point = "TOPRIGHT",
             relPoint = "TOPRIGHT",
-            x = 44.78,
-            y = 45.82,
+            x = 27,
+            y = 51.53,
         },
         standard_target_debuffs = {
             point = "TOPRIGHT",
