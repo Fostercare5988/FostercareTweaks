@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (140 tests).
+VanillaForge (144 tests).
 
 | Area | Files |
 | --- | --- |
@@ -80,7 +80,9 @@ Things to know:
   the frames' last 30 lines with `GetMessageInfo`; at login it puts them
   back with `BackFillMessage`, marked so they are not dimmed again.
 - The client has its own windowed world map (`WORLDMAP_WINDOWED`, the map's
-  minimize button); our map window was retired on 2026-11-01.
+  minimize button); our map window was retired on 2026-11-01. Its size is
+  ours (`worldmap_scale`, slider and Ctrl+wheel), set on `WorldMapFrame`
+  after the native Minimize/Maximize; full screen stays at 1.
 - Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
   runs on a timer must not build strings or tables each tick.
 - On 2026-10-21 the stutter profiler showed no FostercareTweaks handler over

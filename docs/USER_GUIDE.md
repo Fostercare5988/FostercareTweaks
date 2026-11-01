@@ -34,6 +34,7 @@ for a short explanation; a dimmed control waits for the switch above it.
   the player cache in **AddOn Options > ClassicAPI**.
 - **World map**: coordinates, and group members in class colors. For a map
   window, use the minimize button on the map (the game's own windowed map).
+  **Map window size** sets its size; so does **Ctrl + mouse wheel** on the map.
 
 ## Unit Frames
 
