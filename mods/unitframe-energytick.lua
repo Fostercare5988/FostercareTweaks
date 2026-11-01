@@ -8,10 +8,6 @@ local module = FT:register({
     config = { energytick_contrast = 1, energytick_flash = 1, energytick_width = 3 },
 })
 
-local function GetActivePowerBar()
-    return PlayerFrameManaBar
-end
-
 module.enable = function(self)
     if self.frame then return end
     local driver = CreateFrame("Frame", "FCTweaksEnergyTick", UIParent)
@@ -20,6 +16,8 @@ module.enable = function(self)
     local visuals = {}
     local function HideVisuals()
         if not driver.currentVisuals then return end
+        -- Hidden glow and core are shown again by the next layout.
+        driver.layout = nil
         for _, texture in ipairs(driver.currentVisuals) do
             if texture:IsShown() then texture:Hide() end
         end
@@ -52,8 +50,9 @@ module.enable = function(self)
         driver.currentBar, driver.currentVisuals = bar, textures
         driver.pulse, driver.spark, driver.glow, driver.core = unpack(textures)
         driver.sparkW, driver.sparkH, driver.lastX, driver.pulseAlpha = nil, nil, nil, 0
+        driver.layout = nil
     end
-    SelectVisuals(GetActivePowerBar())
+    SelectVisuals(PlayerFrameManaBar)
 
     local generation, power, lastValue = 0, nil, nil
     local pendingGain, pendingAt, pendingMax, pendingValue, settling = 0, nil, 0, 0, false
@@ -69,15 +68,14 @@ module.enable = function(self)
         end
     end
     Refresh = function()
-        local bar = GetActivePowerBar()
-        Watch(PlayerFrame); Watch(PlayerFrameManaBar)
+        local bar = PlayerFrameManaBar
         local active = FostercareTweaks_Config["Show Energy Ticks"] ~= 0 and bar and bar:IsVisible() and
             not UnitIsDeadOrGhost("player") and (power == 0 or power == 3) and driver.start
         local width, height = 0, 0
         if active then width, height = bar:GetWidth(), bar:GetHeight() end
         active = active and width > 0 and height > 0
         if not active then
-            driver:SetScript("OnUpdate", nil)
+            if driver.running then driver.running = nil; driver:SetScript("OnUpdate", nil) end
             HideVisuals()
             return
         end
@@ -91,26 +89,34 @@ module.enable = function(self)
         driver.pixelScale = bar:GetEffectiveScale()
         -- White core and additive glow stay inside even a one-pixel bar.
         local coreW = math.min(FT.GetNumber("energytick_width", 3, 2, 6), sparkW)
-        driver.core:SetWidth(coreW); driver.core:SetHeight(sparkH)
-        driver.glow:SetWidth(math.min(coreW + 2, sparkW)); driver.glow:SetHeight(sparkH)
-        driver.pulse:SetWidth(width); driver.pulse:SetHeight(math.min(4, height))
-        driver.pulse:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
         local contrast = FT.GetNumber("energytick_contrast", 1, 0, 1) ~= 0
-        if contrast then
-            driver.spark:SetVertexColor(1, 1, 1, 0.9)
-            driver.glow:Show(); driver.core:Show()
-        else
-            driver.spark:SetVertexColor(1, 1, 1, 1)
-            driver.glow:Hide(); driver.core:Hide()
+        -- Most calls are power changes: the widgets are written only when the
+        -- bar's size or the settings changed.
+        if not driver.layout or driver.layoutW ~= width or driver.layoutH ~= height
+            or driver.layoutCore ~= coreW or driver.layoutContrast ~= contrast then
+            driver.layout, driver.layoutW, driver.layoutH = true, width, height
+            driver.layoutCore, driver.layoutContrast = coreW, contrast
+            driver.core:SetWidth(coreW); driver.core:SetHeight(sparkH)
+            driver.glow:SetWidth(math.min(coreW + 2, sparkW)); driver.glow:SetHeight(sparkH)
+            driver.pulse:SetWidth(width); driver.pulse:SetHeight(math.min(4, height))
+            driver.pulse:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+            if contrast then
+                driver.spark:SetVertexColor(1, 1, 1, 0.9)
+                driver.glow:Show(); driver.core:Show()
+            else
+                driver.spark:SetVertexColor(1, 1, 1, 1)
+                driver.glow:Hide(); driver.core:Hide()
+            end
+            driver.lastX = nil
         end
         driver.flash = FT.GetNumber("energytick_flash", 1, 0, 1) ~= 0
-        driver.lastX = nil
-        driver:SetScript("OnUpdate", Render)
+        if not driver.running then driver.running = true; driver:SetScript("OnUpdate", Render) end
         Render()
         if not driver.pulse:IsShown() then driver.pulse:Show() end
         if not driver.spark:IsShown() then driver.spark:Show() end
     end
     FT.RefreshEnergyTick = Refresh
+    Watch(PlayerFrame); Watch(PlayerFrameManaBar)
     local function Reset()
         generation = generation + 1
         power, lastValue = UnitPowerType("player"), UnitMana("player")
@@ -157,7 +163,7 @@ module.enable = function(self)
     end
     FT.SetEventHandler(driver, function(_, ev, unit, caster, spellID, ptype, amount)
         if ev == "SPELL_ENERGIZE_ON_SELF" then
-            -- NamPower v4.6.2+ supplies target, caster, spell, resource, amount.
+            -- NamPower supplies target, caster, spell, resource, amount.
             if unit == UnitGUID("player") and ptype == power and amount and amount > 0 then
                 local now = GetTime()
                 if not spellAt or now - spellAt > 0.35 then spellGain = 0 end
@@ -191,13 +197,7 @@ module.enable = function(self)
     -- The player's power only; ClassicAPI also fires these for every group,
     -- nameplate and mark token.
     for _, ev in ipairs({"UNIT_DISPLAYPOWER", "UNIT_POWER_UPDATE"}) do driver:RegisterUnitEvent(ev, "player") end
-    if GetNampowerVersion then
-        local major, minor, patch = GetNampowerVersion()
-        if type(major) == "number" and type(minor) == "number" and type(patch) == "number" and
-            (major > 4 or (major == 4 and (minor > 6 or (minor == 6 and patch >= 2)))) then
-            driver:RegisterEvent("SPELL_ENERGIZE_ON_SELF")
-        end
-    end
+    driver:RegisterEvent("SPELL_ENERGIZE_ON_SELF")
     -- Frame-rate independent animation: no resource, visibility or size polling.
     -- Replace the same anchor only when the visible screen pixel changes.
     Render = function()

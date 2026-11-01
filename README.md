@@ -14,8 +14,8 @@ interface tweaks for World of Warcraft 1.12.1.
 
 ## Requirements
 
-WoW 1.12.1 build 5875 with **ClassicAPI**, **SuperWoW 2.2+**, **NamPower 4.6.2+**
-and **UnitXP SP3 v89+** loaded.
+WoW 1.12.1 build 5875 with **ClassicAPI**, **SuperWoW**, **NamPower** and
+**UnitXP SP3** loaded.
 
 FostercareTweaks leaves to ClassicAPI what ClassicAPI does: dismounting when you
 cast (its AddOn Options; FostercareTweaks covers attacks, flights, NPCs and

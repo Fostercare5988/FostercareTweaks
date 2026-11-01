@@ -88,7 +88,6 @@ local module = FT:register({
 
 module.enable = function(self)
     local clock = CreateFrame("Frame", "FCTweaksMinimapClock", Minimap)
-    _G.MinimapClock = clock
     clock:SetFrameLevel(64)
     clock:SetPoint("BOTTOM", MinimapCluster, "BOTTOM", 8, 4)  -- under the map border, not over the map
     clock:SetWidth(50)
@@ -114,8 +113,11 @@ module.enable = function(self)
         end
     end
 
-    UpdateClock()
-    C_Timer.NewTicker(1.0, UpdateClock)
+    local function Tick()
+        UpdateClock()
+        C_Timer.After(61 - tonumber(date("%S")), Tick)
+    end
+    Tick()
 
     clock:SetScript("OnEnter", function()
         local h, m = GetGameTime()

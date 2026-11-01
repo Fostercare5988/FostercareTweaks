@@ -2,15 +2,12 @@
 -- World of Warcraft 1.12.1 Enhanced Client
 -- Maintainer: Fostercare5988
 
--- Requires ClassicAPI (UNIT_AURA_DELTA, Cooldown methods) and SuperWoW 2.2+.
-local superMajor, superMinor = string.match(tostring(SUPERWOW_VERSION or ""), "^(%d+)%.(%d+)")
-superMajor, superMinor = tonumber(superMajor), tonumber(superMinor)
-local hasSuperWoW = superMajor and (superMajor > 2 or (superMajor == 2 and superMinor >= 2))
-
-if type(CLASSIC_API_VERSION) ~= "number" or not hasSuperWoW then
+-- Requires ClassicAPI and SuperWoW, checked as loaded; VanillaForge's
+-- UPSTREAM_VERSIONS.json names the versions.
+if type(CLASSIC_API_VERSION) ~= "number" or not SUPERWOW_VERSION then
     if DEFAULT_CHAT_FRAME then
         DEFAULT_CHAT_FRAME:AddMessage(
-            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI & SuperWoW (v2.2+)! Please ensure both DLLs are loaded.",
+            "|cffff2020[Fatal Error]|r FostercareTweaks requires ClassicAPI & SuperWoW! Please ensure both DLLs are loaded.",
             1, 0.2, 0.2
         )
     end
@@ -129,10 +126,9 @@ function FT:Initialize()
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
         if (mod.always or FostercareTweaks_Config[title] == 1) and mod.enable then
-            local success, err = pcall(mod.enable, mod)
-            if not success and DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cffff2020[FostercareTweaks Error]|r Failed to enable '" .. tostring(title) .. "': " .. tostring(err), 1, 0.3, 0.3)
-            end
+            -- One module's error does not stop the others, and it reaches the
+            -- error handler (!ErrorLog) with its stack.
+            xpcall(function() mod:enable() end, geterrorhandler())
         end
     end
     if self.ActionBars then self.ActionBars:Initialize() end

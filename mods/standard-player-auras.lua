@@ -4,7 +4,7 @@ if not FT then return end
 -- Original 1.12 top-right auras: keep Blizzard icons, handlers and timers.
 -- BuffFrame and TemporaryEnchantFrame stay active as native update controllers.
 local module = FT:register({
-    title = "Blizzard Aura Controls", category = "Unit Frames", enabled = true,
+    title = "Blizzard Aura Controls", category = "Unit Frames", always = true,
     description = "Separate visibility and Ctrl+Shift movement for the original player aura areas.",
 })
 local areas

@@ -65,14 +65,6 @@ castbar.text:SetPoint("CENTER", castbar, "CENTER", 0, 0)
 local font, size = castbar.text:GetFont()
 castbar.text:SetFont(font, (size or 12) - 2, "THINOUTLINE")
 
-local function GetCastingInfo(unit)
-    return C_Spell.UnitCastingInfo(unit)
-end
-
-local function GetChannelInfo(unit)
-    return C_Spell.UnitChannelInfo(unit)
-end
-
 local function StopCast()
     if castbar:IsShown() then
         castbar:Hide()
@@ -135,7 +127,7 @@ end
 
 local function UpdateCast()
     if FostercareTweaks_Config["Enemy Castbars"] == 0 then StopCast(); return end
-    if not UnitExists("target") or (UnitIsDeadOrGhost and UnitIsDeadOrGhost("target")) then
+    if not UnitExists("target") or UnitIsDeadOrGhost("target") then
         StopCast()
         return
     end
@@ -144,10 +136,10 @@ local function UpdateCast()
     local isChannel = false
 
     local isTradeskill, castID
-    cast, displayName, texture, startTime, endTime, isTradeskill, castID, notInterruptible = GetCastingInfo("target")
+    cast, displayName, texture, startTime, endTime, isTradeskill, castID, notInterruptible = C_Spell.UnitCastingInfo("target")
 
     if not cast then
-        cast, displayName, texture, startTime, endTime, isTradeskill, notInterruptible = GetChannelInfo("target")
+        cast, displayName, texture, startTime, endTime, isTradeskill, notInterruptible = C_Spell.UnitChannelInfo("target")
         if cast then isChannel = true end
     end
 
@@ -237,7 +229,6 @@ module.enable = function(self)
 end
 
 -- Switching this view off removes its subscriptions and animation immediately.
--- The plate view has an independent owner and setting.
 module.apply = function(self)
     if not self.frame then
         if FT.IsEnabled(self.title) then self:enable() end

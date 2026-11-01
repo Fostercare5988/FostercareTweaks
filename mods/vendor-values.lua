@@ -67,8 +67,9 @@ module.enable = function(self)
     end
   end)
 
+  local slotInfo = {}
   hooksecurefunc(GameTooltip, "SetBagItem", function(frame, bag, slot)
-    local info = C_Container.GetContainerItemInfo(bag, slot)
+    local info = C_Container.GetContainerItemInfo(bag, slot, slotInfo)
     ShowValue(frame, info and info.hyperlink, info and info.stackCount, false)
   end)
   hooksecurefunc(GameTooltip, "SetQuestLogItem", function(frame, itemType, index)

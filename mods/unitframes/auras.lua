@@ -513,11 +513,12 @@ local function IsAreaDragging(frame)
     return frame and frame.fctMover and frame.fctMover.dragging
 end
 
+local KINDS = { "buff", "debuff" }
 function Auras:LayoutContainer(container)
     if not container then return end
     local options = container.options or {}
     local spacing, perRow = options.spacing or 3, options.perRow or 8
-    for _, kind in ipairs({ "buff", "debuff" }) do
+    for _, kind in ipairs(KINDS) do
         local row, buttons = container[kind .. "Frame"], container[kind .. "Buttons"]
         if row then
             local count = 0

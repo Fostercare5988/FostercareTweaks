@@ -3,7 +3,7 @@ local UF = FT and FT.UnitFrames
 if not UF or not GroupFrame or type(GroupFrame_OnEvent) ~= "function" or
    type(GroupFrame_Toggle) ~= "function" then return end
 
--- The compact grid may be baked into FrameXML or loaded as Turtle_GroupUI.
+-- The compact grid (Turtle_GroupUI) is part of this client's FrameXML.
 -- Keep its saved preference; suspend only the native work while our grid owns it.
 local owned, initialized = false, false
 local suspended

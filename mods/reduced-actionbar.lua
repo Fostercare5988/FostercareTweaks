@@ -104,7 +104,7 @@ module.enable = function(self)
     end
 
     local function ManageReducedFramePositions()
-        if MultiBarBottomLeft then
+        if not FT.ActionBars.enabled then
             MultiBarBottomLeft:ClearAllPoints()
             if MainMenuExpBar:IsVisible() or ReputationWatchBar:IsVisible() then
                 local anchor = (GetWatchedFactionInfo and GetWatchedFactionInfo() and ReputationWatchBar) or MainMenuExpBar

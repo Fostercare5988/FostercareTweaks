@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (101 tests).
+VanillaForge (119 tests).
 
 | Area | Files |
 | --- | --- |
@@ -61,6 +61,14 @@ Things to know:
 - Auto Dismount covers what ClassicAPI's `autoDismount`/`autoUnshift`/
   `autoStand` miss (they act before spell casts only): melee attack, flight
   masters, NPCs and items in a form. Spell errors stay with ClassicAPI.
+- A module's `enable` runs under `xpcall` with the error handler, so an
+  error reaches !ErrorLog with its stack and the other modules still start.
+- Other addons use one interface: ActionBarProfiles calls
+  `FostercareTweaks.ExtraActions` (`GetProfile`, `ValidateProfile`,
+  `ApplyProfile`, `ProfileVersion` 1). AutoLazy's minimap tray skips
+  `FCTweaksMinimapClock` by name. Nothing else reads Tweaks' globals.
+- Equip Compare follows `OnTooltipSetItem` (it fires for every item set on
+  a tooltip) and `MODIFIER_STATE_CHANGED`; it never polls the tooltip.
 - Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
   runs on a timer must not build strings or tables each tick.
 - On 2026-10-21 the stutter profiler showed no FostercareTweaks handler over
