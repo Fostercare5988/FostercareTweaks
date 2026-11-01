@@ -619,24 +619,17 @@ end
 -- 4. Group Grid Construction & Subgroup Layout
 --------------------------------------------------------------------------------
 
-local rangeTicker
-local function CheckRanges()
-    -- The current enemy and its target are shared by this synchronous pass.
+-- Aggro changes with your enemy target or its target, not with the roster:
+-- PLAYER_TARGET_CHANGED and UNIT_TARGET "target" refresh every button once.
+-- The enemy's target is read once for the whole pass.
+local function RefreshAggro()
     local targetTargetGUID = false
     if UF:IsRaidShowAggro() and UnitExists("target") and UnitCanAttack("player", "target") then
         targetTargetGUID = UnitGUID("targettarget") or false
     end
     for _, button in pairs(unitToButton) do
-        UpdateButtonRange(button)
-        -- Aggro can change without a roster, leader or raid-mark event. Reuse
-        -- the visible group's bounded reconciliation; do not reflow its text.
         UpdateButtonAggro(button, targetTargetGUID)
     end
-end
-local function SyncRangeTicker()
-    if raidFrame and raidFrame:IsShown() and not testMode then
-        if not rangeTicker then rangeTicker = C_Timer.NewTicker(0.25, CheckRanges) end
-    elseif rangeTicker then rangeTicker:Cancel(); rangeTicker = nil end
 end
 
 local function ConstructRaidGrid()
@@ -649,8 +642,6 @@ local function ConstructRaidGrid()
     local colSpacingX = dims.spacingX
 
     raidFrame = CreateFrame("Frame", "FCTweaksRaidFrame", UIParent)
-    raidFrame:SetScript("OnShow", SyncRangeTicker)
-    raidFrame:SetScript("OnHide", SyncRangeTicker)
     raidFrame:SetWidth(8 * (btnW + colSpacingX) - colSpacingX)
     raidFrame:SetHeight(5 * (btnH + btnSpacingY) - btnSpacingY + 16)
     raidFrame:SetFrameStrata("LOW")
@@ -897,7 +888,6 @@ function UF:UpdateGroupRoster(force)
     else
         raidFrame:Hide()
     end
-    SyncRangeTicker()
 end
 
 -- Roster events come in bursts (a battleground filling, members zoning);
@@ -915,6 +905,8 @@ local function RaidFrame_OnEvent(_, ev, a1, a2)
             rosterPending = true
             C_Timer.After(0, FlushRoster)
         end
+    elseif ev == "PLAYER_TARGET_CHANGED" or ev == "UNIT_TARGET" then
+        RefreshAggro()
     elseif ev == "RAID_TARGET_UPDATE" or ev == "PARTY_LEADER_CHANGED" then
         for _, btn in pairs(unitToButton) do
             UpdateButtonIndicators(btn)
@@ -924,6 +916,7 @@ local function RaidFrame_OnEvent(_, ev, a1, a2)
         local btn = unitToButton[a1]
         if ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
             UpdateButtonHealth(btn)
+        elseif ev == "UNIT_IN_RANGE_UPDATE" or ev == "UNIT_CONNECTION" then
             UpdateButtonRange(btn)
         elseif ev == "UNIT_MANA" or ev == "UNIT_RAGE" or ev == "UNIT_ENERGY" or ev == "UNIT_FOCUS" or
                ev == "UNIT_MAXMANA" or ev == "UNIT_DISPLAYPOWER" then
@@ -948,7 +941,6 @@ function UF:ToggleRaidTest()
     if UF.SyncNativeGroupFrames then
         UF:SyncNativeGroupFrames(testMode or UF:GetGroupDimensions().enabled)
     end
-    SyncRangeTicker()
 
     local bc = UF.backdropBorderColor or { 0.15, 0.15, 0.15, 0.9 }
 
@@ -1128,7 +1120,8 @@ end
 -- ClassicAPI event that RegisterUnitEvent is not documented to filter; the
 -- handler's unitToButton lookup drops other tokens.
 local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_ENERGY",
-    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL" }
+    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL",
+    "UNIT_IN_RANGE_UPDATE", "UNIT_CONNECTION" }
 local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
 for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = RAID_UNITS[i] end
 
@@ -1148,6 +1141,8 @@ function UF:EnableRaidFrames(deferRoster)
     raidFrame:RegisterEvent("PARTY_LEADER_CHANGED")
     raidFrame:RegisterEvent("RAID_TARGET_UPDATE")
     raidFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    raidFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    raidFrame:RegisterUnitEvent("UNIT_TARGET", "target")
     for _, ev in ipairs(MEMBER_EVENTS) do raidFrame:RegisterUnitEvent(ev, unpack(MEMBER_UNITS)) end
     raidFrame:RegisterEvent("UNIT_AURA_DELTA")
     FT.SetEventHandler(raidFrame, RaidFrame_OnEvent)
