@@ -6,25 +6,32 @@ if not FT then return end
 do
 -- Minimap size: the map frame itself is resized (140 px at 1x). Everything on it
 -- (the clock, the buttons, the tray's addon buttons) keeps its own size, which a
--- scale would have changed.
+-- scale would have changed. The map, the zone name, the clock and each icon are
+-- placed on their own, against the screen: resizing or moving one never moves
+-- another.
 local module = FT:register({
     title = "MiniMap Size",
     description = "Make the mini map larger or smaller. Its clock and buttons keep their size.",
     category = "World & MiniMap", always = true,
 })
 
--- Put a minimap icon where the player left it. Positions are kept relative to the
--- map, so the icon follows the map when it is dragged. A position saved against
--- the screen by an earlier version (oldKey) is converted once.
-function FT.PlaceOnMinimap(frame, key, oldKey, label)
+-- Put a minimap piece (zone name, clock, icon) where the player left it, against
+-- the screen. Earlier versions saved it against the map's corner (mapKey), which
+-- moved when the map was resized: that position is converted once, keeping the
+-- piece where it stands now. screenKey is an older screen position, same meaning.
+function FT.PlaceIcon(frame, key, label, screenKey, mapKey)
     local saved = FostercareTweaks_Config.unitframe_positions
-    if oldKey and saved and saved[oldKey] and not saved[key] then
-        FT.RestoreFramePosition(frame, oldKey)
-        FT.SaveFramePosition(frame, key, Minimap)
-        if saved[key] then saved[oldKey] = nil end
+    if saved and not saved[key] then
+        if mapKey and saved[mapKey] then
+            FT.RestoreFramePosition(frame, mapKey, Minimap)
+            FT.SaveFramePosition(frame, key)
+            if saved[key] then saved[mapKey] = nil end
+        elseif screenKey and saved[screenKey] then
+            saved[key], saved[screenKey] = saved[screenKey], nil
+        end
     end
-    FT.RestoreFramePosition(frame, key, Minimap)
-    FT.RegisterFrameMover(frame, key, label, Minimap)
+    FT.RestoreFramePosition(frame, key)
+    FT.RegisterFrameMover(frame, key, label)
 end
 
 -- The map, not the larger cluster frame behind it, is what must stay on screen.
@@ -92,7 +99,7 @@ module.enable = function(self)
     clock.text:SetAllPoints(clock)
 
     -- Ctrl+Shift moves it; placed once the map's own layout is final.
-    C_Timer.After(0, function() FT.PlaceOnMinimap(clock, "minimap_clock_r", "minimap_clock", "Clock") end)
+    C_Timer.After(0, function() FT.PlaceIcon(clock, "minimap_clock_s", "Clock", "minimap_clock", "minimap_clock_r") end)
 
     -- Refresh only when the displayed minute changes.
     local function UpdateClock()
@@ -182,8 +189,8 @@ module.enable = function(self)
     if MinimapToggleButton then MinimapToggleButton:Hide() end
     if MinimapZoneTextButton then
         MinimapZoneTextButton:SetPoint("CENTER", 7, 85)
-        -- The zone name moves with Ctrl+Shift like the icons, and then follows the map.
-        C_Timer.After(0, function() FT.PlaceOnMinimap(MinimapZoneTextButton, "minimap_zone", nil, "Zone") end)
+        -- The zone name moves with Ctrl+Shift like the icons.
+        C_Timer.After(0, function() FT.PlaceIcon(MinimapZoneTextButton, "minimap_zone_s", "Zone", nil, "minimap_zone") end)
     end
 
     -- Ctrl+Shift moves the mail, battleground and tracking (herbs, ...) icons. The
@@ -198,7 +205,7 @@ module.enable = function(self)
         local frame = _G[entry[1]]
         if frame then
             frame.fctRestoreShown = entry[4]
-            C_Timer.After(0, function() FT.PlaceOnMinimap(frame, entry[2] .. "_r", entry[2], entry[3]) end)
+            C_Timer.After(0, function() FT.PlaceIcon(frame, entry[2] .. "_s", entry[3], entry[2], entry[2] .. "_r") end)
         end
     end
 
