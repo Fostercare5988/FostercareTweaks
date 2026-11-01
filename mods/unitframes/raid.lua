@@ -918,8 +918,7 @@ local function RaidFrame_OnEvent(_, ev, a1, a2)
             UpdateButtonHealth(btn)
         elseif ev == "UNIT_IN_RANGE_UPDATE" or ev == "UNIT_CONNECTION" then
             UpdateButtonRange(btn)
-        elseif ev == "UNIT_MANA" or ev == "UNIT_RAGE" or ev == "UNIT_ENERGY" or ev == "UNIT_FOCUS" or
-               ev == "UNIT_MAXMANA" or ev == "UNIT_DISPLAYPOWER" then
+        elseif ev == "UNIT_POWER_UPDATE" or ev == "UNIT_MAXPOWER" or ev == "UNIT_DISPLAYPOWER" then
             UpdateButtonPower(btn)
         elseif ev == "UNIT_AURA_DELTA" then
             if not UpdateChangedRaidAuras(btn, a2) then UpdateButtonAuras(btn) end
@@ -1119,8 +1118,8 @@ end
 -- mark and focus token, which these buttons never show. UNIT_AURA_DELTA is a
 -- ClassicAPI event that RegisterUnitEvent is not documented to filter; the
 -- handler's unitToButton lookup drops other tokens.
-local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_MANA", "UNIT_RAGE", "UNIT_ENERGY",
-    "UNIT_MAXMANA", "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL",
+local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_UPDATE", "UNIT_MAXPOWER",
+    "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL",
     "UNIT_IN_RANGE_UPDATE", "UNIT_CONNECTION" }
 local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
 for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = RAID_UNITS[i] end

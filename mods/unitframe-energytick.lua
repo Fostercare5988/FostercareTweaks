@@ -190,7 +190,7 @@ module.enable = function(self)
         "UI_SCALE_CHANGED"}) do driver:RegisterEvent(ev) end
     -- The player's power only; ClassicAPI also fires these for every group,
     -- nameplate and mark token.
-    for _, ev in ipairs({"UNIT_DISPLAYPOWER", "UNIT_ENERGY", "UNIT_MANA"}) do driver:RegisterUnitEvent(ev, "player") end
+    for _, ev in ipairs({"UNIT_DISPLAYPOWER", "UNIT_POWER_UPDATE"}) do driver:RegisterUnitEvent(ev, "player") end
     if GetNampowerVersion then
         local major, minor, patch = GetNampowerVersion()
         if type(major) == "number" and type(minor) == "number" and type(patch) == "number" and
