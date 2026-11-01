@@ -10,7 +10,7 @@ interface tweaks for World of Warcraft 1.12.1.
 - Improved auras, class colors, health numbers, target castbar, raid marks and
   energy ticks on Blizzard's player and target frames.
 - Item quality borders, equipment comparison, sell prices and a Sell Junk button.
-- Windowed world map, square minimap, chat history, timestamps and copyable links.
+- World map coordinates, square minimap, chat history, timestamps and copyable links.
 
 ## Requirements
 

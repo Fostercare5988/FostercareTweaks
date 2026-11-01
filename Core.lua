@@ -100,6 +100,14 @@ function FT:Initialize()
     if self.initialized then return end
     self.initialized = true
     EnsureSavedTables()
+    -- WorldMap Window retired 2026-11-01 for the client's own windowed map. A
+    -- character that used it keeps a window (WORLDMAP_WINDOWED is the
+    -- client's account-wide setting; Minimize does not toggle the map at 1).
+    if FostercareTweaks_Config["WorldMap Window"] == 1 and WORLDMAP_WINDOWED ~= 1 then
+        WORLDMAP_WINDOWED = 1
+        WorldMapFrame_Minimize()
+    end
+    FostercareTweaks_Config["WorldMap Window"] = nil
 
     if self.MigrateFrameSettings then self.MigrateFrameSettings() end
 
