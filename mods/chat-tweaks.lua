@@ -253,12 +253,14 @@ module.enable = function(self)
             cf.FCTweaks_HookAddMessage = cf.AddMessage
             cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
                 if text then
-                    text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                    text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                    text = gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                    text = gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
-                    text = gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
-                    text = gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
+                    if string.find(text, "{CLINK:", 1, true) then
+                        text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+                        text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+                        text = gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+                        text = gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
+                        text = gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
+                        text = gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
+                    end
                     text = HandleLink(text)
                 end
                 cf.FCTweaks_HookAddMessage(frame, text, a1, a2, a3, a4, a5)
@@ -334,29 +336,17 @@ end
 do
 -- Adds timestamps to chat messages
 
-local rgbhex = FT.rgbhex
-
 local module = FT:register({
     title = "Chat Timestamps",
     description = "Add timestamps to chat messages.",
     category = "Social & Chat",
     enabled = false,
-    config = {
-        ["chat.timestamp.bracket"] = "[]",
-        ["chat.timestamp.format"] = 24,
-        ["chat.timestamp.color"] = { r = 0.8, g = 0.8, b = 0.8, a = 1 },
-    }
 })
 
-module.enable = function(self)
-    local bracket = self.config["chat.timestamp.bracket"] or "[]"
-    local clock = self.config["chat.timestamp.format"] or 24
-    local rgb = self.config["chat.timestamp.color"] or { r = 0.8, g = 0.8, b = 0.8, a = 1 }
+-- [HH:MM:SS] in light grey.
+local STAMP = "|cffcccccc[%H:%M:%S]|r "
 
-    local left = string.sub(bracket, 1, 1) or ""
-    local right = string.sub(bracket, 2, 2) or ""
-    local timeFormat = (clock == 24) and "%H:%M:%S" or "%I:%M:%S %p"
-    local color = rgbhex and rgbhex({ rgb.r, rgb.g, rgb.b, rgb.a }) or "|cffcccccc"
+module.enable = function(self)
 
     -- Combat log windows stay unstamped, as the other chat modules leave them:
     -- every combat line would build a new string.
@@ -366,7 +356,7 @@ module.enable = function(self)
             local origAddMessage = cf.AddMessage
             cf.AddMessage = function(frame, msg, a1, a2, a3, a4, a5)
                 if not msg then return end
-                msg = color .. left .. date(timeFormat) .. right .. "|r " .. msg
+                msg = date(STAMP) .. msg
                 origAddMessage(frame, msg, a1, a2, a3, a4, a5)
             end
         end

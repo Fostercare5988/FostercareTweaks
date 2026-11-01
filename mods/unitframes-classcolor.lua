@@ -115,28 +115,11 @@ local function RestoreParty()
     originalPartyColors = {}
 end
 
-local function RestoreHealthBars()
-    -- Ensure health bars are native green, never class-tinted
-    if PlayerFrameHealthBar then
-        PlayerFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
-    end
-    if TargetFrameHealthBar then
-        TargetFrameHealthBar:SetStatusBarColor(0, 1, 0, 1)
-    end
-    for id = 1, MAX_PARTY_MEMBERS do
-        local bar = _G["PartyMemberFrame" .. id .. "HealthBar"]
-        if bar then
-            bar:SetStatusBarColor(0, 1, 0, 1)
-        end
-    end
-end
-
 local function ApplyAll()
     if not IsActive() then return end
     ColorPlayer()
     ColorTarget()
     ColorParty()
-    RestoreHealthBars()
 end
 
 local hooksInstalled = false
@@ -160,13 +143,11 @@ local function EnsureHooks()
         FT.hooksecurefunc("PartyMemberFrame_UpdateMember", ColorParty)
     end
 
+    -- Target and party changes reach the hooks above; the player's class
+    -- never changes, so the world entry repaints once.
     local worldRefresh = CreateFrame("Frame")
     worldRefresh:RegisterEvent("PLAYER_ENTERING_WORLD")
-    worldRefresh:RegisterEvent("PLAYER_TARGET_CHANGED")
-    worldRefresh:RegisterEvent("PARTY_MEMBERS_CHANGED")
-    FT.SetEventHandler(worldRefresh, function()
-        ApplyAll()
-    end)
+    FT.SetEventHandler(worldRefresh, ApplyAll)
 end
 
 function module:apply()
@@ -182,7 +163,6 @@ function module:apply()
             TargetFrame_CheckFaction()
         end
         RestoreParty()
-        RestoreHealthBars()
     end
 end
 

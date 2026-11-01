@@ -2,8 +2,9 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/equip-compare.lua
--- Shows currently equipped items on tooltips while the shift key is pressed
-
+-- Shows currently equipped items on tooltips while the shift key is pressed.
+-- ClassicAPI fires OnTooltipSetItem whenever a tooltip's item is set, so a new
+-- item under the cursor reaches us without watching the tooltip.
 
 local module = FT:register({
     title = "Equip Compare",
@@ -13,82 +14,47 @@ local module = FT:register({
 })
 
 module.enable = function(self)
-    if ShoppingTooltip1 then ShoppingTooltip1:SetClampedToScreen(true) end
-    if ShoppingTooltip2 then ShoppingTooltip2:SetClampedToScreen(true) end
-
-    if ItemRefTooltip and not ItemRefTooltip.shoppingTooltips then
-        ItemRefTooltip.shoppingTooltips = { ShoppingTooltip1, ShoppingTooltip2 }
-    end
+    ShoppingTooltip1:SetClampedToScreen(true)
+    ShoppingTooltip2:SetClampedToScreen(true)
 
     local leftShiftDown = IsLeftShiftKeyDown() and true or false
     local rightShiftDown = IsRightShiftKeyDown() and true or false
     local isShiftDown = leftShiftDown or rightShiftDown
-    local lastProcessedLink = nil
-    local hoverTicker
+    -- Tooltips that compare, in the order a Shift press looks at them.
+    local hooked = {}
     local scheduled, wantedLinks = {}, {}
 
     local function GetTooltipLink(tooltip)
-        local link
-        if tooltip.GetItem then
-            local name
-            name, link = tooltip:GetItem()
-        end
+        local _, link = tooltip:GetItem()
         return link or tooltip.itemLink or tooltip.link or tooltip.compareLink
     end
 
-    local function IsShiftActive()
-        if isShiftDown then return true end
-        if IsShiftKeyDown and IsShiftKeyDown() then return true end
-        return false
-    end
-
     local function HideCompare()
-        if ShoppingTooltip1 and ShoppingTooltip1:IsShown() then
-            ShoppingTooltip1:Hide()
-        end
-        if ShoppingTooltip2 and ShoppingTooltip2:IsShown() then
-            ShoppingTooltip2:Hide()
-        end
-        if GameTooltip then
-            GameTooltip.lastComparedItem = nil
-        end
-        if ItemRefTooltip then
-            ItemRefTooltip.lastComparedItem = nil
-        end
-        if AtlasLootTooltip then
-            AtlasLootTooltip.lastComparedItem = nil
-        end
-        if AtlasLootTooltip2 then
-            AtlasLootTooltip2.lastComparedItem = nil
-        end
+        if ShoppingTooltip1:IsShown() then ShoppingTooltip1:Hide() end
+        if ShoppingTooltip2:IsShown() then ShoppingTooltip2:Hide() end
+        for _, tooltip in ipairs(hooked) do tooltip.lastComparedItem = nil end
     end
 
     local function ShowCompare(tooltip)
-        if not tooltip or not tooltip:IsShown() or not IsShiftActive() then
+        if not tooltip:IsShown() or not (isShiftDown or IsShiftKeyDown()) then
             HideCompare()
             return
         end
-
         local link = GetTooltipLink(tooltip)
         if not link then
             HideCompare()
             return
         end
         tooltip.compareLink = link
-
-        if ShoppingTooltip1 and ShoppingTooltip1:IsShown() and tooltip.lastComparedItem == link then
-            return
-        end
-
+        if ShoppingTooltip1:IsShown() and tooltip.lastComparedItem == link then return end
         HideCompare()
         -- ClassicAPI's bundled GameTooltip_ShowCompareItem fills and places both shopping tooltips.
         GameTooltip_ShowCompareItem(tooltip)
-
         tooltip.lastComparedItem = link
     end
 
     local function QueueCompare(tooltip)
-        if not IsShiftActive() then wantedLinks[tooltip] = nil; HideCompare(); return end
+        if not (isShiftDown or IsShiftKeyDown()) then wantedLinks[tooltip] = nil; HideCompare(); return end
         wantedLinks[tooltip] = GetTooltipLink(tooltip)
         if not wantedLinks[tooltip] or scheduled[tooltip] then return end
         scheduled[tooltip] = true
@@ -102,74 +68,32 @@ module.enable = function(self)
         end)
     end
 
-    local function HookTooltip(tt)
-        if not tt then return end
+    local function Forget(tooltip)
+        wantedLinks[tooltip] = nil
+        tooltip.compareLink = nil
+        tooltip.lastComparedItem = nil
+        HideCompare()
+    end
 
-        FT.HookScript(tt, "OnTooltipSetItem", QueueCompare)
-        FT.HookScript(tt, "OnShow", QueueCompare)
-
-        FT.HookScript(tt, "OnHide", function(self)
-            wantedLinks[self] = nil
-            self.compareLink = nil
-            self.lastComparedItem = nil
-            if self == GameTooltip then
-                lastProcessedLink = nil
-            end
-            HideCompare()
-        end)
-
-        FT.HookScript(tt, "OnTooltipCleared", function(self)
-            wantedLinks[self] = nil
-            self.compareLink = nil
-            self.lastComparedItem = nil
-            HideCompare()
-        end)
+    local function HookTooltip(tooltip)
+        if not tooltip then return end
+        if not tooltip.shoppingTooltips then tooltip.shoppingTooltips = { ShoppingTooltip1, ShoppingTooltip2 } end
+        hooked[#hooked + 1] = tooltip
+        FT.HookScript(tooltip, "OnTooltipSetItem", QueueCompare)
+        FT.HookScript(tooltip, "OnShow", QueueCompare)
+        FT.HookScript(tooltip, "OnHide", Forget)
+        FT.HookScript(tooltip, "OnTooltipCleared", Forget)
     end
 
     HookTooltip(GameTooltip)
     HookTooltip(ItemRefTooltip)
-
+    -- AtlasLoot's item tooltips, when it is loaded (an optional dependency).
     FT.HookAddonOrVariable("AtlasLoot", function()
-            if AtlasLootTooltip and not AtlasLootTooltip.shoppingTooltips then
-                AtlasLootTooltip.shoppingTooltips = { ShoppingTooltip1, ShoppingTooltip2 }
-            end
-            if AtlasLootTooltip2 and not AtlasLootTooltip2.shoppingTooltips then
-                AtlasLootTooltip2.shoppingTooltips = { ShoppingTooltip1, ShoppingTooltip2 }
-            end
-            HookTooltip(AtlasLootTooltip)
-            HookTooltip(AtlasLootTooltip2)
+        HookTooltip(AtlasLootTooltip)
+        HookTooltip(AtlasLootTooltip2)
     end)
 
     local modFrame = CreateFrame("Frame", "FCTweaksEquipCompareModFrame", UIParent)
-
-    local function UpdateHover()
-        if not GameTooltip or not GameTooltip:IsShown() then
-            lastProcessedLink = nil
-            return
-        end
-
-        local link = GetTooltipLink(GameTooltip)
-        if not link then
-            return
-        end
-
-        if link ~= lastProcessedLink then
-            lastProcessedLink = link
-            ShowCompare(GameTooltip)
-        end
-    end
-
-    local function SetHoverActive(active)
-        if active and not hoverTicker then
-            -- Tooltip events defer normal changes to the next frame; bounded
-            -- reconciliation also supports optional addons that set link fields.
-            hoverTicker = C_Timer.NewTicker(0.1, UpdateHover)
-        elseif not active and hoverTicker then
-            hoverTicker:Cancel()
-            hoverTicker = nil
-        end
-    end
-
     modFrame:RegisterEvent("MODIFIER_STATE_CHANGED")
     FT.SetEventHandler(modFrame, function(_, ev, key, state)
         if key == "LSHIFT" then
@@ -183,29 +107,19 @@ module.enable = function(self)
         end
 
         local shiftActive = leftShiftDown or rightShiftDown
-        if shiftActive ~= isShiftDown then
-            isShiftDown = shiftActive
-            if isShiftDown then
-                if GameTooltip and GameTooltip:IsShown() and (not ItemRefTooltip or not ItemRefTooltip:IsShown() or not MouseIsOver(ItemRefTooltip)) then
-                    local link = GetTooltipLink(GameTooltip)
-                    if link then
-                        lastProcessedLink = link
-                    end
-                    ShowCompare(GameTooltip)
-                elseif ItemRefTooltip and ItemRefTooltip:IsShown() then
-                    ShowCompare(ItemRefTooltip)
-                elseif AtlasLootTooltip and AtlasLootTooltip:IsShown() then
-                    ShowCompare(AtlasLootTooltip)
-                elseif AtlasLootTooltip2 and AtlasLootTooltip2:IsShown() then
-                    ShowCompare(AtlasLootTooltip2)
-                end
-                SetHoverActive(true)
-            else
-                SetHoverActive(false)
-                lastProcessedLink = nil
-                HideCompare()
-            end
+        if shiftActive == isShiftDown then return end
+        isShiftDown = shiftActive
+        if not isShiftDown then
+            HideCompare()
+            return
+        end
+        -- The hovered item wins over an open item link the cursor is not on.
+        if GameTooltip:IsShown() and not (ItemRefTooltip:IsShown() and MouseIsOver(ItemRefTooltip)) then
+            ShowCompare(GameTooltip)
+            return
+        end
+        for i = 2, #hooked do
+            if hooked[i]:IsShown() then ShowCompare(hooked[i]); return end
         end
     end)
-    if isShiftDown then UpdateHover(); SetHoverActive(true) end
 end

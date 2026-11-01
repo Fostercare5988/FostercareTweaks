@@ -77,12 +77,14 @@ module.enable = function()
             Style(_G["Inspect" .. slot], LinkQuality(GetInventoryItemLink("target", id)))
         end
     end
+    -- One table for every slot read (ClassicAPI's buf), not one per slot.
+    local slotInfo = {}
     local function RefreshBag(frame)
         if not frame or not frame:IsShown() then return end
         for slot = 1, MAX_CONTAINER_ITEMS do
             local button = _G[frame:GetName() .. "Item" .. slot]
             if button and button:IsShown() then
-                local info = C_Container.GetContainerItemInfo(frame:GetID(), button:GetID())
+                local info = C_Container.GetContainerItemInfo(frame:GetID(), button:GetID(), slotInfo)
                 local quality = info and (KnownQuality(info.quality) or
                     (info.itemID and KnownQuality(C_Item.GetItemQualityByID(info.itemID))))
                 Style(button, quality)

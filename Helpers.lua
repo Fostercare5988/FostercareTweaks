@@ -84,10 +84,7 @@ FT.SetEventHandler(loadWatcher, function()
         local request = waiting[i]
         if IsAddOnLoaded(request.name) or _G[request.name] then
             table.remove(waiting, i)
-            local ok, err = pcall(request.callback)
-            if not ok and DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("FostercareTweaks: " .. request.name .. ": " .. tostring(err), 1, 0.3, 0.3)
-            end
+            xpcall(request.callback, geterrorhandler())
         end
     end
     if #waiting == 0 then loadWatcher:UnregisterAllEvents() end
@@ -134,14 +131,6 @@ FT.rgbhex = function(r, g, b, a)
         return string.format("|c%02x%02x%02x%02x", _a * 255, _r * 255, _g * 255, _b * 255)
     end
     return ""
-end
-
-FT.round = function(input, places)
-    places = places or 0
-    if type(input) == "number" then
-        local pow = 10 ^ places
-        return floor(input * pow + 0.5) / pow
-    end
 end
 
 FT.Abbreviate = AbbreviateNumbers
@@ -192,19 +181,6 @@ FT.AddBorder = function(frame, inset, color)
 
     frame.FostercareTweaks_border = b
     return b
-end
-
--- Each iterator owns its keys, including nested/early-ended iteration.
-FT.spairs = function(t, sortFunc)
-    local keys = {}
-    for key in pairs(t) do table.insert(keys, key) end
-    table.sort(keys, sortFunc)
-    local index = 0
-    return function()
-        index = index + 1
-        local key = keys[index]
-        if key ~= nil then return key, t[key] end
-    end
 end
 
 -- Item Identification & Counting
