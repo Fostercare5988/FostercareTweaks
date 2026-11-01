@@ -144,20 +144,7 @@ FT.round = function(input, places)
     end
 end
 
-FT.Abbreviate = function(number, eachk)
-    if type(number) ~= "number" then return number or "" end
-    local sign = number < 0 and -1 or 1
-    local num = math.abs(number)
-
-    if num >= 1000000 then
-        return FT.round(num / 1000000 * sign, 2) .. "m"
-    elseif not eachk and num >= 10000 then
-        return FT.round(num / 1000 * sign, 2) .. "k"
-    elseif eachk and num >= 1000 then
-        return FT.round(num / 1000 * sign, 2) .. "k"
-    end
-    return number
-end
+FT.Abbreviate = AbbreviateNumbers
 
 FT.TimeConvert = function(remaining)
     local color = "|cffffffff"
