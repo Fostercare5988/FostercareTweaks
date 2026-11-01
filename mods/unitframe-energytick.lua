@@ -70,7 +70,7 @@ module.enable = function(self)
     Refresh = function()
         local bar = PlayerFrameManaBar
         local active = FostercareTweaks_Config["Show Energy Ticks"] ~= 0 and bar and bar:IsVisible() and
-            not UnitIsDeadOrGhost("player") and (power == 0 or power == 3) and driver.start
+            not UnitIsDeadOrGhost("player") and (power == 0 or power == 3)
         local width, height = 0, 0
         if active then width, height = bar:GetWidth(), bar:GetHeight() end
         active = active and width > 0 and height > 0
@@ -121,7 +121,10 @@ module.enable = function(self)
         generation = generation + 1
         power, lastValue = UnitPowerType("player"), UnitMana("player")
         pendingGain, pendingAt, spellGain, spellAt, settling = 0, nil, 0, nil, false
-        driver.start, driver.period, driver.manaBlockedUntil = nil, nil, nil
+        -- Until a gain shows where the server's tick falls, the line runs a
+        -- two-second cycle from now and the edge does not flash. A full bar
+        -- gains nothing, so waiting for a gain left the line hidden.
+        driver.start, driver.period, driver.manaBlockedUntil, driver.synced = GetTime(), 2, nil, nil
         candidateAt = nil
         Refresh()
     end
@@ -134,7 +137,7 @@ module.enable = function(self)
             -- Server update lag can increase the proportional tick slightly.
             local clipped = value == maximum and amount <= 44
             local plausible = (amount >= 20 and amount <= 22) or (amount >= 40 and amount <= 44) or clipped
-            if plausible and driver.start then
+            if plausible and driver.synced then
                 local phase = (at - driver.start) % 2
                 if phase >= 0.35 and phase <= 1.65 then
                     -- Recover from a shifted/delayed server phase only after
@@ -143,9 +146,9 @@ module.enable = function(self)
                     candidateAt = at
                 else candidateAt = nil end
             end
-            if plausible then driver.start, driver.period, candidateAt = at, 2, nil end
+            if plausible then driver.start, driver.period, candidateAt, driver.synced = at, 2, nil, true end
         elseif power == 0 and (not driver.manaBlockedUntil or at >= driver.manaBlockedUntil) then
-            driver.start, driver.period = at, 2
+            driver.start, driver.period, driver.synced = at, 2, true
         end
     end
     local function SettleGain()
@@ -216,7 +219,7 @@ module.enable = function(self)
         end
         -- A short bottom-edge pulse gives the estimated tick a visible beat
         -- without covering power text. Quantized alpha bounds widget writes.
-        local alpha = driver.flash and driver.period ~= 5 and elapsed < 0.25 and math.floor((1 - elapsed / 0.25) * 16 + 0.5) / 16 or 0
+        local alpha = driver.flash and driver.synced and driver.period ~= 5 and elapsed < 0.25 and math.floor((1 - elapsed / 0.25) * 16 + 0.5) / 16 or 0
         if driver.pulseAlpha ~= alpha then
             driver.pulseAlpha = alpha
             driver.pulse:SetAlpha(alpha)

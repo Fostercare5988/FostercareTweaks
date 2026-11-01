@@ -1,76 +1,8 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
-do
--- Turns world map into a movable, scalable window
-
-local HookScript = FT.HookScript
-
-local module = FT:register({
-    title = "WorldMap Window",
-    description = "Turns the world map into a movable window. The map can be scaled with <Ctrl> + Mousewheel.",
-    category = "World & MiniMap",
-    enabled = true,
-})
-
-module.enable = function(self)
-    table.insert(UISpecialFrames, "WorldMapFrame")
-
-    function _G.ToggleWorldMap()
-        if WorldMapFrame:IsShown() then
-            WorldMapFrame:Hide()
-        else
-            WorldMapFrame:Show()
-        end
-    end
-
-    local delay = CreateFrame("Frame")
-    delay:RegisterEvent("PLAYER_ENTERING_WORLD")
-    FT.SetEventHandler(delay, function(self)
-        UIPanelWindows["WorldMapFrame"] = { area = "center" }
-
-        if not self.hooked then
-            self.hooked = true
-
-            HookScript(WorldMapFrame, "OnShow", function(frame)
-                frame:EnableKeyboard(false)
-                frame:EnableMouseWheel(true)
-            end)
-
-            HookScript(WorldMapFrame, "OnMouseWheel", function(_, delta)
-                delta = delta or 0
-                if IsShiftKeyDown() then
-                    WorldMapFrame:SetAlpha(math.max(0.2, math.min(1, WorldMapFrame:GetAlpha() + delta / 10)))
-                elseif IsControlKeyDown() then
-                    WorldMapFrame:SetScale(math.max(0.3, math.min(1.5, WorldMapFrame:GetScale() + delta / 10)))
-                end
-            end)
-
-            HookScript(WorldMapFrame, "OnMouseDown", function()
-                WorldMapFrame:StartMoving()
-            end)
-
-            HookScript(WorldMapFrame, "OnMouseUp", function()
-                WorldMapFrame:StopMovingOrSizing()
-            end)
-        end
-
-        WorldMapFrame:SetMovable(true)
-        WorldMapFrame:EnableMouse(true)
-        WorldMapFrame:SetScale(0.85)
-        WorldMapFrame:ClearAllPoints()
-        WorldMapFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 30)
-        WorldMapFrame:SetWidth(WorldMapButton:GetWidth() + 15)
-        WorldMapFrame:SetHeight(WorldMapButton:GetHeight() + 55)
-
-        if BlackoutWorld then
-            BlackoutWorld:Hide()
-        end
-    end)
-end
-end
+-- World map additions; the client's own windowed map (the map's minimize
+-- button) replaced our own map window on 2026-11-01.
 
 do
 -- Adds player and cursor coordinates to the World Map (Rule AP-10, Rule C3, Rule C12 compliant)

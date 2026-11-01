@@ -23,6 +23,7 @@ local function NeedReload() reloadNeeded = true end
 local function Always() return true end
 local function Pixels(value) return value .. " px" end
 local function Times(value) return string.format("%.2fx", value) end
+local MOVE_HINT = "Hold Ctrl+Shift to move frames, aura areas, the raid frames and minimap pieces. Action bars: Move bars."
 
 -- Dims a slider block the way UI.Sync dims a switch.
 local function Dim(slider, on)
@@ -82,7 +83,7 @@ end
 local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
-    { label = "General", height = 520 },
+    { label = "General", height = 572 },
     { label = "Unit Frames", height = 452 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
@@ -101,9 +102,8 @@ end
 -- General ---------------------------------------------------------------------
 local general = pages[1]
 UI.Heading(general, "Gameplay", LEFT, -98)
-Feature(general, "Auto Dismount", "Dismount for everything else",
-    "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item. Spells do this in ClassicAPI.",
-    LEFT, -118)
+Feature(general, "Auto Dismount", "Dismount to attack, fly, talk",
+    "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item.", LEFT, -118)
 Feature(general, "Auto Stance", "Switch stance for spells",
     "A warrior or druid spell that needs another stance or form switches to the first one you can use.", LEFT, -144)
 Feature(general, "Hide Stealth / Stance Bar", "Hide the stance bar", "Hide the stealth, stance and form buttons.",
@@ -117,7 +117,7 @@ UI.Heading(general, "Minimap", LEFT, -348)
 Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", LEFT, -368)
 Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", LEFT, -394)
 Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", LEFT, -420)
-Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", RIGHT, -404,
+Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", LEFT, -450,
     function(value) FT.ApplyMinimapScale(value) end, nil, Times)
 UI.Heading(general, "Chat", RIGHT, -98)
 Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
@@ -129,11 +129,12 @@ Feature(general, "Chat Class Colors", "Class colors for names",
     "Player names in their class color. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.", RIGHT, -222)
 Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue instead of pink.", RIGHT, -248)
 UI.Heading(general, "World map", RIGHT, -288)
-Feature(general, "WorldMap Window", "Map in a window", "A movable map window. Ctrl + mouse wheel resizes it.", RIGHT, -308)
-Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -334)
-Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -360)
+Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -308)
+Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -334)
+UI.Heading(general, "Moving", RIGHT, -374)
+Hint(general, MOVE_HINT, RIGHT, -394)
 Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
-    LEFT, -456, 444)
+    LEFT, -500, 444)
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
@@ -156,7 +157,7 @@ local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait"
     end, 172)
 table.insert(syncs, function() UI.Sync(outside, FT.GetOverride("raidmark_position") == "outside", marks()) end)
 Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", LEFT, -320, Marks, marks)
-Hint(unit, "Hold Ctrl+Shift to move frames, aura areas, the raid frames and action bars.", LEFT, -372, 444)
+Hint(unit, MOVE_HINT, LEFT, -372, 444)
 UI.Heading(unit, "Energy ticks", RIGHT, -98)
 Feature(unit, "Show Energy Ticks", "Energy and mana ticks",
     "Estimated energy ticks and the five-second mana rule on your power bar.", RIGHT, -118, ApplyUnitFrames)
@@ -164,9 +165,9 @@ local ticks = On("Show Energy Ticks", true)
 Option(unit, "energytick_contrast", 1, "Bright line", "A white center and glow on the tick line.", RIGHT, -144, Ticks, ticks)
 Option(unit, "energytick_flash", 1, "Flash on tick", "The bar's edge lights up at each tick.", RIGHT, -170, Ticks, ticks)
 Slider(unit, "energytick_width", 3, 2, 6, 1, "Line width", RIGHT, -200, Ticks, ticks)
-FooterButton(unit, "FTOpt_ResetPositions", "Reset positions", LEFT, 172, function()
+FooterButton(unit, "FTOpt_ResetPositions", "Reset all positions", LEFT, 172, function()
     Config().unitframe_positions = nil; NeedReload(); Refresh()
-end, "Put every moved frame and aura area back in its place. Takes effect after a reload.")
+end, "Put every moved frame, aura area, the raid frames and the minimap pieces back in place. Takes effect after a reload.")
 
 -- Auras -------------------------------------------------------------------------
 local auras = pages[3]
@@ -177,8 +178,8 @@ end
 UI.Heading(auras, "Player and target", LEFT, -98)
 Feature(auras, "Show Player Buffs", "Player buffs", "Under the player frame, with sweeps and countdowns.", LEFT, -118, ApplyUnitFrames)
 Feature(auras, "Show Player Debuffs", "Player debuffs", "Under the player frame; dispel colors on the border.", LEFT, -144, ApplyUnitFrames)
-Feature(auras, "Show Target Buffs", "Target buffs", nil, LEFT, -170, ApplyUnitFrames)
-Feature(auras, "Show Target Debuffs", "Target debuffs", nil, LEFT, -196, ApplyUnitFrames)
+Feature(auras, "Show Target Buffs", "Target buffs", "Under the target frame.", LEFT, -170, ApplyUnitFrames)
+Feature(auras, "Show Target Debuffs", "Target debuffs", "Under the target frame.", LEFT, -196, ApplyUnitFrames)
 local function AuraSize(kind)
     return function(value)
         local apply = UF().Auras["Apply" .. kind .. "Size"]
