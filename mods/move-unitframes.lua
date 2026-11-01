@@ -62,8 +62,16 @@ function FT.UpdateFrameMovers()
         if unlocked then unlocker.grid:Show() else unlocker.grid:Hide() end
     end
     for _, mover in ipairs(movers) do
-        if unlocked then mover:Show()
-        else StopDrag(mover); mover:Hide() end
+        local owner = mover.owner
+        if unlocked then
+            -- Mail, battleground and similar icons are hidden by the game until
+            -- needed; show them while moving so they can be grabbed.
+            if owner.fctRestoreShown and not owner:IsShown() then owner.fctForcedShown = true; owner:Show() end
+            mover:Show()
+        else
+            StopDrag(mover); mover:Hide()
+            if owner.fctForcedShown then owner.fctForcedShown = nil; owner.fctRestoreShown(owner) end
+        end
     end
 end
 
