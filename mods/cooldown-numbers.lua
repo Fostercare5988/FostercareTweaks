@@ -9,7 +9,7 @@ local TimeConvert = FT.TimeConvert
 
 local module = FT:register({
     title = "Cooldown Numbers",
-    description = "Show remaining cooldown time; GearRack keeps its own counters.",
+    description = "Show remaining cooldown time on the stock action buttons.",
     category = "Action Bar",
     always = true,
 })
@@ -18,10 +18,6 @@ local active = {}
 local ticker
 local enabled
 
--- GearRack always draws the numbers on its equipment and trinket buttons.
-local function GearRackNumbers(cooldown)
-    return GearRack and type(GearRack.HasCooldownNumbers)=="function" and GearRack.HasCooldownNumbers(cooldown:GetName())
-end
 local function NativeNumbers(cooldown)
     return cooldown:GetObjectType() == "Cooldown" and not cooldown:GetHideCountdownNumbers()
         and GetCVar("countdownForCooldowns") == "1"
@@ -108,7 +104,7 @@ end
 local function SetCooldown(cdFrame, start, duration, enable)
     if not cdFrame then return end
     if not duration or duration < 2 or cdFrame.noCooldownCount or cdFrame.readable
-        or NativeNumbers(cdFrame) or GearRackNumbers(cdFrame) then
+        or NativeNumbers(cdFrame) then
         if cdFrame.cooldowntext then StopNumber(cdFrame.cooldowntext) end
         return
     end
