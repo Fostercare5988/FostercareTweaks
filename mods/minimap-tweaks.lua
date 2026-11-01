@@ -21,20 +21,17 @@ module.enable = function(self)
     clock:SetPoint("BOTTOM", MinimapCluster, "BOTTOM", 8, 4)  -- under the map border, not over the map
     clock:SetWidth(50)
     clock:SetHeight(23)
-    clock:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 8, edgeSize = 16,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
-    })
-    clock:SetBackdropBorderColor(0.9, 0.8, 0.5, 1)
-    clock:SetBackdropColor(0.4, 0.4, 0.4, 1)
     clock:EnableMouse(true)
 
+    -- Plain text in the zone text's font and gold: no border, no background.
     clock.text = clock:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    clock.text:SetFont(STANDARD_TEXT_FONT, 12, "OUTLINE")
+    local font, size, flags = MinimapZoneText:GetFont()
+    clock.text:SetFont(font, size, flags)
     clock.text:SetAllPoints(clock)
-    clock.text:SetFontObject(GameFontWhite)
+
+    -- Ctrl+Shift moves it, like the unit frames.
+    FT.RestoreFramePosition(clock, "minimap_clock")
+    FT.RegisterFrameMover(clock, "minimap_clock", "Clock")
 
     -- Refresh only when the displayed minute changes.
     local function UpdateClock()
@@ -123,6 +120,23 @@ module.enable = function(self)
     if MinimapBorderTop then MinimapBorderTop:Hide() end
     if MinimapToggleButton then MinimapToggleButton:Hide() end
     if MinimapZoneTextButton then MinimapZoneTextButton:SetPoint("CENTER", 7, 85) end
+
+    -- Ctrl+Shift moves the mail, battleground and tracking (herbs, ...) icons. The
+    -- game hides them until needed; the mover shows each one while it is held and
+    -- then asks the game's own rule again.
+    local movable = {
+        { "MiniMapMailFrame", "minimap_mail", "Mail", function(f) if HasNewMail() then f:Show() else f:Hide() end end },
+        { "MiniMapBattlefieldFrame", "minimap_bg", "BG", function() BattlefieldFrame_UpdateStatus() end },
+        { "MiniMapTrackingFrame", "minimap_tracking", "Track", function(f) if GetTrackingTexture() then f:Show() else f:Hide() end end },
+    }
+    for _, entry in ipairs(movable) do
+        local frame = _G[entry[1]]
+        if frame then
+            frame.fctRestoreShown = entry[4]
+            FT.RestoreFramePosition(frame, entry[2])
+            FT.RegisterFrameMover(frame, entry[2], entry[3])
+        end
+    end
 
     if MinimapZoomIn then MinimapZoomIn:Hide() end
     if MinimapZoomOut then MinimapZoomOut:Hide() end
