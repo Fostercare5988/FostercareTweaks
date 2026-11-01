@@ -4,16 +4,17 @@ if not FT then return end
 -- Related modules; settings remain independent.
 
 do
--- Minimap size: the whole cluster (map, zone text, clock, buttons) scales.
+-- Minimap size: the map (and its border) scales; the clock and the icons keep
+-- their own size and sit where the player put them.
 local module = FT:register({
     title = "MiniMap Size",
-    description = "Scale the mini map and the buttons around it.",
+    description = "Scale the mini map. Its clock and buttons keep their size.",
     category = "World & MiniMap", always = true,
 })
 
 -- Put a minimap icon where the player left it. Positions are kept relative to the
--- map, so the icon follows the map when it is moved or resized. A position saved
--- against the screen by an earlier version (oldKey) is converted once.
+-- map, so the icon follows the map when it is dragged. A position saved against
+-- the screen by an earlier version (oldKey) is converted once.
 function FT.PlaceOnMinimap(frame, key, oldKey, label)
     local saved = FostercareTweaks_Config.unitframe_positions
     if oldKey and saved and saved[oldKey] and not saved[key] then
@@ -25,43 +26,27 @@ function FT.PlaceOnMinimap(frame, key, oldKey, label)
     FT.RegisterFrameMover(frame, key, label, Minimap)
 end
 
--- keep: the player changed the size now, so a moved map keeps its top-right
--- corner on screen (its saved offset is in the cluster's own units).
-function FT.ApplyMinimapScale(scale, keep)
-    if math.abs(MinimapCluster:GetScale() - scale) < 0.001 then return end
-    local saved = FostercareTweaks_Config.unitframe_positions
-    local right, top
-    if keep and saved and saved.minimap and MinimapCluster:GetRight() then
-        local eff = MinimapCluster:GetEffectiveScale()
-        right, top = MinimapCluster:GetRight() * eff, MinimapCluster:GetTop() * eff
-    end
-    MinimapCluster:SetScale(scale)
-    if right then
-        local eff = MinimapCluster:GetEffectiveScale()
-        local ratio = UIParent:GetEffectiveScale() / eff
-        saved.minimap = { point = "TOPRIGHT", relPoint = "TOPRIGHT",
-            x = right / eff - UIParent:GetRight() * ratio, y = top / eff - UIParent:GetTop() * ratio }
-        FT.RestoreFramePosition(MinimapCluster, "minimap")
-    end
-end
+-- These children of the map keep their own size when the map is scaled.
+local FIXED_SIZE = { "FCTweaksMinimapClock", "MiniMapMailFrame", "MiniMapBattlefieldFrame", "MiniMapTrackingFrame" }
 
--- The map frame itself grows (140 px at 1): a larger frame is a larger window on
--- the map, not a magnified picture. UNVERIFIED: test in game how much more of the
--- world it shows at each zoom.
-function FT.ApplyMinimapView(factor)
-    local size = 140 * factor
-    if math.abs(Minimap:GetWidth() - size) < 0.5 then return end
-    Minimap:SetWidth(size); Minimap:SetHeight(size)
-    Minimap:SetZoom(Minimap:GetZoom())
+function FT.ApplyMinimapScale(scale)
+    Minimap:SetScale(scale)
+    for _, name in ipairs(FIXED_SIZE) do
+        local frame = _G[name]
+        if frame then frame:SetScale(1 / scale) end
+    end
 end
 
 module.enable = function(self)
+    -- Retired: a larger frame only enlarged the picture.
+    FostercareTweaks_Config.overwrites.minimap_view = nil
     FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
-    FT.ApplyMinimapView(FT.GetNumber("minimap_view", 1, 1, 2))
-    -- Ctrl+Shift moves the whole minimap area; it keeps its top-right corner.
+    -- Ctrl+Shift moves the map with its zone name; the handle covers the map itself.
     MinimapCluster.fctPositionPoint = "TOPRIGHT"
     FT.RestoreFramePosition(MinimapCluster, "minimap")
     FT.RegisterFrameMover(MinimapCluster, "minimap", "Minimap")
+    MinimapCluster.fctMover:ClearAllPoints()
+    MinimapCluster.fctMover:SetAllPoints(Minimap)
 end
 end
 
@@ -84,6 +69,7 @@ module.enable = function(self)
     clock:SetWidth(50)
     clock:SetHeight(23)
     clock:EnableMouse(true)
+    clock:SetScale(1 / Minimap:GetScale())
 
     -- Plain text in the zone text's font and gold: no border, no background.
     clock.text = clock:CreateFontString(nil, "OVERLAY", "GameFontNormal")
