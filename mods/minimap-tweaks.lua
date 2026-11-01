@@ -4,11 +4,11 @@ if not FT then return end
 -- Related modules; settings remain independent.
 
 do
--- Minimap size: the map frame itself is resized (140 px at 1x). Everything on it
--- (the clock, the buttons, the tray's addon buttons) keeps its own size, which a
--- scale would have changed. The map, the zone name, the clock and each icon are
--- placed on their own, against the screen: resizing or moving one never moves
--- another.
+-- Minimap size: the map is scaled (a resized frame breaks the engine's own blip,
+-- arrow and tooltip geometry). The clock and the icons below keep their own size,
+-- and AutoLazy's tray sizes the buttons it docks. The map, the zone name, the
+-- clock and each icon are placed on their own, against the screen: resizing or
+-- moving one never moves another.
 local module = FT:register({
     title = "MiniMap Size",
     description = "Make the mini map larger or smaller. Its clock and buttons keep their size.",
@@ -48,11 +48,14 @@ function FT.ClampMinimapToMap()
         Minimap:GetBottom() * e - MinimapCluster:GetBottom())
 end
 
+-- These children of the map keep their own size when the map is scaled.
+local FIXED_SIZE = { "FCTweaksMinimapClock", "MiniMapMailFrame", "MiniMapBattlefieldFrame", "MiniMapTrackingFrame" }
+
 function FT.ApplyMinimapScale(scale)
-    local size = 140 * scale
-    if math.abs(Minimap:GetWidth() - size) >= 0.5 then
-        Minimap:SetWidth(size); Minimap:SetHeight(size)
-        Minimap:SetZoom(Minimap:GetZoom())   -- redraw at the new size
+    Minimap:SetScale(scale)
+    for _, name in ipairs(FIXED_SIZE) do
+        local frame = _G[name]
+        if frame then frame:SetScale(1 / scale) end
     end
     FT.ClampMinimapToMap()
 end
@@ -91,6 +94,7 @@ module.enable = function(self)
     clock:SetWidth(50)
     clock:SetHeight(23)
     clock:EnableMouse(true)
+    clock:SetScale(1 / Minimap:GetScale())
 
     -- Plain text in the zone text's font and gold: no border, no background.
     clock.text = clock:CreateFontString(nil, "OVERLAY", "GameFontNormal")
