@@ -9,35 +9,25 @@ local module = FT:register({
     enabled = true,
 })
 
+-- "|Hplayer:Name:id|h[Name]|h" becomes the name in its class color (grey when
+-- the class is unknown), brackets in the line's color. Lua 5.0's gsub uses the
+-- empty string for a nil result, so a link left alone is returned whole.
+local function Colorize(link, shown)
+    local real = string.gsub(link, ":.*$", "")
+    if shown ~= real then return "|Hplayer:" .. link .. "|h[" .. shown .. "]|h" end
+    local class = GetPlayerClass(real)
+    local color = class and RAID_CLASS_COLORS[class] and rgbhex(RAID_CLASS_COLORS[class]) or "|cffaaaaaa"
+    return "|r[" .. color .. "|Hplayer:" .. link .. "|h" .. color .. real .. "|h|r]|r"
+end
+
 module.enable = function(self)
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
         if cf and not cf.FCTweaks_HookAddMessageColor and not FT.IsCombatChatFrame(cf) then
             cf.FCTweaks_HookAddMessageColor = cf.AddMessage
             cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
-                if text then
-                    for name in string.gmatch(text, "|Hplayer:(.-)|h") do
-                        local real = string.gsub(name, ":.*$", "")
-                        local color = "|cffaaaaaa"
-                        local classToken = GetPlayerClass(real)
-
-                        if classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[classToken] then
-                            color = rgbhex(RAID_CLASS_COLORS[classToken])
-                        end
-
-                        local escaped_name = string.gsub(name, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-                        local escaped_real = string.gsub(real, "([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
-                        local pattern1 = "|Hplayer:" .. escaped_name .. "|h%[" .. escaped_real .. "%]|h(.-:-)"
-                        local repl1 = "|r[" .. color .. "|Hplayer:" .. name .. "|h" .. color .. real .. "|h|r" .. "]|r" .. "%1"
-                        local new_text, count = string.gsub(text, pattern1, repl1)
-                        if count == 0 then
-                            local pattern2 = "(|Hplayer:" .. escaped_name .. "|h)%[" .. escaped_real .. "%](|h)"
-                            local repl2 = "|r[" .. color .. "%1" .. color .. real .. "%2|r]"
-                            text = string.gsub(text, pattern2, repl2)
-                        else
-                            text = new_text
-                        end
-                    end
+                if text and string.find(text, "|Hplayer:", 1, true) then
+                    text = string.gsub(text, "|Hplayer:([^|]*)|h%[([^%]|]*)%]|h", Colorize)
                 end
                 cf.FCTweaks_HookAddMessageColor(frame, text, a1, a2, a3, a4, a5)
             end

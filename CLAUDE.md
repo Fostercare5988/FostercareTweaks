@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (129 tests).
+VanillaForge (140 tests).
 
 | Area | Files |
 | --- | --- |
@@ -68,7 +68,19 @@ Things to know:
   `ApplyProfile`, `ProfileVersion` 1). AutoLazy's minimap tray skips
   `FCTweaksMinimapClock` by name. Nothing else reads Tweaks' globals.
 - Equip Compare follows `OnTooltipSetItem` (it fires for every item set on
-  a tooltip) and `MODIFIER_STATE_CHANGED`; it never polls the tooltip.
+  a tooltip) and `MODIFIER_STATE_CHANGED`; it never polls the tooltip. The
+  compare is deferred a frame: ClassicAPI's docs warn that a tooltip rebuilt
+  inside `OnTooltipSet*` can crash the client. Vendor Values keeps its `Set*`
+  hooks for that reason (money lines and `Show()`) and for stack counts.
+- Unchanged writes are skipped through remembered values (`fct*` fields):
+  raid bars (`SetBarRange`/`SetBarColor`), aura icons, counts and borders
+  (`Auras.SetIcon`/`SetCount`/`StyleBorder`). Write those widgets through
+  these helpers, or clear the field, or the next update skips a real change.
+- Chat History keeps no wrapper: at `PLAYER_LOGOUT` (also on reload) it reads
+  the frames' last 30 lines with `GetMessageInfo`; at login it puts them
+  back with `BackFillMessage`, marked so they are not dimmed again.
+- The client has its own windowed world map (`WORLDMAP_WINDOWED`, the map's
+  minimize button); our map window was retired on 2026-11-01.
 - Lua 5.0 collects garbage in one full pass (about 100 ms at 60 MB). Code that
   runs on a timer must not build strings or tables each tick.
 - On 2026-10-21 the stutter profiler showed no FostercareTweaks handler over
