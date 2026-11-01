@@ -82,7 +82,7 @@ end
 local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
-    { label = "General", height = 520 },
+    { label = "General", height = 560 },
     { label = "Unit Frames", height = 452 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
@@ -117,8 +117,10 @@ UI.Heading(general, "Minimap", LEFT, -348)
 Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", LEFT, -368)
 Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", LEFT, -394)
 Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", LEFT, -420)
-Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", LEFT, -454,
+Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", RIGHT, -404,
     function(value) FT.ApplyMinimapScale(value, true) end, nil, Times)
+Slider(general, "minimap_view", 1, 1, 2, 0.1, "Minimap view (area shown)", RIGHT, -448,
+    function(value) FT.ApplyMinimapView(value) end, nil, Times)
 UI.Heading(general, "Chat", RIGHT, -98)
 Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
     "Scroll with the mouse wheel, keep the last channel, repeat messages with the arrow keys.", RIGHT, -118)
@@ -133,7 +135,7 @@ Feature(general, "WorldMap Window", "Map in a window", "A movable map window. Ct
 Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -334)
 Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -360)
 Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
-    LEFT, -456, 444)
+    LEFT, -494, 444)
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
