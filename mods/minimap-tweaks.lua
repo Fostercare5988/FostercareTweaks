@@ -166,7 +166,11 @@ module.enable = function(self)
 
     if MinimapBorderTop then MinimapBorderTop:Hide() end
     if MinimapToggleButton then MinimapToggleButton:Hide() end
-    if MinimapZoneTextButton then MinimapZoneTextButton:SetPoint("CENTER", 7, 85) end
+    if MinimapZoneTextButton then
+        MinimapZoneTextButton:SetPoint("CENTER", 7, 85)
+        -- The zone name moves with Ctrl+Shift like the icons, and then follows the map.
+        C_Timer.After(0, function() FT.PlaceOnMinimap(MinimapZoneTextButton, "minimap_zone", nil, "Zone") end)
+    end
 
     -- Ctrl+Shift moves the mail, battleground and tracking (herbs, ...) icons. The
     -- game hides them until needed; the mover shows each one while it is held and
