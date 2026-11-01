@@ -11,41 +11,57 @@ local module = FT:register({
     category = "World & MiniMap", always = true,
 })
 
--- The icons that Ctrl+Shift can move, with their saved-position keys.
-local MOVED = {
-    { "FCTweaksMinimapClock", "minimap_clock" }, { "MiniMapMailFrame", "minimap_mail" },
-    { "MiniMapBattlefieldFrame", "minimap_bg" }, { "MiniMapTrackingFrame", "minimap_tracking" },
-}
+-- Put a minimap icon where the player left it. Positions are kept relative to the
+-- map, so the icon follows the map when it is moved or resized. A position saved
+-- against the screen by an earlier version (oldKey) is converted once.
+function FT.PlaceOnMinimap(frame, key, oldKey, label)
+    local saved = FostercareTweaks_Config.unitframe_positions
+    if oldKey and saved and saved[oldKey] and not saved[key] then
+        FT.RestoreFramePosition(frame, oldKey)
+        FT.SaveFramePosition(frame, key, Minimap)
+        if saved[key] then saved[oldKey] = nil end
+    end
+    FT.RestoreFramePosition(frame, key, Minimap)
+    FT.RegisterFrameMover(frame, key, label, Minimap)
+end
 
--- keep: the player changed the size now, so moved icons stay where they are on
--- screen (their saved offsets are in the cluster's own units). At login the
--- saved offsets already match the saved size.
+-- keep: the player changed the size now, so a moved map keeps its top-right
+-- corner on screen (its saved offset is in the cluster's own units).
 function FT.ApplyMinimapScale(scale, keep)
     if math.abs(MinimapCluster:GetScale() - scale) < 0.001 then return end
     local saved = FostercareTweaks_Config.unitframe_positions
-    local spots = {}
-    if keep and saved then
-        for _, entry in ipairs(MOVED) do
-            local frame = _G[entry[1]]
-            if frame and saved[entry[2]] and frame:GetLeft() then
-                local eff = frame:GetEffectiveScale()
-                spots[entry[2]] = { frame, frame:GetLeft() * eff, frame:GetTop() * eff }
-            end
-        end
+    local right, top
+    if keep and saved and saved.minimap and MinimapCluster:GetRight() then
+        local eff = MinimapCluster:GetEffectiveScale()
+        right, top = MinimapCluster:GetRight() * eff, MinimapCluster:GetTop() * eff
     end
     MinimapCluster:SetScale(scale)
-    for key, spot in pairs(spots) do
-        local frame = spot[1]
-        local eff = frame:GetEffectiveScale()
+    if right then
+        local eff = MinimapCluster:GetEffectiveScale()
         local ratio = UIParent:GetEffectiveScale() / eff
-        saved[key] = { point = "TOPLEFT", relPoint = "TOPLEFT",
-            x = spot[2] / eff - UIParent:GetLeft() * ratio, y = spot[3] / eff - UIParent:GetTop() * ratio }
-        FT.RestoreFramePosition(frame, key)
+        saved.minimap = { point = "TOPRIGHT", relPoint = "TOPRIGHT",
+            x = right / eff - UIParent:GetRight() * ratio, y = top / eff - UIParent:GetTop() * ratio }
+        FT.RestoreFramePosition(MinimapCluster, "minimap")
     end
+end
+
+-- The map frame itself grows (140 px at 1): a larger frame is a larger window on
+-- the map, not a magnified picture. UNVERIFIED: test in game how much more of the
+-- world it shows at each zoom.
+function FT.ApplyMinimapView(factor)
+    local size = 140 * factor
+    if math.abs(Minimap:GetWidth() - size) < 0.5 then return end
+    Minimap:SetWidth(size); Minimap:SetHeight(size)
+    Minimap:SetZoom(Minimap:GetZoom())
 end
 
 module.enable = function(self)
     FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
+    FT.ApplyMinimapView(FT.GetNumber("minimap_view", 1, 1, 2))
+    -- Ctrl+Shift moves the whole minimap area; it keeps its top-right corner.
+    MinimapCluster.fctPositionPoint = "TOPRIGHT"
+    FT.RestoreFramePosition(MinimapCluster, "minimap")
+    FT.RegisterFrameMover(MinimapCluster, "minimap", "Minimap")
 end
 end
 
@@ -75,9 +91,8 @@ module.enable = function(self)
     clock.text:SetFont(font, size, flags)
     clock.text:SetAllPoints(clock)
 
-    -- Ctrl+Shift moves it, like the unit frames.
-    FT.RestoreFramePosition(clock, "minimap_clock")
-    FT.RegisterFrameMover(clock, "minimap_clock", "Clock")
+    -- Ctrl+Shift moves it; placed once the map's own layout is final.
+    C_Timer.After(0, function() FT.PlaceOnMinimap(clock, "minimap_clock_r", "minimap_clock", "Clock") end)
 
     -- Refresh only when the displayed minute changes.
     local function UpdateClock()
@@ -179,8 +194,7 @@ module.enable = function(self)
         local frame = _G[entry[1]]
         if frame then
             frame.fctRestoreShown = entry[4]
-            FT.RestoreFramePosition(frame, entry[2])
-            FT.RegisterFrameMover(frame, entry[2], entry[3])
+            C_Timer.After(0, function() FT.PlaceOnMinimap(frame, entry[2] .. "_r", entry[2], entry[3]) end)
         end
     end
 
