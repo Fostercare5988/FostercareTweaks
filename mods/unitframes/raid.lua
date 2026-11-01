@@ -44,12 +44,24 @@ end
 -- 2. Unit Button Update Routines
 --------------------------------------------------------------------------------
 
+-- Range and colour change rarely; health and power events mostly move the
+-- value. Written only when they change; the test grid writes through these too.
+local function SetBarRange(bar, max)
+    if bar.fctMax ~= max then bar.fctMax = max; bar:SetMinMaxValues(0, max) end
+end
+local function SetBarColor(bar, r, g, b)
+    if bar.fctR ~= r or bar.fctG ~= g or bar.fctB ~= b then
+        bar.fctR, bar.fctG, bar.fctB = r, g, b
+        bar:SetStatusBarColor(r, g, b, 1)
+    end
+end
+
 local function UpdateButtonHealth(btn)
     local unit = btn.unit
     if not unit or not btn:IsShown() then return end
 
     local cur, max = UF.GetUnitHealthValues(unit)
-    btn.healthBar:SetMinMaxValues(0, max)
+    SetBarRange(btn.healthBar, max)
     btn.healthBar:SetValue(cur)
 
     -- Class color (Exact Luna colors)
@@ -57,9 +69,9 @@ local function UpdateButtonHealth(btn)
     local classToken = FT.NormalizeClass(cls) or btn.rosterClass
     local c = classToken and UF.ClassColors[classToken]
     if c then
-        btn.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+        SetBarColor(btn.healthBar, c.r, c.g, c.b)
     else
-        btn.healthBar:SetStatusBarColor(0.2, 0.9, 0.2, 1)
+        SetBarColor(btn.healthBar, 0.2, 0.9, 0.2)
     end
 
     -- FontString bounds handle long names at the current size.
@@ -107,11 +119,11 @@ local function UpdateButtonPower(btn)
     local cur = UnitMana(unit) or 0
     local ptype = UnitPowerType(unit) or 0
 
-    btn.powerBar:SetMinMaxValues(0, max > 0 and max or 1)
+    SetBarRange(btn.powerBar, max > 0 and max or 1)
     btn.powerBar:SetValue(cur)
 
     local pc = UF.PowerColors[ptype] or UF.PowerColors[0]
-    btn.powerBar:SetStatusBarColor(pc.r, pc.g, pc.b, 1)
+    SetBarColor(btn.powerBar, pc.r, pc.g, pc.b)
 end
 
 -- Healing and protective buffs, matched by client name (the client is English only).
@@ -265,9 +277,8 @@ local function ShowRaidAura(btn, badge, a, size, x, y)
         number:SetWidth(size); number:SetHeight(font)
     end
     badge.unit, badge.auraIndex, badge.spellId = btn.unit, a.index, a.id
-    badge.icon:SetTexture(a.icon)
-    badge.countText:SetText(stacked and a.stacks or "")
-    if stacked then badge.countText:Show() else badge.countText:Hide() end
+    UF.Auras.SetIcon(badge, a.icon)
+    UF.Auras.SetCount(badge, a.stacks)
     UF.Auras.UpdateAuraTiming(badge, UnitGUID(btn.unit), a.id, a.source, a.duration, a.expiration, GetTime())
     UF.Auras.StyleBorder(badge, a.dtype)
     badge:Show()
@@ -776,6 +787,22 @@ end
 -- 6. Roster Update & Unified Group Dispatcher (Party + Raid)
 --------------------------------------------------------------------------------
 
+-- Unit events keep a member current. A roster pass (a battleground filling,
+-- someone joining the party) rebuilds only the buttons whose member, rank or
+-- online state changed.
+local function Assign(btn, unit, force, index, rank, name, class, online)
+    unitToButton[unit] = btn
+    if force or btn.unit ~= unit or btn.rosterName ~= name or btn.rank ~= rank
+        or btn.rosterOnline ~= online or not btn:IsShown() then
+        btn.rangeAlpha = nil
+        SetUnit(btn, unit)
+        btn.rosterName, btn.rosterClass = name, class and FT.NormalizeClass(class)
+        btn.index, btn.rank, btn.rosterOnline = index, rank, online
+        btn:Show()
+        UpdateButtonAll(btn)
+    end
+end
+
 -- force: rebuild every button, not only the ones whose member changed.
 function UF:UpdateGroupRoster(force)
     if not raidFrame then return end
@@ -808,21 +835,8 @@ function UF:UpdateGroupRoster(force)
                 local slot = groupCounters[subgroup] + 1
                 if slot <= 5 then
                     groupCounters[subgroup] = slot
-                    local btn = groups[subgroup].buttons[slot]
-                    local unit = RAID_UNITS[i]
-                    unitToButton[unit] = btn
-                    -- Unit events keep a member current. In a battleground the
-                    -- roster changes all the time; rebuild only the buttons
-                    -- whose member, rank or online state changed.
-                    if force or btn.unit ~= unit or btn.rosterName ~= name or btn.rank ~= rank
-                        or btn.rosterOnline ~= online or not btn:IsShown() then
-                        btn.rangeAlpha = nil
-                        SetUnit(btn, unit)
-                        btn.rosterName, btn.rosterClass = name, FT.NormalizeClass(fileName or class)
-                        btn.index, btn.rank, btn.rosterOnline = i, rank, online
-                        btn:Show()
-                        UpdateButtonAll(btn)
-                    end
+                    Assign(groups[subgroup].buttons[slot], RAID_UNITS[i], force, i, rank, name,
+                        fileName or class, online)
                 end
             end
         end
@@ -831,33 +845,13 @@ function UF:UpdateGroupRoster(force)
         -- Unified Party layout: Group 1 displays party members vertically
         groups[1].title:SetText("Party")
 
-        local slot = 1
-        local pbtn = groups[1].buttons[slot]
-        pbtn.rangeAlpha = nil
-        SetUnit(pbtn, "player")
-        pbtn.rosterName, pbtn.rosterClass = nil, nil
-        pbtn.index = 0
-        pbtn.rank = UnitIsPartyLeader("player") and 2 or 0
-        unitToButton["player"] = pbtn
-        pbtn:Show()
-        UpdateButtonAll(pbtn)
+        Assign(groups[1].buttons[1], "player", force, 0, UnitIsPartyLeader("player") and 2 or 0,
+            UnitName("player"), nil, 1)
         groupCounters[1] = 1
-
-        for i = 1, numParty do
-            slot = slot + 1
-            if slot <= 5 then
-                local btn = groups[1].buttons[slot]
-                local unit = "party" .. i
-                btn.rangeAlpha = nil
-                SetUnit(btn, unit)
-                btn.rosterName, btn.rosterClass = nil, nil
-                btn.index = i
-                btn.rank = 0
-                unitToButton[unit] = btn
-                btn:Show()
-                UpdateButtonAll(btn)
-                groupCounters[1] = slot
-            end
+        for i = 1, math.min(numParty, 4) do
+            local unit = "party" .. i
+            Assign(groups[1].buttons[i + 1], unit, force, i, 0, UnitName(unit), nil, UnitIsConnected(unit))
+            groupCounters[1] = i + 1
         end
 
     end
@@ -965,7 +959,7 @@ function UF:ToggleRaidTest()
                 -- Mock class & name
                 local cls = MOCK_CLASSES[((g + m) % 8) + 1]
                 local c = UF.ClassColors[cls]
-                btn.healthBar:SetStatusBarColor(c.r, c.g, c.b, 1)
+                SetBarColor(btn.healthBar, c.r, c.g, c.b)
                 btn.nameText:SetText(string.sub(cls, 1, 1) .. cls:sub(2):lower() .. m)
 
                 -- Mock health variations
@@ -986,13 +980,13 @@ function UF:ToggleRaidTest()
                 else
                     btn.healthText:SetText("")
                 end
-                btn.healthBar:SetMinMaxValues(0, max)
+                SetBarRange(btn.healthBar, max)
                 btn.healthBar:SetValue(cur)
 
                 -- Mock power bar
-                btn.powerBar:SetMinMaxValues(0, 3000)
+                SetBarRange(btn.powerBar, 3000)
                 btn.powerBar:SetValue(2100)
-                btn.powerBar:SetStatusBarColor(0.3, 0.52, 0.9, 1)
+                SetBarColor(btn.powerBar, 0.3, 0.52, 0.9)
 
                 -- Mock indicators
                 if m == 1 and g == 1 then

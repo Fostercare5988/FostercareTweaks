@@ -271,7 +271,10 @@ end
 end
 
 do
--- Save chat history of non-combatlog windows and restore on login
+-- Chat history of the non-combat windows. The frames keep their own lines
+-- (ClassicAPI smf:GetMessageInfo): they are read once when the UI closes
+-- (logout or reload) and put back behind newer lines at login
+-- (smf:BackFillMessage). No wrapper runs on every chat line.
 
 local rgbhex = FT.rgbhex
 
@@ -281,6 +284,10 @@ local module = FT:register({
     category = "Social & Chat",
     enabled = true,
 })
+
+local KEEP = 30
+-- AddMessage keeps extra values; this one marks a restored, already dimmed line.
+local RESTORED = "FCTweaksHistory"
 
 module.enable = function(self)
     local realm = GetRealmName()
@@ -292,44 +299,39 @@ module.enable = function(self)
     end
     local histories = ChildTable(ChildTable(ChildTable(FostercareTweaks_Cache, "chathistory"), realm), player)
 
-    local function GetChatHistory(id)
-        return ChildTable(histories, id)
+    local function Dim(text, r, g, b)
+        if not (r and g and b) then return text end
+        local color = rgbhex(r * 0.5 + 0.2, g * 0.5 + 0.2, b * 0.5 + 0.2)
+        return color .. (string.gsub(text, "|r", "|r" .. color))
     end
 
-    local function SaveChatHistory(id, msg, r, g, b)
-        if r and g and b and rgbhex then
-            local color = rgbhex(r * 0.5 + 0.2, g * 0.5 + 0.2, b * 0.5 + 0.2)
-            msg = string.gsub(msg, "^", color)
-            msg = string.gsub(msg, "|r", "|r" .. color)
-        end
-
-        local history = GetChatHistory(id)
-        table.insert(history, 1, msg)
-        while #history > 30 do table.remove(history) end
-    end
-
-    local function AddMessage(frame, text, a1, a2, a3, a4, a5)
-        if not text then return end
-        SaveChatHistory(frame:GetID(), text, a1, a2, a3)
-        if frame.FCTweaks_ChatHistoryAddMessage then
-            frame.FCTweaks_ChatHistoryAddMessage(frame, text, a1, a2, a3, a4, a5)
-        end
-    end
-
+    local frames = {}
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G["ChatFrame" .. i]
-        if cf and not FT.IsCombatChatFrame(cf) and not cf.FCTweaks_ChatHistoryAddMessage then
-            local history = GetChatHistory(i)
-            for j = math.min(#history, 30), 1, -1 do
-                if type(history[j]) == "string" then
-                    cf:AddMessage(history[j], 0.7, 0.7, 0.7)
+        if cf and not FT.IsCombatChatFrame(cf) then
+            frames[i] = cf
+            -- Saved newest first; each goes behind the lines already shown.
+            local history = histories[i]
+            if type(history) == "table" then
+                for j = 1, math.min(#history, KEEP) do
+                    if type(history[j]) == "string" then cf:BackFillMessage(history[j], 0.7, 0.7, 0.7, RESTORED) end
                 end
             end
-
-            cf.FCTweaks_ChatHistoryAddMessage = cf.AddMessage
-            cf.AddMessage = AddMessage
         end
     end
+
+    local saver = CreateFrame("Frame")
+    saver:RegisterEvent("PLAYER_LOGOUT")
+    FT.SetEventHandler(saver, function()
+        for i, cf in pairs(frames) do
+            local history, newest = {}, cf:GetNumMessages()
+            for index = newest, math.max(1, newest - KEEP + 1), -1 do
+                local text, r, g, b, mark = cf:GetMessageInfo(index)
+                if text then history[#history + 1] = mark == RESTORED and text or Dim(text, r, g, b) end
+            end
+            histories[i] = history
+        end
+    end)
 end
 end
 

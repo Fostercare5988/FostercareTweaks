@@ -16,7 +16,11 @@ function Auras.StyleBorder(btn, dispelType)
     btn.borderDispelType = dispelType
     local cfg = FostercareTweaks_Config or {}
     local setting = btn.isDebuff and "Show Debuff Borders" or "Show Buff Borders"
-    if cfg[setting] ~= 1 then btn.border:Hide(); return end
+    -- Every aura update restyles its button: write only when the look changes.
+    local look = cfg[setting] ~= 1 and "off" or btn.isDebuff and (dispelType or "None") or "buff"
+    if btn.fctBorderLook == look then return end
+    btn.fctBorderLook = look
+    if look == "off" then btn.border:Hide(); return end
     if btn.isDebuff then
         local dc = UF.DispelColors[dispelType] or UF.DispelColors["None"]
         btn.border:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
@@ -92,6 +96,7 @@ local function ResetAuraButton(btn)
     if btn.countText then
         btn.countText:SetText("")
         btn.countText:Hide()
+        btn.fctCount = nil
     end
 
     if btn.cooldown then
@@ -100,14 +105,14 @@ local function ResetAuraButton(btn)
 
     if btn.icon then
         btn.icon:SetTexture(nil)
-        btn.icon:SetVertexColor(1, 1, 1, 1)
+        btn.fctTexture = nil
     end
 
     if btn.border then
         btn.border:Hide()
+        btn.fctBorderLook = nil
     end
 
-    btn:SetAlpha(1.0)
     btn:Hide()
 end
 
@@ -161,6 +166,7 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.countText:SetJustifyH("RIGHT")
     btn.countText:SetShadowColor(0, 0, 0, 1)
     btn.countText:SetShadowOffset(0.8, -0.8)
+    btn.countText:Hide()
 
     btn.isDebuff = isDebuff
     btn:RegisterForClicks("RightButtonUp")
@@ -340,8 +346,13 @@ end
 
 Auras.UpdateAuraTiming = UpdateAuraTiming
 
+-- Every aura update rewrites its buttons: these write only what changed.
+-- ResetAuraButton clears the remembered values with the widgets.
 local function SetCount(btn, count)
-    if count and count > 1 then
+    if not count or count <= 1 then count = nil end
+    if btn.fctCount == count then return end
+    btn.fctCount = count
+    if count then
         btn.countText:SetText(count)
         btn.countText:Show()
     else
@@ -349,6 +360,10 @@ local function SetCount(btn, count)
         btn.countText:Hide()
     end
 end
+local function SetIcon(btn, icon)
+    if btn.fctTexture ~= icon then btn.fctTexture = icon; btn.icon:SetTexture(icon) end
+end
+Auras.SetCount, Auras.SetIcon = SetCount, SetIcon
 
 function Auras:UpdateContainer(container)
     if not container or not container.unit then return end
@@ -422,9 +437,7 @@ function Auras:UpdateContainer(container)
                         btn.spellId = spellId
                         btn.isOccupied = true
 
-                        btn.icon:SetTexture(icon)
-                        btn.icon:SetVertexColor(1, 1, 1, 1)
-                        btn:SetAlpha(1.0)
+                        SetIcon(btn, icon)
                         SetCount(btn, count)
                         UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
 
@@ -472,9 +485,7 @@ function Auras:UpdateContainer(container)
                         btn.spellId = spellId
                         btn.isOccupied = true
 
-                        btn.icon:SetTexture(icon)
-                        btn.icon:SetVertexColor(1, 1, 1, 1)
-                        btn:SetAlpha(1.0)
+                        SetIcon(btn, icon)
                         SetCount(btn, count)
                         Auras.StyleBorder(btn, dispelType)
 
