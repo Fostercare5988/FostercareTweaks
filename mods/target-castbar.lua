@@ -166,7 +166,8 @@ module.enable = function(self)
     -- Ctrl+Shift moves the bar. The position follows the target frame.
     castbar.moved = FT.RestoreFramePosition(castbar, "target_castbar", TargetFrame)
     castbar.fctRestoreShown = function(bar) if not bar.endSec then bar:Hide() end end
-    FT.RegisterFrameMover(castbar, "target_castbar", "Cast bar", TargetFrame, function() castbar.moved = true end)
+    FT.RegisterFrameMover(castbar, "target_castbar", "Cast bar", TargetFrame, function() castbar.moved = true end,
+        function(saved) castbar.moved, castbar.lastYOffset = saved, nil; UpdateAnchor() end)
     UpdateAnchor()
 
     self:apply()

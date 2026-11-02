@@ -53,6 +53,7 @@ mods\chat-tweaks.lua
 # General & Gameplay Modules
 mods\gameplay.lua
 mods\blue-shaman.lua
+Profiles.lua
 
 # Settings (ForgeUI kit)
 ForgeUI.lua

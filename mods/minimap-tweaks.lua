@@ -64,7 +64,7 @@ module.enable = function(self)
     -- Ctrl+Shift moves the map with its zone name; the handle covers the map itself.
     MinimapCluster.fctPositionPoint = "TOPRIGHT"
     FT.RestoreFramePosition(MinimapCluster, "minimap")
-    FT.RegisterFrameMover(MinimapCluster, "minimap", "Minimap")
+    FT.RegisterFrameMover(MinimapCluster, "minimap", "Minimap", nil, nil, FT.ClampMinimapToMap)
     MinimapCluster.fctMover:ClearAllPoints()
     MinimapCluster.fctMover:SetAllPoints(Minimap)
     -- Once the map's own layout is final (the square map re-anchors it).

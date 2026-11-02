@@ -247,13 +247,16 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
     end
 
     if options.moveKey then
+        -- After a drag or a layout change, rows without a saved spot go back
+        -- under their frame.
+        local function Layout() Auras:LayoutContainer(container) end
         if container.buffFrame then
             FT.RestoreFramePosition(container.buffFrame, options.moveKey .. "_buffs", parentFrame)
-            FT.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, function() Auras:LayoutContainer(container) end)
+            FT.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, Layout, Layout)
         end
         if container.debuffFrame then
             FT.RestoreFramePosition(container.debuffFrame, options.moveKey .. "_debuffs", parentFrame)
-            FT.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame, function() Auras:LayoutContainer(container) end)
+            FT.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame, Layout, Layout)
         end
     end
     return container
