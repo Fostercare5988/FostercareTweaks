@@ -82,13 +82,15 @@ end
 
 local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
-local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
+-- The Action Bars page sets its own height as bar settings open and close.
+local TAB_LIST = {
     { label = "General", height = 540 },
     { label = "Unit Frames", height = 440 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
-    { label = "Action Bars", height = 574 },
-}, function(index) tab = index; Refresh() end)
+    { label = "Action Bars", height = 620 },
+}
+local pages, ShowTab = UI.Tabs(panel, "FTOpt", TAB_LIST, function(index) tab = index; Refresh() end)
 panel:SetScript("OnShow", function() ShowTab(tab) end)
 
 -- One Reload UI button, shown on every page while a change waits for it.
@@ -273,85 +275,108 @@ FooterButton(raid, "FTOpt_RaidReset", "Reset raid settings", LEFT + 180, 140, fu
 end, "Defaults for everything on this page. The frames stay where you put them.")
 
 -- Action Bars -------------------------------------------------------------------
+-- One row per bar: its own Show switch and size, and "More" for the rest of its
+-- settings under the row. Changing a bar turns custom layouts on; they keep
+-- every bar where it stands.
 local bars = pages[5]
 local AB = FT.ActionBars
-local selected = AB.definitions[1]
-local function Layouts() return AB.enabled end
 UI.Heading(bars, "Look", LEFT, -98)
 Feature(bars, "Hide Gryphons", "Hide gryphons", "Remove the gryphons at both ends of the bar.", LEFT, -118)
 Feature(bars, "Floating Actionbar", "No bar background", "Remove the bar's background art.", LEFT, -144)
 Feature(bars, "Reduced Actionbar Size", "Short main bar", "A shorter main bar without the bag and game menu buttons.", LEFT, -170)
-Feature(bars, "Center Vertical Actionbar", "Center the right bars", "Center the right-side bars vertically.", LEFT, -196)
-Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", LEFT, -222)
-UI.Heading(bars, "Layouts", LEFT, -288)
-local layouts = UI.Switch("FTOpt_Layouts", bars, "Custom layouts", "Move and reshape bars. Off keeps the game's layout.",
-    LEFT, -308, function(value) AB:SetEnabled(value); Refresh() end)
-local move = UI.Button("FTOpt_MoveBars", bars, "Move bars", LEFT, -340, 172, function()
+Feature(bars, "Center Vertical Actionbar", "Center the right bars", "Center the right-side bars vertically.", RIGHT, -118)
+Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", RIGHT, -144)
+UI.Heading(bars, "Bars", LEFT, -210)
+local layouts = UI.Switch("FTOpt_Layouts", bars, "Custom layouts", "Off puts every bar back in the game's layout.",
+    LEFT, -230, function(value) AB:SetEnabled(value); Refresh() end)
+local move = UI.Button("FTOpt_MoveBars", bars, "Move bars", RIGHT + 36, -228, 172, function()
     AB:SetEditing(not AB.editing); Refresh()
 end)
-UI.Tooltip(move, "Show a handle on each bar to drag it. Click again, or close this window, to lock them.")
-Hint(bars, "Not in combat. Actions and key bindings stay on their buttons.", LEFT, -372)
+UI.Tooltip(move, "Show a handle on each bar to drag it. Click again, or close this window, to lock them. Not in combat.")
 table.insert(syncs, function()
     UI.Sync(layouts, AB.enabled)
     UI.SetEnabled(move, AB.enabled)
     UI.Select(move, AB.editing)
 end)
 
--- The bar picker: two columns of pills, the chosen bar filled.
-UI.Heading(bars, "Bar", RIGHT, -98)
-local SHORT = { main = "Main", bottomleft = "Bottom left", bottomright = "Bottom right", right = "Right", left = "Left" }
+local ROW_TOP, ROW_STEP, DETAILS = -266, 28, 100
+local NAMES = { main = "Main", bottomleft = "Bottom left", bottomright = "Bottom right", right = "Right", left = "Left" }
 local NOTES = {
-    main = "The main bar and the stealth or stance bar share this layout.",
-    extra = "Extra row 1 shows action page 2 (slots 13 to 24).",
+    main = "The main bar and the stealth or stance bar share this layout. It is always shown.",
+    extra = "Shows action page 2 (slots 13 to 24). Bind keys in Key Bindings.",
 }
-local pickers = {}
-for index, definition in ipairs(AB.definitions) do
-    local choice = definition
-    local label = SHORT[definition.id] or ("Extra " .. definition.extraIndex)
-    local button = UI.Button("FTOpt_Bar" .. definition.id, bars, label, RIGHT + ((index - 1) % 2) * 106,
-        -118 - math.floor((index - 1) / 2) * 26, 102, function() selected = choice; Refresh() end)
-    UI.Tooltip(button, NOTES[definition.id] or (definition.custom
-        and "Drop spells or items on its buttons; Shift-right-click clears one. Bind keys in Key Bindings."
-        or "Keeps its own actions and key bindings."))
-    pickers[definition.id] = button
-end
-local function BarValue(key, fallback)
-    local value = AB:GetSettings(selected.id)[key]
+local CUSTOM = "Drop spells or items on its buttons; Shift-right-click clears one. Bind keys in Key Bindings."
+local open                                  -- the bar whose settings are open
+local function Percent(v) return math.floor(v * 100 + 0.5) .. "%" end
+local function BarValue(id, key, fallback)
+    local value = AB:GetSettings(id)[key]
     if value == nil then return fallback end
     return value
 end
-local function BarSwitch(key, text, y, fallback)
-    local widget = UI.Switch("FTOpt_Bar_" .. key, bars, text, nil, RIGHT, y, function(value)
-        AB:SetValue(selected.id, key, value); Refresh()
-    end, 172)
-    table.insert(syncs, function()
-        UI.Sync(widget, BarValue(key, fallback()), Layouts() and not (key == "visible" and selected.id == "main"))
-    end)
+local function NativeShown(definition)
+    local bar, frame = AB.bars[definition.id], _G[definition.prefix]
+    return (bar and bar.nativeVisible) or (frame and frame:IsShown()) or false
 end
-local function BarSlider(key, text, minimum, maximum, step, y, fallback, format)
-    local slider = UI.Slider("FTOpt_Bar_" .. key, bars, text, RIGHT, y, SIDE, minimum, maximum, step, function(value)
-        AB:SetValue(selected.id, key, value)
-    end, format)
-    table.insert(syncs, function()
-        UI.SetSlider(slider, FT.ClampNumber(BarValue(key), fallback(), minimum, maximum)); Dim(slider, Layouts())
-    end)
+local function SetBar(id, key, value)
+    if not AB.enabled then AB:SetEnabled(true) end
+    if AB.enabled then AB:SetValue(id, key, value) end
 end
-BarSwitch("visible", "Show this bar", -284, function()
-    local bar, frame = AB.bars[selected.id], selected.id == "main" and MainMenuBar or _G[selected.prefix]
-    return selected.id == "main" or (bar and bar.nativeVisible) or (frame and frame:IsShown()) or false
+local rows = {}
+for index, definition in ipairs(AB.definitions) do
+    local def = definition
+    local row = UI.Row("FTOpt_BarRow_" .. def.id, bars, LEFT, ROW_TOP - (index - 1) * ROW_STEP, 444)
+    row.definition = def
+    row.show = UI.Switch("FTOpt_BarShow_" .. def.id, row, NAMES[def.id] or ("Extra " .. def.extraIndex),
+        NOTES[def.id] or (def.custom and CUSTOM or "Keeps its own actions and key bindings."), 6, -3,
+        function(value) SetBar(def.id, "visible", value); Refresh() end, 150)
+    row.size = UI.Slider("FTOpt_BarSize_" .. def.id, row, "", 190, 0, 140, 0.5, 2, 0.05,
+        function(value) SetBar(def.id, "scale", value) end, Percent)
+    row.size:ClearAllPoints(); row.size:SetPoint("LEFT", row, "LEFT", 190, 0)
+    row.size.valueText:ClearAllPoints(); row.size.valueText:SetPoint("LEFT", row.size, "LEFT", 148, 0)
+    row.size.valueText:SetJustifyH("LEFT")
+    UI.Tooltip(row.size, "Size")
+    row.more = UI.Button("FTOpt_BarMore_" .. def.id, row, "More", 384, -2, 56, function()
+        if open == def.id then open = nil else open = def.id end
+        Refresh()
+    end, { ghost = true })
+    rows[index] = row
+end
+
+-- The open bar's other settings, drawn under its row.
+local details = CreateFrame("Frame", "FTOpt_BarDetails", bars)
+details:SetWidth(444); details:SetHeight(DETAILS - 8)
+local function Detail(key) return function(value) SetBar(open, key, value); Refresh() end end
+local columns = UI.Slider("FTOpt_Bar_columns", details, "Buttons per row", 16, -4, 192, 1, 12, 1, Detail("columns"), tostring)
+local spacing = UI.Slider("FTOpt_Bar_spacing", details, "Spacing", 16, -46, 192, 0, 20, 1, Detail("spacing"), Pixels)
+local empty = UI.Switch("FTOpt_Bar_showEmpty", details, "Show empty buttons", nil, 236, -4, Detail("showEmpty"), 172)
+local growUp = UI.Switch("FTOpt_Bar_growUp", details, "Fill bottom to top", nil, 236, -30, Detail("growUp"), 172)
+local resetBar = UI.Button("FTOpt_BarReset", details, "Reset this bar", 236, -60, 172, function()
+    AB:ResetBar(open); Refresh()
 end)
-BarSwitch("showEmpty", "Show empty buttons", -310, function() return selected.id == "extra" or selected.custom or false end)
-BarSwitch("growUp", "Fill bottom to top", -336, function() return false end)
-BarSlider("columns", "Buttons per row", 1, 12, 1, -370, function() return selected.columns end, tostring)
-BarSlider("scale", "Size", 0.5, 2, 0.05, -412, function() return 1 end, function(v) return math.floor(v * 100 + 0.5) .. "%" end)
-BarSlider("spacing", "Spacing", 0, 20, 1, -454, function() return 6 end, Pixels)
-local resetBar = UI.Button("FTOpt_BarReset", bars, "Reset this bar", RIGHT, -496, 172, function()
-    AB:ResetBar(selected.id); Refresh()
-end)
-UI.Tooltip(resetBar, "Its place and shape go back to the default. Its actions stay.")
+UI.Tooltip(resetBar, "Its place, size and shape go back to the default. Its actions stay.")
+
 table.insert(syncs, function()
-    for id, button in pairs(pickers) do UI.Select(button, id == selected.id) end
-    UI.SetEnabled(resetBar, Layouts())
+    local y = ROW_TOP
+    for _, row in ipairs(rows) do
+        local def = row.definition
+        row:ClearAllPoints(); row:SetPoint("TOPLEFT", bars, "TOPLEFT", LEFT, y)
+        local main = def.id == "main"
+        UI.Sync(row.show, main or BarValue(def.id, "visible", NativeShown(def)), not main)
+        UI.SetSlider(row.size, FT.ClampNumber(BarValue(def.id, "scale"), 1, 0.5, 2))
+        UI.Select(row.more, open == def.id)
+        y = y - ROW_STEP
+        if open == def.id then
+            details:ClearAllPoints(); details:SetPoint("TOPLEFT", bars, "TOPLEFT", LEFT, y)
+            UI.SetSlider(columns, FT.ClampNumber(BarValue(def.id, "columns"), def.columns, 1, 12))
+            UI.SetSlider(spacing, FT.ClampNumber(BarValue(def.id, "spacing"), 6, 0, 20))
+            UI.Sync(empty, BarValue(def.id, "showEmpty", def.extraIndex ~= nil))
+            UI.Sync(growUp, BarValue(def.id, "growUp", false))
+            y = y - DETAILS
+        end
+    end
+    if open then details:Show() else details:Hide() end
+    TAB_LIST[5].height = 46 - y
+    if tab == 5 then panel:SetHeight(TAB_LIST[5].height) end
 end)
 
 -- Handles block the buttons under them; lock them with the window and in combat.

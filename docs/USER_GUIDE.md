@@ -93,12 +93,13 @@ One grid serves both parties and raids.
   (without the bag and game menu buttons), centered right-side bars and reagent
   counts (how many casts your reagents allow). Cooldowns always count down on
   the buttons, in the auras' look: tenths in red under 5 seconds.
-- **Custom layouts** lets you move and reshape bars. Off keeps the game's layout.
+- **Bars**: one row per bar, with its switch to show it and its size. **More**
+  opens the rest under the row: **Buttons per row** (12 is a row, 1 a column),
+  **Spacing**, **Show empty buttons**, **Fill bottom to top** and **Reset this
+  bar** (keeps its actions). Changing a bar turns on **Custom layouts**; off
+  puts every bar back in the game's layout.
 - **Move bars** shows a handle on each bar; drag it, then click again or close
   the window to lock. Not in combat.
-- Pick a bar on the right, then set **Show this bar**, **Show empty buttons**,
-  **Fill bottom to top**, **Buttons per row** (12 is a row, 1 a column), **Size**
-  and **Spacing**. **Reset this bar** keeps its actions.
 - **Extra 1** shows action page 2 (slots 13 to 24). **Extra 2 to 7** hold their
   own spells and items: drop a spell or item on an empty button out of combat
   with the game's action bar lock off. Drag between these rows to move or swap;
