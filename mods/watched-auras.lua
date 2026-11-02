@@ -4,9 +4,10 @@ if not FT then return end
 -- Watched auras: chosen buffs on you and debuffs on your target, each its own
 -- icon with the time left (the client's countdown, FT.Countdown), shown while
 -- the aura is up and moved with Ctrl+Shift. FostercareTweaks_Config.watched
--- holds { name, spellId, unit = "player" | "target" | "hidden", mine, icon } in
--- order. An aura shows in one place: a watched one leaves that unit's lists
--- (Blizzard's buffs, the player and target rows), a hidden one leaves them all.
+-- holds { name, spellId, unit = "player" | "target", mine, icon, noIcon, topRight,
+-- inRow } in order. Each aura decides where it shows: its own icon (unless
+-- noIcon), and only when asked also in Blizzard's buffs at the top right
+-- (topRight, your buffs) and the player or target row (inRow).
 -- Positions live with the other frames (unitframe_positions), so each zone
 -- layout keeps its own.
 local module = FT:register({
@@ -19,11 +20,14 @@ FT.WatchedAuras = W
 local SIZE, GAP = 36, 6
 local FILTER = { player = "HELPFUL", target = "HARMFUL" }
 local icons, slots = {}, {}          -- icons by key; one slot buffer
-local hidden = { all = {}, player = {}, target = {} }   -- names, from the list
+-- Names kept out of each list: Blizzard's top right, and each unit's row.
+local hidden = { top = {}, player = {}, target = {} }
 
--- For the aura lists: true when this aura of this unit shows elsewhere.
-function FT.IsAuraHidden(name, unit)
-    return name ~= nil and (hidden.all[name] or (hidden[unit] and hidden[unit][name])) or false
+-- For the aura lists: true when this aura is not wanted there. place "top" is
+-- Blizzard's buffs at the top right; otherwise the unit's row.
+function FT.IsAuraHidden(name, unit, place)
+    local set = place == "top" and hidden.top or hidden[unit]
+    return name ~= nil and set ~= nil and set[name] or false
 end
 
 local function List()
@@ -109,7 +113,8 @@ function W.Update(unit)
                 if entry.unit == unit and not found[entry] and (entry.name == name or entry.spellId == spellId)
                     and (not entry.mine or (source and UnitIsUnit(source, "player"))) then
                     found[entry] = true
-                    local icon = icons[Key(entry)]
+                    entry.icon = entry.icon or texture          -- for its chip in the settings
+                    local icon = not entry.noIcon and icons[Key(entry)]
                     if icon then Show(icon, texture, count, duration, expiration) end
                 end
             end
@@ -130,13 +135,12 @@ function W.Rebuild(refreshLists)
     local wanted, index = {}, 0
     for _, set in pairs(hidden) do table.wipe(set) end
     for _, entry in ipairs(List()) do
-        if entry.unit == "hidden" then
-            hidden.all[entry.name] = true
-        else
+        if not entry.noIcon then
             index = index + 1
             wanted[Key(entry)] = Icon(entry, index)
-            hidden[entry.unit][entry.name] = true
         end
+        if entry.unit == "player" and not entry.topRight then hidden.top[entry.name] = true end
+        if not entry.inRow then hidden[entry.unit][entry.name] = true end
     end
     for key, icon in pairs(icons) do
         if not wanted[key] then icon.fctRestoreShown = nil; icon:Hide() end
@@ -159,7 +163,8 @@ function W.Add(text, unit)
     for _, entry in ipairs(List()) do
         if entry.unit == unit and entry.name == name then return end
     end
-    table.insert(List(), { name = name, spellId = id, unit = unit, mine = unit == "target" or nil })
+    local _, _, known = GetSpellInfo(id or name)         -- your own spells: their icon now
+    table.insert(List(), { name = name, spellId = id, unit = unit, mine = unit == "target" or nil, icon = known })
     W.Rebuild(true)
 end
 
@@ -173,10 +178,23 @@ function W.SetMine(index, mine)
     W.Update("target")
 end
 
+-- Where an aura shows: "icon" (its own), "topRight" (Blizzard's buffs), "inRow"
+-- (the player or target row).
+function W.SetShown(index, place, shown)
+    local entry = List()[index]
+    if place == "icon" then entry.noIcon = not shown or nil
+    else entry[place] = shown and true or nil end
+    W.Rebuild(true)
+end
+
 module.enable = function()
     -- 1.9.0 copied FostercareAuras setups once and kept their spell IDs as text.
     FostercareTweaks_Config.watchedImported = nil
-    for _, entry in ipairs(List()) do entry.spellId = tonumber(entry.spellId) end
+    for _, entry in ipairs(List()) do
+        entry.spellId = tonumber(entry.spellId)
+        -- 1.10's Hide entries: one of your buffs with no icon of its own.
+        if entry.unit == "hidden" then entry.unit, entry.noIcon = "player", true end
+    end
     local events = CreateFrame("Frame")
     events:RegisterUnitEvent("UNIT_AURA_DELTA", "player", "target")
     events:RegisterEvent("PLAYER_TARGET_CHANGED")

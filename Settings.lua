@@ -218,12 +218,15 @@ Feature(auras, "Show Debuff Borders", "Debuff borders", "A dispel-colored border
 Feature(auras, "Show Weapon Enchant Borders", "Enchant borders", "The weapon's quality color around its enchant.",
     RIGHT, -282, StandardAuras, nil, true)
 
--- Watched auras: type a name, pick where it shows; one row per aura.
+-- Watched auras: type a name and add it; the list is a grid of chips, and the
+-- chosen one's card says where it shows.
 local WA = FT.WatchedAuras
+local CHIP_W, CHIP_H, CARD_H = 218, 24, 92
+local selected
 UI.Heading(auras, "Watched auras", LEFT, -352)
-Hint(auras, "Each its own icon with the time left, shown only there. Hide takes one out of every list.", LEFT, -372, 444)
+Hint(auras, "Each gets its own icon with the time left. Click one to choose where it shows.", LEFT, -372, 444)
 local watchName = CreateFrame("EditBox", "FTOpt_WatchName", auras)
-watchName:SetWidth(140); watchName:SetHeight(22)
+watchName:SetWidth(180); watchName:SetHeight(22)
 watchName:SetPoint("TOPLEFT", auras, "TOPLEFT", LEFT, -398)
 watchName:SetAutoFocus(false)
 watchName:SetFontObject(GameFontHighlightSmall)
@@ -231,43 +234,89 @@ watchName:SetTextInsets(10, 10, 0, 0)
 UI.Rounded(watchName, "BACKGROUND", 11, UI.control)
 UI.Tooltip(watchName, "A spell's name, or its ID.")
 local function AddWatch(unit)
+    local before = #WA.List()
     WA.Add(watchName:GetText(), unit)
+    if #WA.List() > before then selected = #WA.List() end     -- open the new one's card
     watchName:SetText(""); watchName:ClearFocus(); Refresh()
 end
 watchName:SetScript("OnEscapePressed", function() watchName:ClearFocus() end)
 watchName:SetScript("OnEnterPressed", function() AddWatch("player") end)
-UI.Button("FTOpt_WatchBuff", auras, "Add your buff", LEFT + 146, -398, 108, function() AddWatch("player") end)
-UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", LEFT + 260, -398, 122, function() AddWatch("target") end)
-UI.Button("FTOpt_WatchHide", auras, "Hide", LEFT + 388, -398, 56, function() AddWatch("hidden") end)
-local watchRows = {}
-local function WatchRow(i)
-    if watchRows[i] then return watchRows[i] end
-    local row = UI.Row("FTOpt_WatchRow" .. i, auras, LEFT, -430 - (i - 1) * 28, 444)
-    row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.name:SetPoint("LEFT", row, "LEFT", 8, 0)
-    UI.Color(row.name, "text")
-    row.kind = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    row.kind:SetPoint("LEFT", row, "LEFT", 150, 0)
-    UI.Color(row.kind, "hint")
-    row.mine = UI.Switch("FTOpt_WatchMine" .. i, row, "Only mine", "Only the debuff you cast; off shows anyone's.",
-        250, -3, function(value) WA.SetMine(i, value) end, 90)
-    row.remove = UI.Button("FTOpt_WatchRemove" .. i, row, "Remove", 370, -2, 70, function()
-        WA.Remove(i); Refresh()
-    end, { ghost = true })
-    watchRows[i] = row
-    return row
+UI.Button("FTOpt_WatchBuff", auras, "Add your buff", LEFT + 190, -398, 120, function() AddWatch("player") end)
+UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", LEFT + 316, -398, 128, function() AddWatch("target") end)
+
+local chips = {}
+local function Chip(i)
+    if chips[i] then return chips[i] end
+    local chip = UI.Button("FTOpt_WatchChip" .. i, auras, "", 0, 0, CHIP_W, function()
+        selected = selected ~= i and i or nil; Refresh()
+    end, { ghost = true, height = CHIP_H })
+    chip.icon = chip:CreateTexture(nil, "ARTWORK")
+    chip.icon:SetWidth(18); chip.icon:SetHeight(18)
+    chip.icon:SetPoint("LEFT", chip, "LEFT", 4, 0)
+    chip.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    local label = chip:GetFontString()
+    label:ClearAllPoints()
+    label:SetPoint("LEFT", chip, "LEFT", 28, 0); label:SetPoint("RIGHT", chip, "RIGHT", -52, 0)
+    label:SetJustifyH("LEFT")
+    chip.kind = chip:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    chip.kind:SetPoint("RIGHT", chip, "RIGHT", -10, 0)
+    UI.Color(chip.kind, "hint")
+    chips[i] = chip
+    return chip
 end
+
+-- The chosen aura's card: where it shows, Only mine, Remove.
+local card = UI.Row("FTOpt_WatchCard", auras, LEFT, 0, 444)
+card:SetHeight(CARD_H)
+card.title = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+card.title:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -9)
+UI.Color(card.title, "heading")
+local function Place(name, text, tip, x, y, place)
+    return UI.Switch("FTOpt_Watch" .. name, card, text, tip, x, y, function(value)
+        WA.SetShown(selected, place, value); Refresh()
+    end, 100)
+end
+card.icon = Place("Icon", "Own icon", "Its own icon with the time left. Hold Ctrl+Shift to move it.", 10, -32, "icon")
+card.top = Place("Top", "Top right", "Also in Blizzard's buffs at the top right of the screen.", 150, -32, "topRight")
+card.row = Place("Row", "Player row", "Also in the row under the player or target frame.", 290, -32, "inRow")
+card.mine = UI.Switch("FTOpt_WatchMine", card, "Only mine", "Only the debuff you cast; off shows anyone's.",
+    10, -60, function(value) WA.SetMine(selected, value); Refresh() end, 100)
+UI.Button("FTOpt_WatchRemove", card, "Remove", 444 - 88, -60, 78, function()
+    WA.Remove(selected); selected = nil; Refresh()
+end, { ghost = true })
+
 table.insert(syncs, function()
     local list = WA.List()
+    if selected and not list[selected] then selected = nil end
     for i, entry in ipairs(list) do
-        local row = WatchRow(i)
-        row.name:SetText(entry.name)
-        row.kind:SetText(entry.unit == "player" and "Your buff" or entry.unit == "target" and "Target debuff" or "Hidden")
-        if entry.unit == "target" then row.mine:Show(); UI.Sync(row.mine, entry.mine) else row.mine:Hide() end
-        row:Show()
+        local chip, column, row = Chip(i), (i - 1) % 2, math.floor((i - 1) / 2)
+        chip:ClearAllPoints()
+        chip:SetPoint("TOPLEFT", auras, "TOPLEFT", LEFT + column * (444 - CHIP_W), -430 - row * (CHIP_H + 4))
+        chip:SetText(entry.name)
+        local _, _, spellIcon = GetSpellInfo(entry.spellId or entry.name)
+        chip.icon:SetTexture(entry.icon or spellIcon or "Interface\\Icons\\INV_Misc_QuestionMark")
+        chip.kind:SetText(entry.unit == "player" and "buff" or "debuff")
+        UI.Select(chip, i == selected)
+        chip:Show()
     end
-    for i = #list + 1, #watchRows do watchRows[i]:Hide() end
-    TAB_LIST[3].height = 470 + #list * 28
+    for i = #list + 1, #chips do chips[i]:Hide() end
+    local bottom = -430 - math.ceil(#list / 2) * (CHIP_H + 4)
+    local entry = list[selected]
+    if entry then
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", auras, "TOPLEFT", LEFT, bottom - 6)
+        card.title:SetText(entry.name .. (entry.unit == "player" and "  -  your buff" or "  -  target debuff"))
+        UI.Sync(card.icon, not entry.noIcon)
+        if entry.unit == "player" then card.top:Show(); UI.Sync(card.top, entry.topRight) else card.top:Hide() end
+        card.row.label:SetText(entry.unit == "player" and "Player row" or "Target row")
+        UI.Sync(card.row, entry.inRow)
+        if entry.unit == "target" then card.mine:Show(); UI.Sync(card.mine, entry.mine) else card.mine:Hide() end
+        card:Show()
+        bottom = bottom - 6 - CARD_H
+    else
+        card:Hide()
+    end
+    TAB_LIST[3].height = 60 - bottom
     if tab == 3 then panel:SetHeight(TAB_LIST[3].height) end
 end)
 
@@ -483,14 +532,17 @@ for index, info in ipairs(TAB_LIST) do
     scroll:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
     scroll:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -28, 8)
     local holder = CreateFrame("Frame", nil, scroll)
-    holder:SetWidth(panel.width)
     scroll:SetScrollChild(holder)
     host.holder = holder
     host:SetScript("OnShow", function()
         if panel:IsShown() then panel:Hide() end
         hosted, tab = index, index
+        -- The category is narrower than the window: the page shrinks to fit.
+        local width = scroll:GetWidth()
+        host.scale = width > 0 and math.min(1, width / panel.width) or 1
+        holder:SetWidth(panel.width * host.scale)
         local page = pages[index]
-        page:SetParent(holder); page:ClearAllPoints()
+        page:SetParent(holder); page:SetScale(host.scale); page:ClearAllPoints()
         page:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, SHIFT)
         page:SetWidth(panel.width)
         page:Show()
@@ -500,7 +552,7 @@ for index, info in ipairs(TAB_LIST) do
         if hosted == index then hosted = nil end
         AB:SetEditing(false)
         local page = pages[index]
-        page:Hide(); page:SetParent(panel); page:ClearAllPoints(); page:SetAllPoints(panel)
+        page:Hide(); page:SetParent(panel); page:SetScale(1); page:ClearAllPoints(); page:SetAllPoints(panel)
     end)
     hosts[index] = host
     InterfaceOptions_AddCategory(host)
@@ -510,7 +562,7 @@ table.insert(syncs, function()
     local host = hosts[hosted]
     if host then
         local height = TAB_LIST[hosted].height
-        pages[hosted]:SetHeight(height); host.holder:SetHeight(height - SHIFT)
+        pages[hosted]:SetHeight(height); host.holder:SetHeight((height - SHIFT) * host.scale)
     end
 end)
 

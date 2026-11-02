@@ -125,17 +125,29 @@ local function StyleWeaponEnchants(force)
             button.fctEnchantShown = shown
             if shown then ReadEnchants() end
         end
+        if button.fctAnchorHand ~= button:GetID() then AnchorWeapon(button) end
         StyleAuraIcon(button, true, force)
     end
 end
+-- The native updater gives TempEnchant1 to the off hand whenever it has an
+-- enchant. Place each button by the hand it shows: main hand left, off hand
+-- right, whichever weapons are enchanted.
+local function AnchorWeapon(button)
+    local hand = button:GetID()
+    button.fctAnchorHand = hand
+    button:ClearAllPoints()
+    button:SetPoint("TOPRIGHT", areas[3].frame, "TOPRIGHT", hand == 17 and 0 or -35, 0)
+end
+
 local function AnchorButtons()
     if not areas then return end
-    for index, area in ipairs(areas) do
-        -- Buffs and debuffs close up around hidden ones; the two weapon
-        -- buttons keep their places (the native updater shows them each frame).
+    for _, button in ipairs(areas[3].buttons) do AnchorWeapon(button) end
+    for index = 1, 2 do
+        local area = areas[index]
+        -- Buffs and debuffs close up around hidden ones.
         local i = 0
         for _, button in ipairs(area.buttons) do
-            if index == 3 or button:IsShown() then
+            if button:IsShown() then
                 i = i + 1
                 -- Native icons are 30px. Keep eight per row, right-to-left,
                 -- including room for the original duration labels underneath.
@@ -160,7 +172,7 @@ end
 -- elsewhere (watched or hidden). SuperWoW names the aura behind the index.
 local function HideIfElsewhere(button)
     if button.buffIndex and button.buffIndex >= 0 and button:IsShown()
-        and FT.IsAuraHidden(GetSpellInfo(GetPlayerBuffID(button.buffIndex)), "player") then
+        and FT.IsAuraHidden(GetSpellInfo(GetPlayerBuffID(button.buffIndex)), "player", "top") then
         button:Hide()
     end
     local shown = button:IsShown()
