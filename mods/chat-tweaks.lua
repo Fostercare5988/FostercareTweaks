@@ -131,7 +131,7 @@ local function FormatLink(formatter, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 
     if formatter == URLPattern.EMAIL.fm then
         local colon = string.find(a1, ":")
-        if colon and string.len(a1) > colon then
+        if colon and #a1 > colon then
             if string.sub(a1, 1, 6) ~= "mailto" then
                 local prefix, address = string.sub(newtext, 1, colon), string.sub(newtext, colon + 1)
                 return string.format(" %s|cffccccff|Hurl:%s|h[%s]|h|r ", prefix, address, address)
@@ -233,7 +233,7 @@ module.enable = function(self)
         local playerlink = string.sub(link, 1, 6) == "player"
 
         if string.sub(link, 1, 3) == "url" then
-            if string.len(link) > 4 and string.sub(link, 1, 4) == "url:" then
+            if #link > 4 and string.sub(link, 1, 4) == "url:" then
                 CopyLinkDialog.CopyText(string.sub(link, 5))
             end
             return
@@ -250,7 +250,7 @@ module.enable = function(self)
             return
         elseif playerlink then
             local name = string.sub(link, 8)
-            if name and string.len(name) > 0 then
+            if name and #name > 0 then
                 local realName = string.gsub(name, ":.*$", "")
                 realName = gsub(realName, "([^%s]*)%s+([^%s]*)%s+([^%s]*)", "%3")
                 realName = gsub(realName, "([^%s]*)%s+([^%s]*)", "%2")
