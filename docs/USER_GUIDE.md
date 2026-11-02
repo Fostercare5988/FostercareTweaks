@@ -48,6 +48,7 @@ These improve Blizzard's player, target and pet frames.
   after a reload; `/ft resetuf` does both at once.
 - **Target castbar**: your target's casts under its frame; grey when they cannot
   be interrupted. Hold Ctrl+Shift to move it; it follows the target frame.
+- **Your cast bar**: hold Ctrl+Shift to move it off the action bars.
 - **Raid marks**: bigger marks on the target frame and raid frames, on the
   portrait or beside the frame. When you are not in a group, the raid mark keys
   set marks only you can see.
