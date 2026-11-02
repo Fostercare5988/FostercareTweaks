@@ -86,7 +86,7 @@ local TABS = { "general", "unit", "auras", "raid", "bars" }
 local TAB_LIST = {
     { label = "General", height = 590 },
     { label = "Unit Frames", height = 440 },
-    { label = "Auras", height = 400 },
+    { label = "Auras", height = 470 },
     { label = "Raid", height = 590 },
     { label = "Action Bars", height = 620 },
 }
@@ -216,6 +216,58 @@ Feature(auras, "Show Buff Borders", "Buff borders", "A dark border around buffs 
 Feature(auras, "Show Debuff Borders", "Debuff borders", "A dispel-colored border around debuffs everywhere.", RIGHT, -256, StandardAuras, nil, false)
 Feature(auras, "Show Weapon Enchant Borders", "Enchant borders", "The weapon's quality color around its enchant.",
     RIGHT, -282, StandardAuras, nil, true)
+
+-- Watched auras: type a name, pick where it shows; one row per aura.
+local WA = FT.WatchedAuras
+UI.Heading(auras, "Watched auras", LEFT, -352)
+Hint(auras, "Each its own icon with the time left, while the aura is up. Hold Ctrl+Shift to move them.", LEFT, -372, 444)
+local watchName = CreateFrame("EditBox", "FTOpt_WatchName", auras)
+watchName:SetWidth(180); watchName:SetHeight(22)
+watchName:SetPoint("TOPLEFT", auras, "TOPLEFT", LEFT, -398)
+watchName:SetAutoFocus(false)
+watchName:SetFontObject(GameFontHighlightSmall)
+watchName:SetTextInsets(10, 10, 0, 0)
+UI.Rounded(watchName, "BACKGROUND", 11, UI.control)
+UI.Tooltip(watchName, "A spell's name, or its ID.")
+local function AddWatch(unit)
+    WA.Add(watchName:GetText(), unit)
+    watchName:SetText(""); watchName:ClearFocus(); Refresh()
+end
+watchName:SetScript("OnEscapePressed", function() watchName:ClearFocus() end)
+watchName:SetScript("OnEnterPressed", function() AddWatch("player") end)
+UI.Button("FTOpt_WatchBuff", auras, "Add your buff", LEFT + 190, -398, 120, function() AddWatch("player") end)
+UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", LEFT + 316, -398, 128, function() AddWatch("target") end)
+local watchRows = {}
+local function WatchRow(i)
+    if watchRows[i] then return watchRows[i] end
+    local row = UI.Row("FTOpt_WatchRow" .. i, auras, LEFT, -430 - (i - 1) * 28, 444)
+    row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    row.name:SetPoint("LEFT", row, "LEFT", 8, 0)
+    UI.Color(row.name, "text")
+    row.kind = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    row.kind:SetPoint("LEFT", row, "LEFT", 150, 0)
+    UI.Color(row.kind, "hint")
+    row.mine = UI.Switch("FTOpt_WatchMine" .. i, row, "Only mine", "Only the debuff you cast; off shows anyone's.",
+        250, -3, function(value) WA.SetMine(i, value) end, 90)
+    row.remove = UI.Button("FTOpt_WatchRemove" .. i, row, "Remove", 370, -2, 70, function()
+        WA.Remove(i); Refresh()
+    end, { ghost = true })
+    watchRows[i] = row
+    return row
+end
+table.insert(syncs, function()
+    local list = WA.List()
+    for i, entry in ipairs(list) do
+        local row = WatchRow(i)
+        row.name:SetText(entry.name)
+        row.kind:SetText(entry.unit == "player" and "Your buff" or "Target debuff")
+        if entry.unit == "target" then row.mine:Show(); UI.Sync(row.mine, entry.mine) else row.mine:Hide() end
+        row:Show()
+    end
+    for i = #list + 1, #watchRows do watchRows[i]:Hide() end
+    TAB_LIST[3].height = 470 + #list * 28
+    if tab == 3 then panel:SetHeight(TAB_LIST[3].height) end
+end)
 
 -- Raid --------------------------------------------------------------------------
 local raid = pages[4]
