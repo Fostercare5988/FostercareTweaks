@@ -116,6 +116,15 @@ local function StyleAuraIcon(button, weaponEnchant, force)
         elseif button.fctAuraBorder then button.fctAuraBorder:Hide() end
     end
 end
+-- The native updater gives TempEnchant1 to the off hand whenever it has an
+-- enchant. Place each button by the hand it shows: main hand left, off hand
+-- right, whichever weapons are enchanted.
+local function AnchorWeapon(button)
+    local hand = button:GetID()
+    button.fctAnchorHand = hand
+    button:ClearAllPoints()
+    button:SetPoint("TOPRIGHT", areas[3].frame, "TOPRIGHT", hand == 17 and 0 or -35, 0)
+end
 local function StyleWeaponEnchants(force)
     if not areas then return end
     for _, button in ipairs(areas[3].buttons) do
@@ -128,15 +137,6 @@ local function StyleWeaponEnchants(force)
         if button.fctAnchorHand ~= button:GetID() then AnchorWeapon(button) end
         StyleAuraIcon(button, true, force)
     end
-end
--- The native updater gives TempEnchant1 to the off hand whenever it has an
--- enchant. Place each button by the hand it shows: main hand left, off hand
--- right, whichever weapons are enchanted.
-local function AnchorWeapon(button)
-    local hand = button:GetID()
-    button.fctAnchorHand = hand
-    button:ClearAllPoints()
-    button:SetPoint("TOPRIGHT", areas[3].frame, "TOPRIGHT", hand == 17 and 0 or -35, 0)
 end
 
 local function AnchorButtons()
