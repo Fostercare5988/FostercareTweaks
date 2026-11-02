@@ -147,37 +147,10 @@ function W.SetMine(index, mine)
     W.Update("target")
 end
 
--- Once: the buffs and target debuffs of a FostercareAuras setup, with their
--- icons and places (its offsets are from the screen centre). Weapon poisons
--- are the Weapon enchants area here.
-local function ImportFostercareAuras()
-    local cfg = FostercareTweaks_Config
-    local db = FostercareAurasDB
-    if cfg.watchedImported or type(db) ~= "table" or type(db.spells) ~= "table" then return end
-    cfg.watchedImported = true
-    local found = {}
-    for _, spell in pairs(db.spells) do
-        if (spell.type == "Buff" or spell.type == "Debuff") and spell.displayName then
-            found[#found + 1] = spell
-        end
-    end
-    table.sort(found, function(a, b) return (a.order or 0) < (b.order or 0) end)
-    cfg.unitframe_positions = cfg.unitframe_positions or {}
-    for _, spell in ipairs(found) do
-        local aura = type(spell.conditions) == "table" and type(spell.conditions.aura) == "table" and spell.conditions.aura or {}
-        local entry = { name = spell.displayName, spellId = spell.spellid, unit = spell.type == "Buff" and "player" or "target",
-            icon = spell.iconTexture }
-        entry.mine = entry.unit == "target" and aura.onlyMine ~= false or nil
-        table.insert(List(), entry)
-        local x, y = spell.offsetX or spell.x, spell.offsetY or spell.y
-        if x and y and not cfg.unitframe_positions[Key(entry)] then
-            cfg.unitframe_positions[Key(entry)] = { point = "CENTER", relPoint = "CENTER", x = x, y = y }
-        end
-    end
-end
-
 module.enable = function()
-    ImportFostercareAuras()
+    -- 1.9.0 copied FostercareAuras setups once and kept their spell IDs as text.
+    FostercareTweaks_Config.watchedImported = nil
+    for _, entry in ipairs(List()) do entry.spellId = tonumber(entry.spellId) end
     local events = CreateFrame("Frame")
     events:RegisterUnitEvent("UNIT_AURA_DELTA", "player", "target")
     events:RegisterEvent("PLAYER_TARGET_CHANGED")

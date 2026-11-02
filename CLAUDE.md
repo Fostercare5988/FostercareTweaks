@@ -86,9 +86,8 @@ Things to know:
   masters, NPCs and items in a form. Spell errors stay with ClassicAPI.
 - A module's `enable` runs under `xpcall` with the error handler, so an
   error reaches !ErrorLog with its stack and the other modules still start.
-- Watched auras (mods/watched-auras.lua) import FostercareAuras' buffs and
-  target debuffs once from its `FostercareAurasDB` (`watchedImported`); nothing
-  else of FostercareAuras is read. Icon positions use mover keys `watch_*`.
+- Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
+  Icon positions use mover keys `watch_*`.
 - Other addons use one interface: ActionBarProfiles calls
   `FostercareTweaks.ExtraActions` (`GetProfile`, `ValidateProfile`,
   `ApplyProfile`, `ProfileVersion` 1). AutoLazy's minimap tray skips
