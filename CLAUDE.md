@@ -7,7 +7,7 @@ VanillaForge (187 tests).
 | Area | Files |
 | --- | --- |
 | Core | `Core.lua` (module registry `FT:register`, `/ft`), `Helpers.lua` |
-| Settings | `Settings.lua` (one ForgeUI window, five tabs, AddOn Options entry), `ForgeUI.lua` and `Media/` (VanillaForge kit, copied unchanged) |
+| Settings | `Settings.lua` (one ForgeUI window, five tabs; each tab's page also a category under the AddOn Options entry, moved into its scroll frame while shown), `ForgeUI.lua` and `Media/` (VanillaForge kit, copied unchanged) |
 | Action bars | `ActionBars.lua`, `ExtraActions.lua` (extra rows 2-7), `mods/actionbar-*.lua`, `mods/cooldown-numbers.lua`, `mods/reduced-actionbar.lua` |
 | Unit frames | `mods/unitframes/` (core: shared settings, colors, bars; auras: improved auras on Blizzard frames and raid icons; raid; native-group), `mods/unitframe*.lua`, `mods/health-numbers.lua`, `mods/target-*.lua`, `mods/raid-target-marks.lua` |
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |

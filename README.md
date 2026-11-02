@@ -36,7 +36,7 @@ game's AddOns list. The folder must contain
 ## Settings
 
 Type **`/ft`**, or open **Game Menu > AddOn Options > FostercareTweaks**. Five
-pages: **General**, **Unit Frames**, **Auras**, **Raid** and **Action Bars**.
+pages, in both: **General**, **Unit Frames**, **Auras**, **Raid** and **Action Bars**.
 Changes save at once; a **Reload UI** button appears when one needs it.
 Hold **Ctrl+Shift** to move frames, and use **`/ft testraid`** to preview the raid
 frames.

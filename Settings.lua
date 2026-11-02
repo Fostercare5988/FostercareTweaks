@@ -91,7 +91,8 @@ local TAB_LIST = {
     { label = "Action Bars", height = 620 },
 }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", TAB_LIST, function(index) tab = index; Refresh() end)
-panel:SetScript("OnShow", function() ShowTab(tab) end)
+-- A page back from AddOn Options is hidden even when its tab is the active one.
+panel:SetScript("OnShow", function() ShowTab(tab); pages[tab]:Show() end)
 
 -- One Reload UI button, shown on every page while a change waits for it.
 for index, page in ipairs(pages) do
@@ -451,23 +452,15 @@ end)
 -- Handles block the buttons under them; lock them with the window and in combat.
 FT.HookScript(panel, "OnHide", function() AB:SetEditing(false) end)
 panel:RegisterEvent("PLAYER_REGEN_DISABLED")
-FT.SetEventHandler(panel, function() if panel:IsShown() then Refresh() end end)
 
--- Opening ------------------------------------------------------------------------
--- A layout change elsewhere shows in the open window.
-function FT.RefreshSettings() if panel:IsShown() then Refresh() end end
+-- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI): the same five pages,
+-- one category each, in a scroll frame. A page lives in one place at a time: it
+-- moves into the category that opens and back into the window when it closes.
+local SHIFT = 84                        -- the window's title and tabs above each page
+local hosts, hosted = {}, nil
+local function Shown() return panel:IsShown() or hosted ~= nil end
+FT.SetEventHandler(panel, function() if Shown() then Refresh() end end)
 
--- FT.OpenSettings() toggles the window; a page name opens that page.
-function FT.OpenSettings(name)
-    for index, key in ipairs(TABS) do if key == name then tab = index end end
-    if name or not panel:IsShown() then
-        panel:Show(); ShowTab(tab)
-    else
-        panel:Hide()
-    end
-end
-
--- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI).
 local entry = CreateFrame("Frame", "FostercareTweaksOptionsEntry")
 entry.name = "FostercareTweaks"
 local entryTitle = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -475,11 +468,63 @@ entryTitle:SetPoint("TOPLEFT", entry, "TOPLEFT", 16, -16)
 entryTitle:SetText("FostercareTweaks")
 local entryText = entry:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 entryText:SetPoint("TOPLEFT", entryTitle, "BOTTOMLEFT", 0, -8)
-entryText:SetText("Settings open in their own window. Type /ft to open them at any time.")
-local open = UI.Button("FostercareTweaksOptionsOpen", entry, "Open settings", 16, -70, 172, function()
-    if InterfaceOptionsFrame and InterfaceOptionsFrame:IsShown() then InterfaceOptionsFrame:Hide() end
-    if GameMenuFrame and GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) end
+entryText:SetText("Open a page under FostercareTweaks, or type /ft for the settings window.")
+local open = UI.Button("FostercareTweaksOptionsOpen", entry, "Open settings window", 16, -70, 172, function()
+    if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) end
     FT.OpenSettings("general")
 end)
 UI.Select(open, true)
 InterfaceOptions_AddCategory(entry)
+
+for index, info in ipairs(TAB_LIST) do
+    local host = CreateFrame("Frame", "FostercareTweaksOptions" .. index)
+    host.name, host.parent = info.label, "FostercareTweaks"
+    local scroll = CreateFrame("ScrollFrame", "FostercareTweaksOptions" .. index .. "Scroll", host, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
+    scroll:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -28, 8)
+    local holder = CreateFrame("Frame", nil, scroll)
+    holder:SetWidth(panel.width)
+    scroll:SetScrollChild(holder)
+    host.holder = holder
+    host:SetScript("OnShow", function()
+        if panel:IsShown() then panel:Hide() end
+        hosted, tab = index, index
+        local page = pages[index]
+        page:SetParent(holder); page:ClearAllPoints()
+        page:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, SHIFT)
+        page:SetWidth(panel.width)
+        page:Show()
+        Refresh()
+    end)
+    host:SetScript("OnHide", function()
+        if hosted == index then hosted = nil end
+        AB:SetEditing(false)
+        local page = pages[index]
+        page:Hide(); page:SetParent(panel); page:ClearAllPoints(); page:SetAllPoints(panel)
+    end)
+    hosts[index] = host
+    InterfaceOptions_AddCategory(host)
+end
+-- Pages that grow (watched auras, open bar settings) grow their category too.
+table.insert(syncs, function()
+    local host = hosts[hosted]
+    if host then
+        local height = TAB_LIST[hosted].height
+        pages[hosted]:SetHeight(height); host.holder:SetHeight(height - SHIFT)
+    end
+end)
+
+-- Opening ------------------------------------------------------------------------
+-- A layout change elsewhere shows in the open window or category.
+function FT.RefreshSettings() if Shown() then Refresh() end end
+
+-- FT.OpenSettings() toggles the window; a page name opens that page.
+function FT.OpenSettings(name)
+    for index, key in ipairs(TABS) do if key == name then tab = index end end
+    if name or not panel:IsShown() then
+        if InterfaceOptionsFrame:IsShown() then InterfaceOptionsFrame:Hide() end
+        panel:Show(); ShowTab(tab)
+    else
+        panel:Hide()
+    end
+end
