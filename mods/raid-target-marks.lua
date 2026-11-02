@@ -3,7 +3,7 @@ if not FT then return end
 
 -- Use the native eight-symbol atlas and authoritative unit identities.
 local module = FT:register({
-    title = "Clear Raid Target Marks", enabled = true,
+    title = "Clear Raid Target Marks", always = true,
     config = { raidmark_size = 22, raidmark_position = "portrait" },
 })
 

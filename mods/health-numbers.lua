@@ -6,7 +6,7 @@ local Abbreviate = AbbreviateNumbers
 
 local module = FT:register({
     title = "Real Health Numbers",
-    enabled = true,
+    always = true,
 })
 
 local GetUnitHealthValues = FT.GetUnitHealthValues

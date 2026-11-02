@@ -6,7 +6,7 @@ if not FT then return end
 
 local module = FT:register({
     title = "Sell Junk",
-    enabled = true,
+    always = true,
 })
 
 module.enable = function(self)

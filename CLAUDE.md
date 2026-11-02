@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (181 tests).
+VanillaForge (187 tests).
 
 | Area | Files |
 | --- | --- |
@@ -25,6 +25,11 @@ Things to know:
 - Each `mods/` file registers its modules with `FT:register({ title, enabled })`
   (or `always = true`: no switch, no saved key) and an `enable` function. The
   load order is the TOC. Settings.lua holds the labels and tooltips.
+- Always on since 2026-11-02 (all ten characters had them on): Sell Junk,
+  Vendor Values, Item Rarity Borders, Equip Compare, Chat Hyperlinks, WorldMap
+  Coordinates and Class Colors, Real Health Numbers, Clear Raid Target Marks.
+  Core clears their saved switches. `/ft` opens the window or a page;
+  `testraid` and `resetuf` are the only other commands.
 - Settings: each control saves at once and calls the module's live update;
   a module without one marks the window as needing a reload. Controls refresh
   through the `syncs` list; never write settings from a refresh.

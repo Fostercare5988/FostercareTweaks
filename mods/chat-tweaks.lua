@@ -82,7 +82,7 @@ do
 
 local module = FT:register({
     title = "Chat Hyperlinks",
-    enabled = true,
+    always = true,
 })
 
 local URLPattern = {

@@ -8,7 +8,7 @@ local GetItemIDFromLink = FT.GetItemIDFromLink
 
 local module = FT:register({
   title = "Vendor Values",
-  enabled = true,
+  always = true,
 })
 
 local function GetSellPrice(item)
