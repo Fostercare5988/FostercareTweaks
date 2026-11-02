@@ -23,3 +23,14 @@ module.enable = function()
     end
     FT.RegisterFrameMover(CastingBarFrame, KEY, "Cast Bar", nil, function() saved = true end)
 end
+
+-- Takes effect after a reload (the settings switch asks for one). The target
+-- bar reads the same setting in mods/target-castbar.lua.
+local borderless = FT:register({
+    title = "Borderless Castbars", category = "Unit Frames",
+    description = "Removes the border art from your cast bar and the target cast bar.",
+})
+borderless.enable = function()
+    CastingBarBorder:SetTexture(nil)
+    CastingBarFlash:SetTexture(nil)
+end

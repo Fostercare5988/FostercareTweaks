@@ -9,6 +9,7 @@ FostercareTweaks_Defaults = {
     ["Blizzard Aura Controls"] = 1,
     ["Blue Shaman Class Colors"] = 1,
     ["Center Vertical Actionbar"] = 1,
+    ["Borderless Castbars"] = 0,
     ["Chat Class Colors"] = 1,
     ["Chat History"] = 1,
     ["Chat Hyperlinks"] = 1,

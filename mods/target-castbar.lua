@@ -166,6 +166,8 @@ module.enable = function(self)
         if castbar:IsShown() then UpdateAnchor() end
     end)
 
+    if FT.IsEnabled("Borderless Castbars") then castbar:SetBackdropBorderColor(0, 0, 0, 0) end
+
     -- Ctrl+Shift moves the bar. The position follows the target frame.
     castbar.moved = FT.RestoreFramePosition(castbar, "target_castbar", TargetFrame)
     castbar.fctRestoreShown = function(bar) if not bar.endSec then bar:Hide() end end
