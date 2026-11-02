@@ -470,7 +470,7 @@ local function BindRaidAuraInteraction(badge)
     badge:SetScript("OnClick", AuraBadge_OnClick)
     local enter, leave = badge:GetScript("OnEnter"), badge:GetScript("OnLeave")
     badge:SetScript("OnEnter", function()
-        -- SuperWoW: the member stays the mouseover unit for mouseover casts.
+        -- NamPower: the member stays the mouseover unit for mouseover casts.
         if this.unit then SetMouseoverUnit(this.unit) end
         enter()
         if this.fctHideDuration and this.expirationTime and this.expirationTime > GetTime() then
