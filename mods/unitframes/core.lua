@@ -5,16 +5,10 @@ if not FT then return end
 -- Shared unit-frame settings, colors and bars for the improved auras on
 -- Blizzard's player and target frames and for the party and raid frames.
 
-for _, spec in ipairs({
-    { "Show Player Buffs", "Player buffs under the player frame.", true },
-    { "Show Target Buffs", "Target buffs under the target frame.", true },
-    { "Show Player Debuffs", "Player debuffs under the player frame.", true },
-    { "Show Target Debuffs", "Target debuffs under the target frame.", true },
-    { "Show Raid Aggro Indicator", "A red corner on the member your enemy target attacks.", true },
-    { "Show Raid HoT Indicator", "A corner icon for heals over time and shields.", true },
-    { "Show Raid Debuff Badges", "Debuff icons inside raid members.", true },
-}) do
-    FT:register({ title = spec[1], description = spec[2], category = "Unit Frames", enabled = spec[3] })
+-- Switches read by the aura rows and the raid frames; on by default.
+for _, title in ipairs({ "Show Player Buffs", "Show Target Buffs", "Show Player Debuffs", "Show Target Debuffs",
+    "Show Raid Aggro Indicator", "Show Raid HoT Indicator", "Show Raid Debuff Badges" }) do
+    FT:register({ title = title, enabled = true })
 end
 
 FT.UnitFrames = FT.UnitFrames or {}
@@ -56,8 +50,6 @@ function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges", t
 function UF:GetBuffSize() return FT.GetNumber("uf_buff_size", 20, 14, 32) end
 function UF:GetDebuffSize() return FT.GetNumber("uf_debuff_size", 20, 14, 32) end
 function UF:GetRaidHealthFormat() return FT.GetOverride("raid_health_format", "deficit") end
-
-UF.GetUnitHealthValues = FT.GetUnitHealthValues
 
 function UF.SetFontSize(fontString, size)
     if not fontString or not size then return end

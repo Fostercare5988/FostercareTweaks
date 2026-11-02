@@ -4,8 +4,6 @@ if not FT then return end
 -- Available casts from exact action/macro spell identity and client DBC data.
 local module = FT:register({
     title = "Reagent Counter",
-    description = "Shows available casts for spells that consume reagents.",
-    category = "Action Bar",
     enabled = false,
 })
 
@@ -59,7 +57,8 @@ module.enable = function(self)
             count = C_Spell.GetSpellCastCount(spellID)
             counts[spellID] = count
         end
-        local text = _G[button:GetName() .. "Count"]
+        local text = button.fctCountText
+        if text == nil then text = _G[button:GetName() .. "Count"] or false; button.fctCountText = text end
         if text then
             text:SetText(count > 999 and "*" or tostring(count))
             text:Show()

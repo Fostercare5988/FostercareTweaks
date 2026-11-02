@@ -4,8 +4,7 @@ if not FT then return end
 -- Ctrl+Shift movers for native/custom frames and independent aura areas.
 local module = FT:register({
     title = "Movable Unit Frames",
-    description = "Hold Ctrl+Shift to move unit frames and their buff/debuff areas.",
-    category = "Unit Frames", always = true,
+    always = true,
 })
 local movers = {}
 local unlocker = CreateFrame("Frame", "FCTweaksUnitFrameUnlocker", UIParent)

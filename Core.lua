@@ -21,8 +21,6 @@ FostercareTweaks = FT
 -- Component Registration
 FT.register = function(self, mod)
     if not mod or not mod.title then return end
-    local category = mod.category or "General"
-    mod.category = category
     if not self.mods[mod.title] then
         table.insert(self.moduleOrder, mod.title)
     end

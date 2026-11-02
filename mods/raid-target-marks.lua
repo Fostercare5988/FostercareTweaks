@@ -3,8 +3,7 @@ if not FT then return end
 
 -- Use the native eight-symbol atlas and authoritative unit identities.
 local module = FT:register({
-    title = "Clear Raid Target Marks", category = "Unit Frames", enabled = true,
-    description = "Readable raid target marks on unit frames. Solo, the mark keys set marks only you see.",
+    title = "Clear Raid Target Marks", enabled = true,
     config = { raidmark_size = 22, raidmark_position = "portrait" },
 })
 
@@ -17,7 +16,6 @@ end
 -- The target frame's mark: on the portrait, or beside the frame.
 local function LayoutTargetMark()
     local icon = TargetRaidTargetIcon
-    if not icon or not TargetFrame or not TargetPortrait then return end
     local size, position = FT.GetRaidMarkSettings()
     icon:ClearAllPoints()
     if position == "outside" then icon:SetPoint("LEFT", TargetFrame, "RIGHT", 2, 0)
@@ -37,7 +35,6 @@ end
 -- UNVERIFIED: test in game that RAID_TARGET_UPDATE fires for local marks;
 -- the refresh below covers our frames either way.
 local function InstallSoloMarks()
-    if type(SetLocalRaidTargetIndex) ~= "function" or type(GetRaidTargets) ~= "function" then return end
     local groupMark = SetRaidTargetIcon
     function SetRaidTargetIcon(unit, index)
         if GetNumRaidMembers() > 0 or GetNumPartyMembers() > 0 then return groupMark(unit, index) end
@@ -45,7 +42,7 @@ local function InstallSoloMarks()
         if not guid then return end
         local marks = GetRaidTargets()
         SetLocalRaidTargetIndex(unit, marks and marks[index] == guid and 0 or index)
-        if TargetFrame_UpdateRaidTargetIcon then TargetFrame_UpdateRaidTargetIcon() end
+        TargetFrame_UpdateRaidTargetIcon()
         FT:RefreshRaidMarks()
     end
 end
@@ -55,7 +52,7 @@ module.enable = function(self)
     InstallSoloMarks()
     local driver = CreateFrame("Frame", "FCTweaksRaidMarks", UIParent)
     self.frame = driver
-    FT.hooksecurefunc("TargetFrame_UpdateRaidTargetIcon", LayoutTargetMark)
+    hooksecurefunc("TargetFrame_UpdateRaidTargetIcon", LayoutTargetMark)
     driver:RegisterEvent("RAID_TARGET_UPDATE")
     driver:RegisterEvent("PLAYER_ENTERING_WORLD")
     driver:RegisterEvent("UI_SCALE_CHANGED")

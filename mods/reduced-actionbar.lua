@@ -1,15 +1,10 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
 do
 
 local module = FT:register({
     title = "Reduced Actionbar Size",
-    description = "Reduces the actionbar size by removing several items such as the bag panel and microbar.",
-    category = "Action Bar",
-    enabled = nil,
 })
 
 local function ReplaceBag()
@@ -107,7 +102,7 @@ module.enable = function(self)
         if not FT.ActionBars.enabled then
             MultiBarBottomLeft:ClearAllPoints()
             if MainMenuExpBar:IsVisible() or ReputationWatchBar:IsVisible() then
-                local anchor = (GetWatchedFactionInfo and GetWatchedFactionInfo() and ReputationWatchBar) or MainMenuExpBar
+                local anchor = (GetWatchedFactionInfo() and ReputationWatchBar) or MainMenuExpBar
                 MultiBarBottomLeft:SetPoint("BOTTOM", anchor, "TOP", 2, 3)
             else
                 MultiBarBottomLeft:SetPoint("BOTTOM", MainMenuBar, "TOP", 2, -3)
@@ -144,9 +139,9 @@ module.enable = function(self)
         end
     end
 
-    FT.hooksecurefunc("UIParent_ManageFramePositions", ManageReducedFramePositions)
+    hooksecurefunc("UIParent_ManageFramePositions", ManageReducedFramePositions)
 
-    FT.hooksecurefunc("ShowPetActionBar", function()
+    hooksecurefunc("ShowPetActionBar", function()
         PETACTIONBAR_XPOS = 36
     end)
 

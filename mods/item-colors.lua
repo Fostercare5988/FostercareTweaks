@@ -9,8 +9,6 @@ local HookAddonOrVariable = FT.HookAddonOrVariable
 
 local module = FT:register({
     title = "Item Rarity Borders",
-    description = "Show item rarity as the border color on bags, bank, character and inspect frames.",
-    category = "Tooltip & Items",
     enabled = true,
 })
 
@@ -63,27 +61,40 @@ module.enable = function()
         local id = FT.GetItemIDFromLink(link)
         return id and KnownQuality(C_Item.GetItemQualityByID(id))
     end
+    -- Slot buttons by inventory id, looked up once per frame set.
+    local function Slots(prefix, names)
+        local buttons = {}
+        for id, slot in pairs(names) do buttons[id] = _G[prefix .. slot] end
+        return buttons
+    end
+    local character, inspect = Slots("Character", paperdoll_slots)
     local function RefreshPaperdoll()
-        if not CharacterFrame or not CharacterFrame:IsShown() then return end
-        for id, slot in pairs(paperdoll_slots) do
+        if not CharacterFrame:IsShown() then return end
+        for id, button in pairs(character) do
             local quality = KnownQuality(GetInventoryItemQuality("player", id))
             if not quality then quality = LinkQuality(GetInventoryItemLink("player", id)) end
-            Style(_G["Character" .. slot], quality)
+            Style(button, quality)
         end
     end
     local function RefreshInspect()
         if not InspectFrame or not InspectFrame:IsShown() then return end
-        for id, slot in ipairs(inspect_slots) do
-            Style(_G["Inspect" .. slot], LinkQuality(GetInventoryItemLink("target", id)))
+        inspect = inspect or Slots("Inspect", inspect_slots)
+        for id, button in pairs(inspect) do
+            Style(button, LinkQuality(GetInventoryItemLink("target", id)))
         end
     end
     -- One table for every slot read (ClassicAPI's buf), not one per slot.
     local slotInfo = {}
     local function RefreshBag(frame)
         if not frame or not frame:IsShown() then return end
-        for slot = 1, MAX_CONTAINER_ITEMS do
-            local button = _G[frame:GetName() .. "Item" .. slot]
-            if button and button:IsShown() then
+        local buttons = frame.fctItemButtons
+        if not buttons then
+            buttons = {}
+            for slot = 1, MAX_CONTAINER_ITEMS do buttons[slot] = _G[frame:GetName() .. "Item" .. slot] end
+            frame.fctItemButtons = buttons
+        end
+        for _, button in ipairs(buttons) do
+            if button:IsShown() then
                 local info = C_Container.GetContainerItemInfo(frame:GetID(), button:GetID(), slotInfo)
                 local quality = info and (KnownQuality(info.quality) or
                     (info.itemID and KnownQuality(C_Item.GetItemQualityByID(info.itemID))))
@@ -91,13 +102,17 @@ module.enable = function()
             end
         end
     end
+    -- The bank has NUM_BANKGENERIC_SLOTS (24) item buttons in this client.
+    local bags, bank = {}, {}
+    for i = 1, NUM_CONTAINER_FRAMES do bags[i] = _G["ContainerFrame" .. i] end
+    for slot = 1, NUM_BANKGENERIC_SLOTS do bank[slot] = _G["BankFrameItem" .. slot] end
     local function RefreshBags()
-        for i = 1, 12 do RefreshBag(_G["ContainerFrame" .. i]) end
+        for _, frame in ipairs(bags) do RefreshBag(frame) end
     end
     local function RefreshBank()
-        if not BankFrame or not BankFrame:IsShown() then return end
-        for slot = 1, 28 do
-            Style(_G["BankFrameItem" .. slot], LinkQuality(GetContainerItemLink(-1, slot)), true)
+        if not BankFrame:IsShown() then return end
+        for slot, button in ipairs(bank) do
+            Style(button, LinkQuality(GetContainerItemLink(-1, slot)), true)
         end
     end
     local function RefreshVisible()

@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (150 tests).
+VanillaForge (181 tests).
 
 | Area | Files |
 | --- | --- |
@@ -12,7 +12,7 @@ VanillaForge (150 tests).
 | Unit frames | `mods/unitframes/` (core: shared settings, colors, bars; auras: improved auras on Blizzard frames and raid icons; raid; native-group), `mods/unitframe*.lua`, `mods/health-numbers.lua`, `mods/target-*.lua`, `mods/raid-target-marks.lua` |
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |
 | Bags and items | `mods/vendor-values.lua`, `mods/sell-junk.lua`, `mods/item-colors.lua`, `mods/equip-compare.lua` |
-| Chat | `mods/chat-tweaks.lua`, `mods/chat-class-colors.lua` |
+| Chat | `mods/chat-tweaks.lua` |
 | Gameplay | `mods/gameplay.lua` (Auto Dismount, Auto Stance, stance bar), `mods/blue-shaman.lua` |
 
 Things to know:
@@ -22,8 +22,9 @@ Things to know:
   (no character used them); `FT.MigrateFrameSettings` clears their settings.
 - Bars (`UF:CreateBar`) are native StatusBars; ClassicAPI supplies reverse
   fill and fill styles.
-- Each `mods/` file registers one module with `FT:register({ title, category,
-  enabled })` and an `enable` function. The load order is the TOC.
+- Each `mods/` file registers its modules with `FT:register({ title, enabled })`
+  (or `always = true`: no switch, no saved key) and an `enable` function. The
+  load order is the TOC. Settings.lua holds the labels and tooltips.
 - Settings: each control saves at once and calls the module's live update;
   a module without one marks the window as needing a reload. Controls refresh
   through the `syncs` list; never write settings from a refresh.
@@ -43,21 +44,32 @@ Things to know:
 - Cooldown Numbers is for the stock buttons' cooldowns, which are 1.12 Models
   with no native numbers. On a native `Cooldown` it stands aside while the
   player's `countdownForCooldowns` CVar is 1 (read, never set). Frames with
-  their own timer text call `SetHideCountdownNumbers(true)`. Aura buttons and raid
-  badges show the client's countdown through one numeric-rule formatter
-  (`AURA_TIME`: red tenths under 5 s, yellow under 10 s, then s/m/h/d); there
-  is no aura-time ticker.
+  their own timer text call `SetHideCountdownNumbers(true)`. One numeric-rule
+  formatter, `FT.Countdown` (Helpers.lua: red tenths under 5 s, yellow under
+  10 s, then s/m/h/d), is the countdown look everywhere: aura buttons, raid
+  badges and Extra Rows 2-7 set it on their Cooldowns, and the stock buttons'
+  numbers call its `FormatNumber`. There is no aura-time ticker.
 - Auras follow ClassicAPI's `UNIT_AURA_DELTA` (1.17.10), not `UNIT_AURA`: a
   refresh or stack change rewrites only its own button or raid badge, matched
   by spell and caster; a new or lost aura, a full update or an unmatched change
-  reads the row again. Registered with `RegisterEvent`: `RegisterUnitEvent` is
-  not documented to filter it, so the handlers drop other tokens.
+  reads the row again. `RegisterUnitEvent` filters every event whose first
+  argument is a unit (ClassicAPI docs), so it carries only `player`/`target`
+  and the raid members.
 - Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
 - Unit events: ClassicAPI fires each one once per token, including every
   `nameplateN`, `markN` and `focus`. Register `UNIT_*` events with
   `frame:RegisterUnitEvent(event, units...)` for the units the frame shows.
 - Script wrappers (`FT.SetEventHandler`, `FT.HookScript`) take fixed
   parameters: in Lua 5.0 every call of a `...` function builds a table.
+- Client functions are called by their own names (`hooksecurefunc`,
+  `AbbreviateNumbers`); stock FrameXML frames and NamPower functions are used
+  without existence checks. Load-on-demand UIs (Inspect, BattlefieldMinimap,
+  AtlasLoot) and the client's GroupFrame keep theirs.
+- Raid buttons: name and class colour are written by the roster pass and
+  `UNIT_NAME_UPDATE`; `UNIT_HEALTH` writes the bar and, only when the number it
+  shows changes (`fctHealthShown`), the text. A roster rebuild clears it.
+- Chat: one `AddMessage` wrapper per non-combat window (`FT.AddChatFilter` in
+  chat-tweaks.lua) runs the filters of links, timestamps and class colours.
 - Auto Dismount covers what ClassicAPI's `autoDismount`/`autoUnshift`/
   `autoStand` miss (they act before spell casts only): melee attack, flight
   masters, NPCs and items in a form. Spell errors stay with ClassicAPI.

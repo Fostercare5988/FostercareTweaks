@@ -4,8 +4,7 @@ if not FT then return end
 -- Ctrl+Shift moves your own cast bar, which the action bars can cover.
 -- The game's cast bar keeps doing the casting; only its position is saved.
 local module = FT:register({
-    title = "Movable Cast Bar", category = "Unit Frames", always = true,
-    description = "Hold Ctrl+Shift to move your own cast bar.",
+    title = "Movable Cast Bar", always = true,
 })
 
 local KEY = "player_castbar"
@@ -16,7 +15,7 @@ local function Place() if saved then FT.RestoreFramePosition(CastingBarFrame, KE
 module.enable = function()
     saved = FT.RestoreFramePosition(CastingBarFrame, KEY)
     -- The game re-anchors the bar whenever it lays out the screen.
-    FT.hooksecurefunc("UIParent_ManageFramePositions", Place)
+    hooksecurefunc("UIParent_ManageFramePositions", Place)
     -- Shown while Ctrl+Shift is held so it can be grabbed; then the game's own rule.
     CastingBarFrame.fctRestoreShown = function(bar)
         if not (bar.casting or bar.channeling or bar.fadeOut) then bar:Hide() end
@@ -27,8 +26,7 @@ end
 -- Takes effect after a reload (the settings switch asks for one). The target
 -- bar reads the same setting in mods/target-castbar.lua.
 local borderless = FT:register({
-    title = "Borderless Castbars", category = "Unit Frames",
-    description = "Removes the border art from your cast bar and the target cast bar.",
+    title = "Borderless Castbars",
 })
 borderless.enable = function()
     CastingBarBorder:SetTexture(nil)

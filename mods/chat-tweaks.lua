@@ -1,7 +1,28 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
+-- One AddMessage wrapper per chat window (combat logs excepted) runs the line
+-- filters the chat modules add, in the order they start: links, timestamps,
+-- class colours. A wrapper per module cost a call and a closure per line each.
+local filters
+function FT.AddChatFilter(filter)
+    if not filters then
+        filters = {}
+        for i = 1, NUM_CHAT_WINDOWS do
+            local cf = _G["ChatFrame" .. i]
+            if not FT.IsCombatChatFrame(cf) then
+                local add = cf.AddMessage
+                cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
+                    if text then
+                        for f = 1, #filters do text = filters[f](text) end
+                    end
+                    return add(frame, text, a1, a2, a3, a4, a5)
+                end
+            end
+        end
+    end
+    filters[#filters + 1] = filter
+end
 
 do
 -- Mouse wheel chat scrolling, sticky chat channels, and arrow key history
@@ -10,8 +31,6 @@ local scrollspeed = 1
 
 local module = FT:register({
     title = "Chat Tweaks",
-    description = "Allows to scroll using the mouse wheel, enables sticky chat channels and repeats message on arrow up.",
-    category = "Social & Chat",
     enabled = true,
 })
 
@@ -61,11 +80,8 @@ end
 do
 -- Copy website URLs from chat, transform CLINKs into real items, handle quest and player links
 
-
 local module = FT:register({
     title = "Chat Hyperlinks",
-    description = "Copy website URLs from the chat, transforms CLINKs into real items and handles quest and player links.",
-    category = "Social & Chat",
     enabled = true,
 })
 
@@ -247,26 +263,17 @@ module.enable = function(self)
         origSetItemRef(link, text, button)
     end
 
-    for i = 1, NUM_CHAT_WINDOWS do
-        local cf = _G["ChatFrame" .. i]
-        if cf and not cf.FCTweaks_HookAddMessage and not FT.IsCombatChatFrame(cf) then
-            cf.FCTweaks_HookAddMessage = cf.AddMessage
-            cf.AddMessage = function(frame, text, a1, a2, a3, a4, a5)
-                if text then
-                    if string.find(text, "{CLINK:", 1, true) then
-                        text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                        text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                        text = gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-                        text = gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
-                        text = gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
-                        text = gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
-                    end
-                    text = HandleLink(text)
-                end
-                cf.FCTweaks_HookAddMessage(frame, text, a1, a2, a3, a4, a5)
-            end
+    FT.AddChatFilter(function(text)
+        if string.find(text, "{CLINK:", 1, true) then
+            text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
+            text = gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
+            text = gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
         end
-    end
+        return HandleLink(text)
+    end)
 end
 end
 
@@ -280,8 +287,6 @@ local rgbhex = FT.rgbhex
 
 local module = FT:register({
     title = "Chat History",
-    description = "Save chat history of all non-combatlog windows and restore it on login.",
-    category = "Social & Chat",
     enabled = true,
 })
 
@@ -340,28 +345,42 @@ do
 
 local module = FT:register({
     title = "Chat Timestamps",
-    description = "Add timestamps to chat messages.",
-    category = "Social & Chat",
     enabled = false,
 })
 
 -- [HH:MM:SS] in light grey.
 local STAMP = "|cffcccccc[%H:%M:%S]|r "
 
+-- Combat log windows stay unstamped, as the other chat filters leave them:
+-- every combat line would build a new string.
 module.enable = function(self)
+    FT.AddChatFilter(function(text) return date(STAMP) .. text end)
+end
+end
 
-    -- Combat log windows stay unstamped, as the other chat modules leave them:
-    -- every combat line would build a new string.
-    for i = 1, NUM_CHAT_WINDOWS do
-        local cf = _G["ChatFrame" .. i]
-        if cf and cf.AddMessage and not FT.IsCombatChatFrame(cf) then
-            local origAddMessage = cf.AddMessage
-            cf.AddMessage = function(frame, msg, a1, a2, a3, a4, a5)
-                if not msg then return end
-                msg = date(STAMP) .. msg
-                origAddMessage(frame, msg, a1, a2, a3, a4, a5)
-            end
+do
+-- "|Hplayer:Name:id|h[Name]|h" becomes the name in its class color (grey when
+-- the class is unknown), brackets in the line's color. Lua 5.0's gsub uses the
+-- empty string for a nil result, so a link left alone is returned whole.
+local module = FT:register({
+    title = "Chat Class Colors",
+    enabled = true,
+})
+
+local function Colorize(link, shown)
+    local real = string.gsub(link, ":.*$", "")
+    if shown ~= real then return "|Hplayer:" .. link .. "|h[" .. shown .. "]|h" end
+    local class = FT.GetPlayerClass(real)
+    local color = class and RAID_CLASS_COLORS[class] and FT.rgbhex(RAID_CLASS_COLORS[class]) or "|cffaaaaaa"
+    return "|r[" .. color .. "|Hplayer:" .. link .. "|h" .. color .. real .. "|h|r]|r"
+end
+
+module.enable = function(self)
+    FT.AddChatFilter(function(text)
+        if string.find(text, "|Hplayer:", 1, true) then
+            text = string.gsub(text, "|Hplayer:([^|]*)|h%[([^%]|]*)%]|h", Colorize)
         end
-    end
+        return text
+    end)
 end
 end

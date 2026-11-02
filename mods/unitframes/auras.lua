@@ -65,22 +65,6 @@ local function AuraButton_OnClick()
     end
 end
 
--- The client counts the aura time down on each button's Cooldown (CVar
--- countdownForCooldowns 1): tenths in red under 5 s, yellow under 10 s, then
--- whole seconds, minutes, hours and days. One formatter serves every button.
-local AURA_TIME = C_StringUtil.CreateNumericRuleFormatter()
-do
-    local Up = Enum.NumericRuleFormatRounding.Up
-    AURA_TIME:SetBreakpoints({
-        { threshold = 0, step = 0.1, rounding = Up, format = "|cffff4444%.1f|r" },
-        { threshold = 5, step = 1, rounding = Up, format = "|cffffff33%d|r" },
-        { threshold = 10, step = 1, rounding = Up, format = "|cffffffff%d|r" },
-        { threshold = 60, format = "|cffffffff%dm|r", components = { { div = 60, step = 1, rounding = Up } } },
-        { threshold = 3600, format = "|cffffffff%dh|r", components = { { div = 3600, step = 1, rounding = Up } } },
-        { threshold = 86400, format = "|cffffffff%dd|r", components = { { div = 86400, step = 1, rounding = Up } } },
-    })
-end
-
 local function ResetAuraButton(btn)
     if not btn then return end
     if not btn.unit and not btn.isOccupied and not btn.expirationTime and not btn:IsShown() then return end
@@ -144,10 +128,11 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.cooldown:SetReverse(true)
     btn.cooldown:EnableMouse(false)
     btn.cooldown.noCooldownCount = true
-    -- No flash at the end; the countdown numbers come from AURA_TIME.
+    -- No flash at the end. The client counts the time down (CVar
+    -- countdownForCooldowns 1) in the addon's one countdown look.
     btn.cooldown:SetDrawBling(false)
-    btn.cooldown:SetCountdownFormatter(AURA_TIME)
-    local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+    btn.cooldown:SetCountdownFormatter(FT.Countdown)
+    local font = STANDARD_TEXT_FONT
     local number = btn.cooldown:GetCountdownFontString()
     number:SetFont(font, (size <= 20 and 9 or 11), "OUTLINE")
     number:SetShadowColor(0, 0, 0, 1)
@@ -198,8 +183,7 @@ end
 
 function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, options)
     options = options or {}
-    local buffSize = (UF.GetBuffSize and UF:GetBuffSize()) or options.buffSize or options.size or 20
-    local debuffSize = (UF.GetDebuffSize and UF:GetDebuffSize()) or options.debuffSize or options.size or 20
+    local buffSize, debuffSize = UF:GetBuffSize(), UF:GetDebuffSize()
     local spacing = options.spacing or 3
     local perRow = options.perRow or 8
     local alignRight = options.alignRight
@@ -262,7 +246,7 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
         end
     end
 
-    if FT.RegisterFrameMover and options.moveKey then
+    if options.moveKey then
         if container.buffFrame then
             FT.RestoreFramePosition(container.buffFrame, options.moveKey .. "_buffs", parentFrame)
             FT.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, function() Auras:LayoutContainer(container) end)
@@ -277,7 +261,7 @@ end
 
 function Auras:ApplyBuffSize(container, newSize)
     if not container or not container.buffFrame or not container.buffButtons then return end
-    newSize = tonumber(newSize) or (UF.GetBuffSize and UF:GetBuffSize()) or 20
+    newSize = tonumber(newSize) or UF:GetBuffSize()
     container.buffSize = newSize
     local spacing = (container.options and container.options.spacing) or 3
     local perRow = (container.options and container.options.perRow) or 8
@@ -297,7 +281,7 @@ end
 
 function Auras:ApplyDebuffSize(container, newSize)
     if not container or not container.debuffFrame or not container.debuffButtons then return end
-    newSize = tonumber(newSize) or (UF.GetDebuffSize and UF:GetDebuffSize()) or 20
+    newSize = tonumber(newSize) or UF:GetDebuffSize()
     container.debuffSize = newSize
     local spacing = (container.options and container.options.spacing) or 3
     local perRow = (container.options and container.options.perRow) or 8
@@ -374,9 +358,9 @@ function Auras:UpdateContainer(container)
     end
 
     local showBuffs = true
-    if unit == "player" and UF.IsShowPlayerBuffs and not UF:IsShowPlayerBuffs() then
+    if unit == "player" and not UF:IsShowPlayerBuffs() then
         showBuffs = false
-    elseif unit == "target" and UF.IsShowTargetBuffs and not UF:IsShowTargetBuffs() then
+    elseif unit == "target" and not UF:IsShowTargetBuffs() then
         showBuffs = false
     end
 
@@ -389,9 +373,9 @@ function Auras:UpdateContainer(container)
     end
 
     local showDebuffs = true
-    if unit == "player" and UF.IsShowPlayerDebuffs and not UF:IsShowPlayerDebuffs() then
+    if unit == "player" and not UF:IsShowPlayerDebuffs() then
         showDebuffs = false
-    elseif unit == "target" and UF.IsShowTargetDebuffs and not UF:IsShowTargetDebuffs() then
+    elseif unit == "target" and not UF:IsShowTargetDebuffs() then
         showDebuffs = false
     end
 
@@ -601,14 +585,9 @@ function Auras:AttachToTargetFrame()
     if UF.blizzTargetAuras then return UF.blizzTargetAuras end
     if not TargetFrame then return nil end
 
-    local buffSize = (UF.GetBuffSize and UF:GetBuffSize()) or 20
-    local debuffSize = (UF.GetDebuffSize and UF:GetDebuffSize()) or 20
-
     -- Match the standard player row capacity; target rows grow from the portrait side.
     local container = Auras:CreateAuraContainer(TargetFrame, "target", 32, 48, {
         standard = true, moveKey = "standard_target", alignRight = true,
-        buffSize = buffSize,
-        debuffSize = debuffSize,
         spacing = 3,
         perRow = 8,
         buffAnchor = "BOTTOM",
@@ -665,15 +644,14 @@ end
 
 -- Native TargetofTarget_Update also calls this updater on its render path.
 -- Only suppress its stock buttons here; aura scans belong to unit events.
-FT.hooksecurefunc("TargetDebuffButton_Update", SuppressBlizzTargetAuras)
+hooksecurefunc("TargetDebuffButton_Update", SuppressBlizzTargetAuras)
 
 -- Independent event dispatcher for standard target aura updating
 local auraEventFrame = CreateFrame("Frame", "FCTweaksAuraEventFrame", UIParent)
 auraEventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
--- ClassicAPI 1.17.10 sends UNIT_AURA_DELTA once per unit token per frame with
--- the changed aura instance IDs. Only "player" and "target" are read; the
--- target's raid, nameplate and mark copies are ignored.
-auraEventFrame:RegisterEvent("UNIT_AURA_DELTA")
+-- UNIT_AURA_DELTA comes once per unit token with the changed aura instance
+-- IDs. The unit filter drops the target's raid, nameplate and mark copies.
+auraEventFrame:RegisterUnitEvent("UNIT_AURA_DELTA", "player", "target")
 
 function Auras:UpdateBlizzPlayerAuras()
     if not PlayerFrame then return end
@@ -714,7 +692,6 @@ end
 auraEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 FT.SetEventHandler(auraEventFrame, function(_, ev, unit, info)
     if ev == "UNIT_AURA_DELTA" then
-        if unit ~= "player" and unit ~= "target" then return end
         local container = unit == "player" and UF.blizzPlayerAuras or UF.blizzTargetAuras
         local updated = info.updatedAuraInstanceIDs
         if container and container:IsShown() and updated and not info.isFullUpdate

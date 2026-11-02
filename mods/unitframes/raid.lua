@@ -2,9 +2,7 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/unitframes/raid.lua
--- World of Warcraft 1.12.1 Enhanced Client
--- Modern Unit Frames Subsystem: Unified Group Frames (Party & 40-Player Raid)
--- Primary Donor: LunaUnitFrames-TurtleWoW
+-- One grid for the party and a 40-player raid, in the LunaUnitFrames look.
 
 local UF = FT.UnitFrames
 if not UF then return end
@@ -56,58 +54,48 @@ local function SetBarColor(bar, r, g, b)
     end
 end
 
-local function UpdateButtonHealth(btn)
+-- Name and class colour belong to the member, not to its health: the roster
+-- pass and UNIT_NAME_UPDATE write them.
+local function UpdateButtonIdentity(btn)
     local unit = btn.unit
     if not unit or not btn:IsShown() then return end
-
-    local cur, max = UF.GetUnitHealthValues(unit)
-    SetBarRange(btn.healthBar, max)
-    btn.healthBar:SetValue(cur)
-
-    -- Class color (Exact Luna colors)
     local _, cls = UnitClass(unit)
-    local classToken = FT.NormalizeClass(cls) or btn.rosterClass
-    local c = classToken and UF.ClassColors[classToken]
-    if c then
-        SetBarColor(btn.healthBar, c.r, c.g, c.b)
-    else
-        SetBarColor(btn.healthBar, 0.2, 0.9, 0.2)
-    end
-
-    -- FontString bounds handle long names at the current size.
+    local c = UF.ClassColors[FT.NormalizeClass(cls) or btn.rosterClass or ""]
+    if c then SetBarColor(btn.healthBar, c.r, c.g, c.b) else SetBarColor(btn.healthBar, 0.2, 0.9, 0.2) end
     -- The raid roster knows every name; UnitName says "Unknown" until the
     -- client has loaded that player.
     local name = btn.rosterName
     if not name or name == UNKNOWNOBJECT then name = UnitName(unit) end
     name = name or ""
     if btn.nameText:GetText() ~= name then btn.nameText:SetText(name) end
+end
 
-    -- Health / Status text (Configurable: Deficit, Percentage, Current)
-    local isOffline = not UnitIsConnected(unit)
-    local isDead = UnitIsDeadOrGhost(unit)
-    local isGhost = UnitIsGhost(unit)
-    local fmt = (UF.GetRaidHealthFormat and UF:GetRaidHealthFormat()) or "deficit"
-
+-- The health text (missing, percent or current) is built only when the number
+-- it shows changes; offline, ghost and dead are -1, -2 and -3.
+local function UpdateButtonHealth(btn)
+    local unit = btn.unit
+    if not unit or not btn:IsShown() then return end
+    local cur, max = FT.GetUnitHealthValues(unit)
+    SetBarRange(btn.healthBar, max)
+    btn.healthBar:SetValue(cur)
+    local fmt = UF:GetRaidHealthFormat()
+    local shown
+    if not UnitIsConnected(unit) then shown = -1
+    elseif UnitIsDeadOrGhost(unit) then shown = UnitIsGhost(unit) and -2 or -3
+    elseif fmt == "percent" then shown = max > 0 and math.floor(cur / max * 100 + 0.5) or 0
+    elseif fmt == "current" then shown = cur
+    else shown = max > 0 and cur < max and max - cur or 0 end
+    if btn.fctHealthShown == shown and btn.fctHealthFormat == fmt then return end
+    btn.fctHealthShown, btn.fctHealthFormat = shown, fmt
     local text
-    if isOffline then
-        text = "|cff888888Off|r"
-    elseif isDead then
-        text = isGhost and "|cffaaaaaaGhost|r" or "|cffff2020Dead|r"
-    elseif fmt == "percent" then
-        local pct = (max > 0) and math.floor((cur / max) * 100 + 0.5) or 0
-        text = pct .. "%"
-    elseif fmt == "current" then
-        text = FT.Abbreviate(cur)
-    else -- "deficit" (Luna standard healer deficit)
-        if max > 0 and cur < max then
-            text = "-" .. FT.Abbreviate(max - cur)
-        else
-            text = ""
-        end
-    end
+    if shown == -1 then text = "|cff888888Off|r"
+    elseif shown == -2 then text = "|cffaaaaaaGhost|r"
+    elseif shown == -3 then text = "|cffff2020Dead|r"
+    elseif fmt == "percent" then text = shown .. "%"
+    elseif fmt == "current" then text = AbbreviateNumbers(shown)
+    else text = shown > 0 and "-" .. AbbreviateNumbers(shown) or "" end
     -- Text lanes depend on marks, leader icons and the aura strip, which
     -- their own updates lay out. Health changes only replace the text.
-    text = tostring(text)
     if btn.healthText:GetText() ~= text then btn.healthText:SetText(text) end
 end
 
@@ -229,7 +217,7 @@ end
 local function LayoutRaidText(btn, strip)
     local hb = btn.healthBar
     local h = hb:GetHeight() - strip
-    local markSize = math.min((FT.GetRaidMarkSettings and FT.GetRaidMarkSettings()) or 14, hb:GetHeight() - 2, 20)
+    local markSize = math.min(FT.GetRaidMarkSettings(), hb:GetHeight() - 2, 20)
     local marker = btn.raidIcon:IsShown() and markSize + 2 or 0
     local leader = btn.leaderIcon:IsShown() and 7 or 0
     local w = math.max(1, hb:GetWidth() - 8 - marker - leader)
@@ -297,7 +285,7 @@ local function LayoutButtonAuras(btn)
     -- the default grid. Minimum-height frames retain a single identity lane.
     local maxSize = math.max(4, btn.healthBar:GetHeight() - 18)
     size, dsize = math.min(size, maxSize), math.min(dsize, maxSize)
-    local markSpace = btn.raidIcon:IsShown() and math.min((FT.GetRaidMarkSettings and FT.GetRaidMarkSettings()) or 14, btn.healthBar:GetHeight() - 2, 20) + 2 or 0
+    local markSpace = btn.raidIcon:IsShown() and math.min(FT.GetRaidMarkSettings(), btn.healthBar:GetHeight() - 2, 20) + 2 or 0
     local width = btn:GetWidth() - 4 - markSpace
     local overflow = bn * (size + spacing) + dn * (dsize + spacing) - spacing > width
     local available = width - (overflow and 12 or 0)
@@ -433,6 +421,7 @@ local function UpdateButtonRange(btn)
 end
 
 local function UpdateButtonAll(btn)
+    UpdateButtonIdentity(btn)
     UpdateButtonHealth(btn)
     UpdateButtonPower(btn)
     UpdateButtonIndicators(btn)
@@ -794,7 +783,7 @@ local function Assign(btn, unit, force, index, rank, name, class, online)
     unitToButton[unit] = btn
     if force or btn.unit ~= unit or btn.rosterName ~= name or btn.rank ~= rank
         or btn.rosterOnline ~= online or not btn:IsShown() then
-        btn.rangeAlpha = nil
+        btn.rangeAlpha, btn.fctHealthShown = nil, nil
         SetUnit(btn, unit)
         btn.rosterName, btn.rosterClass = name, class and FT.NormalizeClass(class)
         btn.index, btn.rank, btn.rosterOnline = index, rank, online
@@ -808,7 +797,7 @@ function UF:UpdateGroupRoster(force)
     if not raidFrame then return end
     if testMode then return end
 
-    if wipe then wipe(unitToButton) end
+    wipe(unitToButton)
     for g = 1, 8 do groupCounters[g] = 0 end
 
     local numRaid = GetNumRaidMembers() or 0
@@ -921,8 +910,8 @@ local function RaidFrame_OnEvent(_, ev, a1, a2)
             UpdateButtonPower(btn)
         elseif ev == "UNIT_AURA_DELTA" then
             if not UpdateChangedRaidAuras(btn, a2) then UpdateButtonAuras(btn) end
-        elseif ev == "UNIT_NAME_UPDATE" or ev == "UNIT_LEVEL" then
-            UpdateButtonHealth(btn)
+        elseif ev == "UNIT_NAME_UPDATE" then
+            UpdateButtonIdentity(btn)
         end
     end
 end
@@ -940,10 +929,10 @@ function UF:ToggleRaidTest()
         UF:SyncNativeGroupFrames(testMode or UF:GetGroupDimensions().enabled)
     end
 
-    local bc = UF.backdropBorderColor or { 0.15, 0.15, 0.15, 0.9 }
+    local bc = UF.backdropBorderColor
 
     if testMode then
-        if wipe then wipe(unitToButton) end
+        wipe(unitToButton)
         raidFrame:Show()
 
         for g = 1, 8 do
@@ -957,7 +946,7 @@ function UF:ToggleRaidTest()
                 btn.rank = (m == 1 and g == 1) and 2 or 0
 
                 -- Static clean border
-                btn:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4] or 0.9)
+                btn:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4])
 
                 -- Mock class & name
                 local cls = MOCK_CLASSES[((g + m) % 8) + 1]
@@ -1022,7 +1011,7 @@ function UF:ToggleRaidTest()
             for m = 1, 5 do
                 local btn = groups[g].buttons[m]
                 SetUnit(btn, nil)
-                btn:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4] or 0.9)
+                btn:SetBackdropBorderColor(bc[1], bc[2], bc[3], bc[4])
                 for _, badge in ipairs(btn.buffBadges) do UF.Auras.ResetAuraButton(badge) end
                 for _, badge in ipairs(btn.debuffBadges) do UF.Auras.ResetAuraButton(badge) end
                 btn:Hide()
@@ -1036,7 +1025,7 @@ function UF:ToggleRaidTest()
 end
 
 --------------------------------------------------------------------------------
--- 9. Group Frame Size Settings Dialog (Sliders)
+-- 9. Refresh after a settings change
 --------------------------------------------------------------------------------
 
 function UF:RefreshRaidAuraBorders()
@@ -1068,7 +1057,7 @@ end
 function UF:UpdateAllRaidFrames()
     if not raidFrame or not raidFrame:IsShown() then return end
     if testMode then
-        local fmt = (UF.GetRaidHealthFormat and UF:GetRaidHealthFormat()) or "deficit"
+        local fmt = UF:GetRaidHealthFormat()
         for g = 1, 8 do
             if groups[g] then
                 for m = 1, 5 do
@@ -1080,10 +1069,10 @@ function UF:UpdateAllRaidFrames()
                             local pct = (max > 0) and math.floor((cur / max) * 100 + 0.5) or 0
                             btn.healthText:SetText(pct .. "%")
                         elseif fmt == "current" then
-                            btn.healthText:SetText(FT.Abbreviate(cur))
+                            btn.healthText:SetText(AbbreviateNumbers(cur))
                         else
                             if max > 0 and cur < max then
-                                btn.healthText:SetText("-" .. FT.Abbreviate(max - cur))
+                                btn.healthText:SetText("-" .. AbbreviateNumbers(max - cur))
                             else
                                 btn.healthText:SetText("")
                             end
@@ -1114,12 +1103,10 @@ end
 --------------------------------------------------------------------------------
 
 -- Members only: ClassicAPI also fires unit events for every nameplate, raid
--- mark and focus token, which these buttons never show. UNIT_AURA_DELTA is a
--- ClassicAPI event that RegisterUnitEvent is not documented to filter; the
--- handler's unitToButton lookup drops other tokens.
+-- mark and focus token, which these buttons never show. RegisterUnitEvent
+-- filters every event whose first argument is a unit, UNIT_AURA_DELTA too.
 local MEMBER_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH", "UNIT_POWER_UPDATE", "UNIT_MAXPOWER",
-    "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_LEVEL",
-    "UNIT_IN_RANGE_UPDATE", "UNIT_CONNECTION" }
+    "UNIT_DISPLAYPOWER", "UNIT_NAME_UPDATE", "UNIT_IN_RANGE_UPDATE", "UNIT_CONNECTION", "UNIT_AURA_DELTA" }
 local MEMBER_UNITS = { "player", "party1", "party2", "party3", "party4" }
 for i = 1, 40 do MEMBER_UNITS[#MEMBER_UNITS + 1] = RAID_UNITS[i] end
 
@@ -1142,7 +1129,6 @@ function UF:EnableRaidFrames(deferRoster)
     raidFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
     raidFrame:RegisterUnitEvent("UNIT_TARGET", "target")
     for _, ev in ipairs(MEMBER_EVENTS) do raidFrame:RegisterUnitEvent(ev, unpack(MEMBER_UNITS)) end
-    raidFrame:RegisterEvent("UNIT_AURA_DELTA")
     FT.SetEventHandler(raidFrame, RaidFrame_OnEvent)
 
     -- Dimension edits must size the buttons before refreshing the roster once.

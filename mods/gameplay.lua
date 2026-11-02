@@ -1,16 +1,11 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
-
 do
 -- Reversible Blizzard stance bar suppression for stealth, stances and forms.
 
 local module = FT:register({
     title = "Hide Stealth / Stance Bar",
-    description = "Hide Blizzard's stealth, stance and shapeshift bar.",
-    category = "General",
     enabled = false,
 })
 
@@ -45,11 +40,8 @@ end
 do
 -- Automatically switches to the required warrior or druid stance on spell cast
 
-
 local module = FT:register({
     title = "Auto Stance",
-    description = "Automatically switch to the required warrior or druid stance on spell cast.",
-    category = "General",
     enabled = true,
 })
 
@@ -81,8 +73,6 @@ do
 
 local module = FT:register({
     title = "Auto Dismount",
-    description = "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item.",
-    category = "General",
     enabled = true,
 })
 

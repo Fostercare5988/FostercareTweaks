@@ -4,8 +4,7 @@ if not FT then return end
 -- Original 1.12 top-right auras: keep Blizzard icons, handlers and timers.
 -- BuffFrame and TemporaryEnchantFrame stay active as native update controllers.
 local module = FT:register({
-    title = "Blizzard Aura Controls", category = "Unit Frames", always = true,
-    description = "Separate visibility and Ctrl+Shift movement for the original player aura areas.",
+    title = "Blizzard Aura Controls", always = true,
 })
 local areas
 local function StyleAuraIcon(button, weaponEnchant, force)
@@ -117,7 +116,6 @@ end
 module.enable = function()
     if areas then return end
     areas = {}
-    FT.standardAuraAreas = areas
     for _, spec in ipairs({
         { "Buffs", "Show Standard Buffs", "standard_global_buffs", BuffFrame, 0 },
         { "Debuffs", "Show Standard Debuffs", "standard_global_debuffs", TemporaryEnchantFrame, -90 },
@@ -154,11 +152,11 @@ module.enable = function()
     end
     -- This native function reanchors BuffButton8 and BuffButton16 whenever
     -- duration display changes. Restore only icon anchors, never mover positions.
-    FT.hooksecurefunc("BuffButtons_UpdatePositions", AnchorButtons)
-    FT.hooksecurefunc("BuffButton_Update", function()
+    hooksecurefunc("BuffButtons_UpdatePositions", AnchorButtons)
+    hooksecurefunc("BuffButton_Update", function()
         if this and this.buffFilter then StyleAuraIcon(this) end
     end)
-    FT.hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
+    hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
     local inventory = CreateFrame("Frame", nil, UIParent)
     inventory:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
     inventory:RegisterEvent("GET_ITEM_INFO_RECEIVED")

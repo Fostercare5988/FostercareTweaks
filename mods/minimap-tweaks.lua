@@ -1,8 +1,6 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
 do
 -- Minimap size: the map is scaled (a resized frame breaks the engine's own blip,
 -- arrow and tooltip geometry). The clock and the icons below keep their own size,
@@ -11,8 +9,7 @@ do
 -- moving one never moves another.
 local module = FT:register({
     title = "MiniMap Size",
-    description = "Make the mini map larger or smaller. Its clock and buttons keep their size.",
-    category = "World & MiniMap", always = true,
+    always = true,
 })
 
 -- Put a minimap piece (zone name, clock, icon) where the player left it, against
@@ -76,13 +73,10 @@ end
 end
 
 do
--- Adds a 24h clock to the MiniMap (Rule AP-10, Rule C3 compliant)
-
+-- Adds a 24h clock to the MiniMap
 
 local module = FT:register({
     title = "MiniMap Clock",
-    description = "Adds a small 24h clock to the mini map.",
-    category = "World & MiniMap",
     enabled = true,
 })
 
@@ -143,18 +137,12 @@ end
 do
 -- Draw the mini map in a squared shape instead of a round one
 
-
 local module = FT:register({
     title = "MiniMap Square",
-    description = "Draw the mini map in a squared shape instead of a round one.",
-    category = "World & MiniMap",
-    enabled = nil,
 })
 
 module.enable = function(self)
-    if MinimapBorder then
-        MinimapBorder:SetTexture(nil)
-    end
+    MinimapBorder:SetTexture(nil)
     Minimap:SetPoint("CENTER", MinimapCluster, "TOP", 9, -98)
     Minimap:SetMaskTexture("Interface\\Buttons\\WHITE8X8")
 
@@ -177,27 +165,19 @@ end
 do
 -- Hides unnecessary minimap buttons and allows mouse wheel zooming
 
-
 local module = FT:register({
     title = "MiniMap Tweaks",
-    description = "Hides unnecessary mini map buttons and allows to zoom using the mouse wheel.",
-    category = "World & MiniMap",
     enabled = true,
 })
 
 module.enable = function(self)
-    if GameTimeFrame then
-        GameTimeFrame:Hide()
-        FT.HookScript(GameTimeFrame, "OnShow", function() GameTimeFrame:Hide() end)
-    end
-
-    if MinimapBorderTop then MinimapBorderTop:Hide() end
-    if MinimapToggleButton then MinimapToggleButton:Hide() end
-    if MinimapZoneTextButton then
-        MinimapZoneTextButton:SetPoint("CENTER", 7, 85)
-        -- The zone name moves with Ctrl+Shift like the icons.
-        C_Timer.After(0, function() FT.PlaceIcon(MinimapZoneTextButton, "minimap_zone_s", "Zone", nil, "minimap_zone") end)
-    end
+    GameTimeFrame:Hide()
+    FT.HookScript(GameTimeFrame, "OnShow", function() GameTimeFrame:Hide() end)
+    MinimapBorderTop:Hide()
+    MinimapToggleButton:Hide()
+    MinimapZoneTextButton:SetPoint("CENTER", 7, 85)
+    -- The zone name moves with Ctrl+Shift like the icons.
+    C_Timer.After(0, function() FT.PlaceIcon(MinimapZoneTextButton, "minimap_zone_s", "Zone", nil, "minimap_zone") end)
 
     -- Ctrl+Shift moves the mail, battleground and tracking (herbs, ...) icons. The
     -- game hides them until needed; the mover shows each one while it is held and
@@ -209,14 +189,12 @@ module.enable = function(self)
     }
     for _, entry in ipairs(movable) do
         local frame = _G[entry[1]]
-        if frame then
-            frame.fctRestoreShown = entry[4]
-            C_Timer.After(0, function() FT.PlaceIcon(frame, entry[2] .. "_s", entry[3], entry[2], entry[2] .. "_r") end)
-        end
+        frame.fctRestoreShown = entry[4]
+        C_Timer.After(0, function() FT.PlaceIcon(frame, entry[2] .. "_s", entry[3], entry[2], entry[2] .. "_r") end)
     end
 
-    if MinimapZoomIn then MinimapZoomIn:Hide() end
-    if MinimapZoomOut then MinimapZoomOut:Hide() end
+    MinimapZoomIn:Hide()
+    MinimapZoomOut:Hide()
 
     Minimap:EnableMouseWheel(true)
     Minimap:SetScript("OnMouseWheel", function()

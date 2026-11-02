@@ -8,8 +8,6 @@ local GetItemIDFromLink = FT.GetItemIDFromLink
 
 local module = FT:register({
   title = "Vendor Values",
-  description = "Shows the vendor sell values on all item tooltips.",
-  category = "Tooltip & Items",
   enabled = true,
 })
 
@@ -82,7 +80,7 @@ module.enable = function(self)
     ShowValue(frame, GetLootSlotLink(slot), 1, true)
   end)
   hooksecurefunc(GameTooltip, "SetInboxItem", function(frame, mailID, attachmentIndex)
-    local link = GetInboxItemLink and GetInboxItemLink(mailID, attachmentIndex or 1)
+    local link = GetInboxItemLink(mailID, attachmentIndex or 1)
     if not link then
       local _, itemLink = frame:GetItem()
       link = itemLink

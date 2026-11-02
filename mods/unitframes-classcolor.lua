@@ -6,11 +6,8 @@ if not FT then return end
 -- Colors standard player and target name backgrounds by class.
 -- Health bars remain standard Blizzard green.
 
-
 local module = FT:register({
     title = "Unit Frame Class Colors",
-    description = "Class colors on standard player and target name backgrounds.",
-    category = "Unit Frames",
     enabled = true,
 })
 
@@ -18,19 +15,10 @@ local function IsActive()
     return not FostercareTweaks_Config or FostercareTweaks_Config["Unit Frame Class Colors"] ~= 0
 end
 
+-- The raid frames' (Luna) class colours; nil for a unit with no class.
 local function GetClassColor(unit)
-    if not unit or not UnitExists(unit) then return nil end
     local _, class = UnitClass(unit)
-    class = FT.NormalizeClass(class)
-    if not class then return nil end
-    local colors = FT.UnitFrames and FT.UnitFrames.ClassColors
-    if colors and colors[class] then
-        return colors[class]
-    end
-    if RAID_CLASS_COLORS and rawget(RAID_CLASS_COLORS, class) then
-        return rawget(RAID_CLASS_COLORS, class)
-    end
-    return nil
+    return FT.UnitFrames.ClassColors[FT.NormalizeClass(class) or ""]
 end
 
 local ownsPlayerBackground = false
@@ -45,7 +33,7 @@ local originalPartyColors = {}
 local CLASS_FILL = "Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground"
 
 local function EnsurePlayerBackground()
-    if not PlayerFrameNameBackground and PlayerFrame then
+    if not PlayerFrameNameBackground then
         PlayerFrameNameBackground = PlayerFrame:CreateTexture(nil, "BORDER")
         PlayerFrameNameBackground:SetTexture(CLASS_FILL)
         PlayerFrameNameBackground:SetWidth(119)
@@ -60,31 +48,29 @@ local function ColorPlayer()
     local color = GetClassColor("player")
     if color then
         EnsurePlayerBackground()
-        if PlayerFrameNameBackground then
-            PlayerFrameNameBackground:SetTexture(CLASS_FILL)
-            PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
-            PlayerFrameNameBackground:Show()
-        end
+        PlayerFrameNameBackground:SetTexture(CLASS_FILL)
+        PlayerFrameNameBackground:SetVertexColor(color.r, color.g, color.b, 1)
+        PlayerFrameNameBackground:Show()
     end
 end
 
 local targetClassBar
 local function ColorTarget()
-    if not IsActive() or not TargetFrameNameBackground then return end
-    if not targetClassBar and TargetFrame then
+    if not IsActive() then return end
+    if not targetClassBar then
         targetClassBar = TargetFrame:CreateTexture(nil, "BORDER")
         targetClassBar:SetTexture(CLASS_FILL)
         targetClassBar:SetAllPoints(TargetFrameNameBackground)
         targetClassBar:Hide()
     end
     local color = UnitExists("target") and UnitIsPlayer("target") and GetClassColor("target")
-    if color and targetClassBar then
+    if color then
         targetClassBar:SetVertexColor(color.r, color.g, color.b, 1)
         targetClassBar:Show()
     else
         -- NPCs (like Scarlet Myrmidon): Blizzard's TargetFrame_CheckFaction colors
         -- its own name background red, yellow or green.
-        if targetClassBar then targetClassBar:Hide() end
+        targetClassBar:Hide()
         TargetFrameNameBackground:Show()
     end
 end
@@ -127,21 +113,10 @@ local function EnsureHooks()
     if hooksInstalled then return end
     hooksInstalled = true
 
-    if TargetFrame_CheckFaction then
-        FT.hooksecurefunc("TargetFrame_CheckFaction", ColorTarget)
-    end
-
-    if TargetFrame_Update then
-        FT.hooksecurefunc("TargetFrame_Update", ColorTarget)
-    end
-
-    if PlayerFrame_Update then
-        FT.hooksecurefunc("PlayerFrame_Update", ColorPlayer)
-    end
-
-    if PartyMemberFrame_UpdateMember then
-        FT.hooksecurefunc("PartyMemberFrame_UpdateMember", ColorParty)
-    end
+    hooksecurefunc("TargetFrame_CheckFaction", ColorTarget)
+    hooksecurefunc("TargetFrame_Update", ColorTarget)
+    hooksecurefunc("PlayerFrame_Update", ColorPlayer)
+    hooksecurefunc("PartyMemberFrame_UpdateMember", ColorParty)
 
     -- Target and party changes reach the hooks above; the player's class
     -- never changes, so the world entry repaints once.
@@ -159,7 +134,7 @@ function module:apply()
             PlayerFrameNameBackground:Hide()
         end
         if targetClassBar then targetClassBar:Hide() end
-        if UnitExists("target") and TargetFrame_CheckFaction then
+        if UnitExists("target") then
             TargetFrame_CheckFaction()
         end
         RestoreParty()

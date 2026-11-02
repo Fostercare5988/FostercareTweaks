@@ -405,14 +405,14 @@ end
 function AB:Initialize()
     if self.initialized then return end
     self.initialized = true
-    FT.hooksecurefunc("UIParent_ManageFramePositions", function() AB:Apply() end)
-    FT.hooksecurefunc("MultiActionBar_Update", function() AB:Apply() end)
+    hooksecurefunc("UIParent_ManageFramePositions", function() AB:Apply() end)
+    hooksecurefunc("MultiActionBar_Update", function() AB:Apply() end)
     local function HideCoveredMain(button)
         button = button or this
         if AB.enabled and BonusActionBarFrame:IsShown() and AB.normalButtons[button] then button:Hide() end
     end
-    FT.hooksecurefunc("ActionButton_Update", HideCoveredMain)
-    FT.hooksecurefunc("ActionButton_ShowGrid", HideCoveredMain)
+    hooksecurefunc("ActionButton_Update", HideCoveredMain)
+    hooksecurefunc("ActionButton_ShowGrid", HideCoveredMain)
     FT.HookScript(BonusActionBarFrame, "OnShow", function() if AB.enabled then AB:SyncMainVisibility() end end)
     FT.HookScript(BonusActionBarFrame, "OnHide", function() if AB.enabled then AB:SyncMainVisibility() end end)
     local controller = CreateFrame("Frame", "FCTweaksActionBarController", UIParent)

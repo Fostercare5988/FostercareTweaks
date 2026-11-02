@@ -1,16 +1,11 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
 do
 -- Shows an enemy castbar on target unit frame using event-driven state (ClassicAPI & SuperWoW)
 
-
 local module = FT:register({
     title = "Enemy Castbars",
-    description = "Shows an enemy castbar on target unit frame.",
-    category = "Unit Frames",
     enabled = true,
 })
 
@@ -162,7 +157,7 @@ module.enable = function(self)
         if STOP_EVENTS[ev] then StopCast() else UpdateCast() end
     end)
 
-    FT.hooksecurefunc("TargetofTarget_Update", function()
+    hooksecurefunc("TargetofTarget_Update", function()
         if castbar:IsShown() then UpdateAnchor() end
     end)
 
