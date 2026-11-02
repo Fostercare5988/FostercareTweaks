@@ -16,7 +16,6 @@ module.enable = function(self)
     -- without replacing widget methods or native lifecycle handlers.
     TargetHPText:SetAlpha(0)
     TargetHPPercText:SetAlpha(0)
-    TargetFrameHealthBarText:SetAlpha(0)
     hooksecurefunc("TargetHealthCheck", function()
         TargetHPText:Hide()
         TargetHPPercText:Hide()
