@@ -5,9 +5,10 @@ if not FT then return end
 -- icon with the time left (the client's countdown, FT.Countdown), shown while
 -- the aura is up and moved with Ctrl+Shift. FostercareTweaks_Config.watched
 -- holds { name, spellId, unit = "player" | "target", mine, icon, noIcon, topRight,
--- inRow } in order. Each aura decides where it shows: its own icon (unless
--- noIcon), and only when asked also in Blizzard's buffs at the top right
--- (topRight, your buffs) and the player or target row (inRow).
+-- inRow, noCooldown } in order. Each aura decides where it shows: its own icon
+-- (unless noIcon), and only when asked also in Blizzard's buffs at the top right
+-- (topRight, your buffs) and the player or target row (inRow). When one of your
+-- buffs ends, its icon shows its spell's cooldown, greyed (unless noCooldown).
 -- Positions live with the other frames (unitframe_positions), so each zone
 -- layout keeps its own.
 local module = FT:register({
@@ -20,6 +21,10 @@ FT.WatchedAuras = W
 local SIZE, GAP = 36, 6
 local FILTER = { player = "HELPFUL", target = "HARMFUL" }
 local icons, slots = {}, {}          -- icons by key; one slot buffer
+local found = {}                     -- W.Update's matches, reused
+local cooling                        -- a watched buff that shows its cooldown
+local known = {}                     -- buff name -> your spell's ID, or false
+
 -- Names kept out of each list: Blizzard's top right, and each unit's row.
 local hidden = { top = {}, player = {}, target = {} }
 
@@ -58,6 +63,10 @@ local function Icon(entry, index)
         icon.cooldown:SetDrawBling(false)
         icon.cooldown:SetCountdownFormatter(FT.Countdown)
         icon.cooldown.noCooldownCount = true
+        -- A cooldown shown after its buff ended: gone when the spell is ready.
+        icon.cooldown:SetScript("OnCooldownDone", function()
+            if icon.fctCooling then W.Update("player") end
+        end)
         -- Above the sweep and its numbers.
         local text = CreateFrame("Frame", nil, icon)
         text:SetAllPoints(icon)
@@ -87,7 +96,15 @@ local function Icon(entry, index)
     return icon
 end
 
+-- An aura again after its cooldown: colour and the draining sweep back.
+local function EndCooldown(icon)
+    icon.fctCooling, icon.fctStart = nil, nil
+    icon.texture:SetDesaturated(false)
+    icon.cooldown:SetReverse(true)
+end
+
 local function Show(icon, texture, count, duration, expiration)
+    if icon.fctCooling then EndCooldown(icon) end
     icon.fctAura = true
     if icon.fctTexture ~= texture then icon.fctTexture = texture; icon.texture:SetTexture(texture) end
     local stacks = count and count > 1 and count or nil
@@ -101,9 +118,37 @@ local function Show(icon, texture, count, duration, expiration)
     if not icon:IsShown() then icon:Show() end
 end
 
+-- One of your buffs has ended: its spell's own cooldown (not the global one),
+-- greyed with a filling sweep, until it is ready. Stealth after you unstealth.
+local function ShowCooldown(icon, entry)
+    if entry.unit ~= "player" or entry.noCooldown then return false end
+    local id = known[entry.name]
+    if id == nil then
+        local _, _, _, _, _, _, _, _, _, spellId = GetSpellInfo(entry.name)
+        id = spellId or false
+        known[entry.name] = id
+    end
+    local info = id and C_Spell.GetSpellCooldown(id)
+    if not info or info.isOnGCD or info.duration <= 1.5
+        or info.startTime + info.duration <= GetTime() then return false end
+    icon.fctAura = nil
+    if not icon.fctCooling then
+        icon.fctCooling, icon.fctStart = true, nil
+        icon.texture:SetDesaturated(true)
+        icon.cooldown:SetReverse(false)
+    end
+    if icon.fctCount then icon.fctCount = nil; icon.count:SetText("") end
+    if icon.fctStart ~= info.startTime or icon.fctDuration ~= info.duration then
+        icon.fctStart, icon.fctDuration = info.startTime, info.duration
+        icon.cooldown:SetCooldown(info.startTime, info.duration)
+    end
+    if not icon:IsShown() then icon:Show() end
+    return true
+end
+
 -- Reads the unit's auras once and shows the watched ones it has.
 function W.Update(unit)
-    local found = {}
+    table.wipe(found)
     if UnitExists(unit) then
         local _, n = C_UnitAuras.GetAuraSlots(unit, FILTER[unit], 0, nil, slots)
         for i = 1, n do
@@ -122,7 +167,8 @@ function W.Update(unit)
     end
     for _, entry in ipairs(List()) do
         local icon = icons[Key(entry)]
-        if entry.unit == unit and not found[entry] and icon then
+        if entry.unit == unit and not found[entry] and icon
+            and (entry.noIcon or not ShowCooldown(icon, entry)) then
             icon.fctAura = nil
             if icon:IsShown() and not icon.fctForcedShown then icon:Hide() end
         end
@@ -134,7 +180,9 @@ end
 function W.Rebuild(refreshLists)
     local wanted, index = {}, 0
     for _, set in pairs(hidden) do table.wipe(set) end
+    cooling = nil
     for _, entry in ipairs(List()) do
+        if entry.unit == "player" and not entry.noIcon and not entry.noCooldown then cooling = true end
         if not entry.noIcon then
             index = index + 1
             wanted[Key(entry)] = Icon(entry, index)
@@ -179,10 +227,11 @@ function W.SetMine(index, mine)
 end
 
 -- Where an aura shows: "icon" (its own), "topRight" (Blizzard's buffs), "inRow"
--- (the player or target row).
+-- (the player or target row), "cooldown" (its spell's cooldown after it ends).
 function W.SetShown(index, place, shown)
     local entry = List()[index]
     if place == "icon" then entry.noIcon = not shown or nil
+    elseif place == "cooldown" then entry.noCooldown = not shown or nil
     else entry[place] = shown and true or nil end
     W.Rebuild(true)
 end
@@ -199,9 +248,13 @@ module.enable = function()
     events:RegisterUnitEvent("UNIT_AURA_DELTA", "player", "target")
     events:RegisterEvent("PLAYER_TARGET_CHANGED")
     events:RegisterEvent("PLAYER_ENTERING_WORLD")
+    events:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    events:RegisterEvent("SPELLS_CHANGED")
     FT.SetEventHandler(events, function(_, ev, unit)
         if ev == "UNIT_AURA_DELTA" then W.Update(unit)
         elseif ev == "PLAYER_TARGET_CHANGED" then W.Update("target")
+        elseif ev == "SPELL_UPDATE_COOLDOWN" then if cooling then W.Update("player") end
+        elseif ev == "SPELLS_CHANGED" then table.wipe(known)
         else W.Update("player"); W.Update("target") end
     end)
     W.Rebuild()

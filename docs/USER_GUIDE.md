@@ -86,7 +86,9 @@ These improve Blizzard's player, target and pet frames.
   The list is a grid; click an aura for its card. **Own icon**, **Top right**
   (Blizzard's buffs, for your buffs) and **Player row** / **Target row** choose
   where it shows: at first only its own icon. Turn the icon off too to hide an
-  aura everywhere. **Remove** takes it off the list.
+  aura everywhere. **Cooldown** (your buffs, on at first): when the buff ends,
+  its icon stays greyed with the spell's cooldown until it is ready, such as
+  Stealth after you leave it. **Remove** takes it off the list.
 
 ## Raid
 
