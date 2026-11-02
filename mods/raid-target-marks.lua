@@ -30,18 +30,13 @@ function FT:RefreshRaidMarks(includeRaid)
     if includeRaid ~= false and UF and UF.RefreshRaidMarks then UF:RefreshRaidMarks() end
 end
 
--- Solo, the server refuses raid marks. NamPower's local marks are seen only
--- by this client: the mark keys and menu then toggle a local mark instead.
+-- Solo, the server refuses raid marks. NamPower's SetRaidTarget then sets a
+-- local mark that only this client sees (NP_EnableLocalSetRaidTarget, on by
+-- default), so the mark keys and menu work alone too.
 -- UNVERIFIED: test in game that RAID_TARGET_UPDATE fires for local marks;
--- the refresh below covers our frames either way.
-local function InstallSoloMarks()
-    local groupMark = SetRaidTargetIcon
-    function SetRaidTargetIcon(unit, index)
-        if GetNumRaidMembers() > 0 or GetNumPartyMembers() > 0 then return groupMark(unit, index) end
-        local guid = UnitGUID(unit)
-        if not guid then return end
-        local marks = GetRaidTargets()
-        SetLocalRaidTargetIndex(unit, marks and marks[index] == guid and 0 or index)
+-- until it is known, a solo mark redraws the target and raid frames itself.
+local function RedrawSoloMark()
+    if GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 then
         TargetFrame_UpdateRaidTargetIcon()
         FT:RefreshRaidMarks()
     end
@@ -49,7 +44,7 @@ end
 
 module.enable = function(self)
     if self.frame then return end
-    InstallSoloMarks()
+    hooksecurefunc("SetRaidTarget", RedrawSoloMark)
     local driver = CreateFrame("Frame", "FCTweaksRaidMarks", UIParent)
     self.frame = driver
     hooksecurefunc("TargetFrame_UpdateRaidTargetIcon", LayoutTargetMark)

@@ -586,7 +586,6 @@ end
 
 function Auras:AttachToTargetFrame()
     if UF.blizzTargetAuras then return UF.blizzTargetAuras end
-    if not TargetFrame then return nil end
 
     -- Match the standard player row capacity; target rows grow from the portrait side.
     local container = Auras:CreateAuraContainer(TargetFrame, "target", 32, 48, {
@@ -615,34 +614,18 @@ local function SuppressBlizzTargetAuras()
     end
 end
 
-local isUpdatingBlizzAuras = false
 function Auras:UpdateBlizzTargetAuras()
-    if isUpdatingBlizzAuras then return end
-    isUpdatingBlizzAuras = true
-
-    local container = UF.blizzTargetAuras
-    if not container then
-        container = Auras:AttachToTargetFrame()
-    end
-
-    local targetShown = TargetFrame and TargetFrame:IsShown() and UnitExists("target")
-
-    if not container or not targetShown then
-        if container and container:IsShown() then
+    local container = Auras:AttachToTargetFrame()
+    if not TargetFrame:IsShown() or not UnitExists("target") then
+        if container:IsShown() then
             container:Hide()
-            for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
-            for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
+            Auras:ResetContainer(container)
         end
-        isUpdatingBlizzAuras = false
         return
     end
-
     SuppressBlizzTargetAuras()
-
     container:Show()
     Auras:UpdateContainer(container)
-
-    isUpdatingBlizzAuras = false
 end
 
 -- Native TargetofTarget_Update also calls this updater on its render path.
