@@ -78,7 +78,8 @@ These improve Blizzard's player, target and pet frames.
 - **Borders** for buffs, debuffs and weapon enchants (the weapon's quality color).
 - **Watched auras**: type a spell's name (or ID) and click **Add your buff** or
   **Add target debuff**. Each gets its own icon with the time left, shown while
-  the aura is up; hold **Ctrl+Shift** to move it, and each zone layout keeps its
+  the aura is up, in front of unit frames and bars. A new icon starts in a row
+  above your character; hold **Ctrl+Shift** to move it, and each zone layout keeps its
   own places. Target debuffs count only yours unless you turn **Only mine** off.
 
 ## Raid
