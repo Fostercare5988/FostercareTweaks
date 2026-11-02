@@ -84,7 +84,7 @@ local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
 -- The Action Bars page sets its own height as bar settings open and close.
 local TAB_LIST = {
-    { label = "General", height = 540 },
+    { label = "General", height = 590 },
     { label = "Unit Frames", height = 440 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
@@ -131,8 +131,24 @@ Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel"
     function() FT.ApplyWorldMapScale() end, nil, Times)
 UI.Heading(general, "Moving", RIGHT, -342)
 Hint(general, MOVE_HINT, RIGHT, -362)
+UI.Heading(general, "Layouts by zone", LEFT, -428)
+Feature(general, "Zone Layouts", "Own layout per zone",
+    "The world, battlegrounds, and dungeons and raids each keep their own frame positions, raid frames, aura sizes, "
+    .. "raid marks, minimap size and action bars. The layout changes after the loading screen.",
+    LEFT, -448, function(value) if value then FT.SwitchLayout(FT.ZoneLayout()) end end)
+local layoutNow = Hint(general, "", LEFT, -474, 444)
+local copyLayout = UI.Button("FTOpt_CopyLayout", general, "Use this layout everywhere", RIGHT + 36, -446, 172, function()
+    FT.CopyLayoutToAll(); Refresh()
+end)
+UI.Tooltip(copyLayout, "The other two layouts become copies of this one.")
+table.insert(syncs, function()
+    local on = FT.IsEnabled("Zone Layouts")
+    layoutNow:SetText(on and ("Now: " .. FT.LAYOUT_NAMES[Config().profile or FT.ZoneLayout()] .. ".")
+        or "One layout everywhere.")
+    UI.SetEnabled(copyLayout, on)
+end)
 Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
-    LEFT, -446, 444)
+    LEFT, -502, 444)
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
@@ -385,6 +401,9 @@ panel:RegisterEvent("PLAYER_REGEN_DISABLED")
 FT.SetEventHandler(panel, function() if panel:IsShown() then Refresh() end end)
 
 -- Opening ------------------------------------------------------------------------
+-- A layout change elsewhere shows in the open window.
+function FT.RefreshSettings() if panel:IsShown() then Refresh() end end
+
 -- FT.OpenSettings() toggles the window; a page name opens that page.
 function FT.OpenSettings(name)
     for index, key in ipairs(TABS) do if key == name then tab = index end end

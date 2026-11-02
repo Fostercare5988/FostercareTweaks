@@ -36,6 +36,13 @@ for a short explanation; a dimmed control waits for the switch above it.
   the player cache in **AddOn Options > ClassicAPI**.
 - **World map**: for a map window, use the minimize button on the map (the
   game's own windowed map).
+- **Layouts by zone**: the world, battlegrounds, and dungeons and raids each keep
+  their own frame positions, raid frames, aura sizes, raid marks, minimap size
+  and action bars. Set things up in a battleground and they stay there; the
+  layout changes after the loading screen (after combat if you are fighting).
+  A new layout starts as a copy of the one you were using. **Use this layout
+  everywhere** copies the current one to the other two. Spells and items on the
+  extra rows are the same in every layout.
   **Map window size** sets its size; so does **Ctrl + mouse wheel** on the map.
 
 ## Unit Frames

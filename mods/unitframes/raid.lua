@@ -653,14 +653,9 @@ local function ConstructRaidGrid()
     raidFrame:EnableMouse(false)
     raidFrame:SetScale(dims.scale)
 
-    -- Position restoration or default HUD placement
-    raidFrame:ClearAllPoints()
-    local savedPos = FostercareTweaks_Config and FostercareTweaks_Config.unitframe_positions and FostercareTweaks_Config.unitframe_positions["raid"]
-    if savedPos and savedPos.point and savedPos.relPoint and savedPos.x and savedPos.y then
-        raidFrame:SetPoint(savedPos.point, UIParent, savedPos.relPoint, savedPos.x, savedPos.y)
-    else
-        raidFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 20, -180)
-    end
+    -- The default spot, then the saved one.
+    raidFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 20, -180)
+    FT.RestoreFramePosition(raidFrame, "raid")
 
     for g = 1, 8 do
         local grp = CreateFrame("Frame", "FCTweaksRaidGroup" .. g, raidFrame)

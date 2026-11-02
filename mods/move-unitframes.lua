@@ -34,6 +34,13 @@ function FT.SaveFramePosition(frame, key, relative)
 end
 
 function FT.RestoreFramePosition(frame, key, relative)
+    -- Where the frame stood before any saved position: a layout without one
+    -- puts it back there (FT.RestoreFramePositions).
+    if not frame.fctHome then
+        local home = {}
+        for i = 1, frame:GetNumPoints() do home[i] = { frame:GetPoint(i) } end
+        frame.fctHome = home
+    end
     local p = FostercareTweaks_Config and FostercareTweaks_Config.unitframe_positions
     p = p and p[key]
     if not p or not p.point or not p.relPoint or not tonumber(p.x) or not tonumber(p.y) then return false end
@@ -74,13 +81,15 @@ function FT.UpdateFrameMovers()
     end
 end
 
-function FT.RegisterFrameMover(frame, key, label, relative, onStop)
+-- onStop runs after a drag; onRestore(saved) after a layout change placed the
+-- frame again (FT.RestoreFramePositions).
+function FT.RegisterFrameMover(frame, key, label, relative, onStop, onRestore)
     if not frame or frame.fctMover then return end
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
     local mover = CreateFrame("Frame", nil, frame)
     mover.owner, mover.key, mover.relative = frame, key, relative or UIParent
-    mover.onStop = onStop
+    mover.onStop, mover.onRestore = onStop, onRestore
     mover:SetAllPoints(frame)
     mover:SetFrameLevel(frame:GetFrameLevel() + 20)
     mover:EnableMouse(true)
@@ -102,6 +111,20 @@ function FT.RegisterFrameMover(frame, key, label, relative, onStop)
     frame.fctMover = mover
     table.insert(movers, mover)
     FT.UpdateFrameMovers()
+end
+
+-- A layout change (Profiles.lua) replaces every saved position at once: each
+-- frame goes to its saved place, or home.
+function FT.RestoreFramePositions()
+    for _, mover in ipairs(movers) do
+        local owner = mover.owner
+        local saved = FT.RestoreFramePosition(owner, mover.key, mover.relative)
+        if not saved and owner.fctHome[1] then
+            owner:ClearAllPoints()
+            for _, p in ipairs(owner.fctHome) do owner:SetPoint(p[1], p[2], p[3], p[4], p[5]) end
+        end
+        if mover.onRestore then mover.onRestore(saved) end
+    end
 end
 
 module.enable = function()
