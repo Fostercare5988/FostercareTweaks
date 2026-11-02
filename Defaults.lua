@@ -1,15 +1,14 @@
 -- FostercareTweaks: the settings a new character starts with.
--- Generated 2026-11-01 from the author's own settings by VanillaForge/tools/export_defaults.py;
+-- Generated 2026-11-02 from the author's own settings by VanillaForge/tools/export_defaults.py;
 -- do not edit by hand, run the tool again. Applied once, on a character that has no
 -- saved settings yet (Core.lua), never over existing ones. Chat history and the
 -- extra bars' spell and item lists are not included.
 FostercareTweaks_Defaults = {
     ["Auto Dismount"] = 1,
     ["Auto Stance"] = 1,
-    ["Blizzard Aura Controls"] = 1,
     ["Blue Shaman Class Colors"] = 1,
+    ["Borderless Castbars"] = 1,
     ["Center Vertical Actionbar"] = 1,
-    ["Borderless Castbars"] = 0,
     ["Chat Class Colors"] = 1,
     ["Chat History"] = 1,
     ["Chat Hyperlinks"] = 1,
@@ -34,7 +33,7 @@ FostercareTweaks_Defaults = {
     ["Show Debuff Borders"] = 1,
     ["Show Energy Ticks"] = 1,
     ["Show Group Labels"] = 0,
-    ["Show Player Buffs"] = 0,
+    ["Show Player Buffs"] = 1,
     ["Show Player Debuffs"] = 1,
     ["Show Raid Aggro Indicator"] = 1,
     ["Show Raid Buffs"] = 1,
@@ -49,7 +48,6 @@ FostercareTweaks_Defaults = {
     ["Vendor Values"] = 1,
     ["WorldMap Class Colors"] = 1,
     ["WorldMap Coordinates"] = 1,
-    ["WorldMap Window"] = 1,
     actionbars = {
         bars = {
             bottomleft = {
@@ -82,9 +80,10 @@ FostercareTweaks_Defaults = {
             extra3 = {
                 columns = 4,
                 scale = 0.9,
+                showEmpty = false,
                 visible = true,
-                x = 1108,
-                y = 116.67,
+                x = 1473.34,
+                y = 343.11,
             },
             left = {
                 scale = 0.9,
@@ -126,13 +125,14 @@ FostercareTweaks_Defaults = {
         raidmark_position = "portrait",
         uf_buff_size = 20,
         uf_debuff_size = 20,
+        worldmap_scale = 1.65,
     },
     unitframe_positions = {
         minimap = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1495,
-            y = 34.52,
+            x = 1490.49,
+            y = 55.45,
         },
         minimap_bg_s = {
             point = "TOPLEFT",
@@ -150,13 +150,13 @@ FostercareTweaks_Defaults = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
             x = 1449.62,
-            y = -35.82,
+            y = 1.9,
         },
         minimap_tracking_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1446.13,
-            y = 0.95,
+            x = 1447.02,
+            y = -27.59,
         },
         minimap_zone_s = {
             point = "TOPLEFT",
@@ -164,11 +164,17 @@ FostercareTweaks_Defaults = {
             x = 1589.61,
             y = -228.47,
         },
+        player_castbar = {
+            point = "TOPLEFT",
+            relPoint = "TOPLEFT",
+            x = 771.04,
+            y = -547.29,
+        },
         raid = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 21.69,
-            y = -48.61,
+            x = -2.01,
+            y = -86.67,
         },
         standard_global_buffs = {
             point = "TOPLEFT",
@@ -221,8 +227,8 @@ FostercareTweaks_Defaults = {
         standard_weapon_enchants = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 443,
-            y = -528.68,
+            x = 323.89,
+            y = -526.78,
         },
     },
 }
