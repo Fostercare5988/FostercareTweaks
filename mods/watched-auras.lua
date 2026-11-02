@@ -35,7 +35,8 @@ local function Icon(entry, index)
     if not icon then
         icon = CreateFrame("Frame", "FCTweaksWatch_" .. key, UIParent)
         icon:SetWidth(SIZE); icon:SetHeight(SIZE)
-        icon:SetFrameStrata("LOW")
+        -- Above unit frames, bars and their movers; under menus and the map.
+        icon:SetFrameStrata("HIGH")
         icon.texture = icon:CreateTexture(nil, "ARTWORK")
         icon.texture:SetAllPoints(icon)
         icon.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -51,8 +52,10 @@ local function Icon(entry, index)
         text:SetFrameLevel(icon:GetFrameLevel() + 5)
         icon.count = text:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
         icon.count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 2)
-        -- A new icon waits in a row under the screen centre until it is moved.
-        icon:SetPoint("CENTER", UIParent, "CENTER", -150 + (index - 1) * (SIZE + GAP), -150)
+        -- A new icon waits above the screen centre, eight to a row, clear of
+        -- the unit frames, until it is moved.
+        local column, row = (index - 1) % 8, math.floor((index - 1) / 8)
+        icon:SetPoint("CENTER", UIParent, "CENTER", (column - 3.5) * (SIZE + GAP), 150 + row * (SIZE + GAP))
         FT.RestoreFramePosition(icon, key)
         FT.RegisterFrameMover(icon, key, entry.name)
         icon:Hide()
