@@ -4,7 +4,9 @@ if not FT then return end
 -- Watched auras: chosen buffs on you and debuffs on your target, each its own
 -- icon with the time left (the client's countdown, FT.Countdown), shown while
 -- the aura is up and moved with Ctrl+Shift. FostercareTweaks_Config.watched
--- holds { name, spellId, unit = "player" | "target", mine, icon } in order.
+-- holds { name, spellId, unit = "player" | "target" | "hidden", mine, icon } in
+-- order. An aura shows in one place: a watched one leaves that unit's lists
+-- (Blizzard's buffs, the player and target rows), a hidden one leaves them all.
 -- Positions live with the other frames (unitframe_positions), so each zone
 -- layout keeps its own.
 local module = FT:register({
@@ -17,6 +19,12 @@ FT.WatchedAuras = W
 local SIZE, GAP = 36, 6
 local FILTER = { player = "HELPFUL", target = "HARMFUL" }
 local icons, slots = {}, {}          -- icons by key; one slot buffer
+local hidden = { all = {}, player = {}, target = {} }   -- names, from the list
+
+-- For the aura lists: true when this aura of this unit shows elsewhere.
+function FT.IsAuraHidden(name, unit)
+    return name ~= nil and (hidden.all[name] or (hidden[unit] and hidden[unit][name])) or false
+end
 
 local function List()
     local cfg = FostercareTweaks_Config
@@ -116,15 +124,30 @@ function W.Update(unit)
     end
 end
 
--- After a change to the list: icons for every entry, none for removed ones.
-function W.Rebuild()
-    local wanted = {}
-    for index, entry in ipairs(List()) do wanted[Key(entry)] = Icon(entry, index) end
+-- After a change to the list: icons for every watched entry, none for removed
+-- or hidden ones; the lists drop what shows elsewhere.
+function W.Rebuild(refreshLists)
+    local wanted, index = {}, 0
+    for _, set in pairs(hidden) do table.wipe(set) end
+    for _, entry in ipairs(List()) do
+        if entry.unit == "hidden" then
+            hidden.all[entry.name] = true
+        else
+            index = index + 1
+            wanted[Key(entry)] = Icon(entry, index)
+            hidden[entry.unit][entry.name] = true
+        end
+    end
     for key, icon in pairs(icons) do
         if not wanted[key] then icon.fctRestoreShown = nil; icon:Hide() end
     end
     W.Update("player")
     W.Update("target")
+    if refreshLists then
+        FT.ApplyStandardAuraSettings()
+        FT.UnitFrames.Auras:UpdateBlizzPlayerAuras()
+        FT.UnitFrames.Auras:UpdateBlizzTargetAuras()
+    end
 end
 
 function W.Add(text, unit)
@@ -137,12 +160,12 @@ function W.Add(text, unit)
         if entry.unit == unit and entry.name == name then return end
     end
     table.insert(List(), { name = name, spellId = id, unit = unit, mine = unit == "target" or nil })
-    W.Rebuild()
+    W.Rebuild(true)
 end
 
 function W.Remove(index)
     table.remove(List(), index)
-    W.Rebuild()
+    W.Rebuild(true)
 end
 
 function W.SetMine(index, mine)

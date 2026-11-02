@@ -74,13 +74,16 @@ These improve Blizzard's player, target and pet frames.
   with sweeps, countdowns and dispel colors (also on the raid frames). Choose
   which rows show, and the icon sizes.
 - **Top right of the screen**: show or hide Blizzard's buffs, debuffs and weapon
-  enchants; **Ctrl+Shift** moves them.
+  enchants; **Ctrl+Shift** moves them. Each weapon shows the icon of its poison,
+  oil or imbue (the poison from your bags, else its spell); hover it for the weapon.
 - **Borders** for buffs, debuffs and weapon enchants (the weapon's quality color).
 - **Watched auras**: type a spell's name (or ID) and click **Add your buff** or
   **Add target debuff**. Each gets its own icon with the time left, shown while
   the aura is up, in front of unit frames and bars. A new icon starts in a row
   above your character; hold **Ctrl+Shift** to move it, and each zone layout keeps its
   own places. Target debuffs count only yours unless you turn **Only mine** off.
+  A watched aura shows only there: it leaves Blizzard's buffs and the player or
+  target row. **Hide** takes an aura out of every list without an icon.
 
 ## Raid
 

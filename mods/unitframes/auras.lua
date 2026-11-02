@@ -416,7 +416,7 @@ function Auras:UpdateContainer(container)
                 local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = C_UnitAuras.UnitAuraBySlot(unit, slots[i])
                 if not name then break end -- end of buffs
 
-                if icon then
+                if icon and not FT.IsAuraHidden(name, unit) then
                     local btn = container.buffButtons[btnIdx]
                     if btn then
                         btn.unit = unit
@@ -464,7 +464,7 @@ function Auras:UpdateContainer(container)
                 local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, castByPlayer = C_UnitAuras.UnitAuraBySlot(unit, slots[i])
                 if not name then break end -- end of debuffs
 
-                if icon then
+                if icon and not FT.IsAuraHidden(name, unit) then
                     local btn = container.debuffButtons[btnIdx]
                     if btn then
                         btn.unit = unit
@@ -673,13 +673,15 @@ end
 -- A refresh or stack change rewrites only its own button. A new or lost aura
 -- moves the others, so the row is read again; so is a change with no button.
 local deltaAura = {}
+local NO_BUTTONS = {}
 local function UpdateChangedAuras(container, unit, ids)
     local now, unitGUID = GetTime(), UnitGUID(unit)
     for i = 1, #ids do
         local d = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, ids[i], deltaAura)
         if not d then return false end
-        local found
-        for _, btn in ipairs(d.isHelpful and container.buffButtons or container.debuffButtons) do
+        -- A hidden aura has no button; its refresh changes nothing here.
+        local found = FT.IsAuraHidden(d.name, unit)
+        for _, btn in ipairs(found and NO_BUTTONS or d.isHelpful and container.buffButtons or container.debuffButtons) do
             if btn.isOccupied and btn.spellId == d.spellId and btn.timerSourceGUID == d.sourceGUID then
                 SetCount(btn, d.applications)
                 UpdateAuraTiming(btn, unitGUID, d.spellId, d.sourceUnit, d.duration, d.expirationTime, now)

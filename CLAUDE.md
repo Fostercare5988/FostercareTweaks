@@ -87,7 +87,14 @@ Things to know:
 - A module's `enable` runs under `xpcall` with the error handler, so an
   error reaches !ErrorLog with its stack and the other modules still start.
 - Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
-  Icon positions use mover keys `watch_*`.
+  Icon positions use mover keys `watch_*`. The list also decides where auras
+  show: `FT.IsAuraHidden(name, unit)` is asked by Blizzard's buff buttons
+  (standard-player-auras.lua, via SuperWoW `GetPlayerBuffID`) and the player
+  and target rows (unitframes/auras.lua).
+- Weapon enchants draw the enchant's icon over the weapon's (`fctPoison`): ClassicAPI
+  `C_Item.GetWeaponEnchantInfo` IDs, read on `UNIT_INVENTORY_CHANGED`,
+  `WEAPON_SLOT_CHANGED` or a hand gaining an enchant; the icon is the bag item
+  named like the enchant, else its proc spell.
 - Other addons use one interface: ActionBarProfiles calls
   `FostercareTweaks.ExtraActions` (`GetProfile`, `ValidateProfile`,
   `ApplyProfile`, `ProfileVersion` 1). AutoLazy's minimap tray skips
