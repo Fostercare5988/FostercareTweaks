@@ -47,6 +47,10 @@ castbar.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 castbar.spark:SetWidth(20)
 castbar.spark:SetHeight(20)
 castbar.spark:SetBlendMode("ADD")
+-- The bar fills itself from castbar.timer (SetTimerDuration, ClassicAPI), so
+-- the spark rides the bar's texture and nothing runs per frame during a cast.
+castbar.spark:SetPoint("CENTER", castbar:GetStatusBarTexture(), "RIGHT", 0, 0)
+castbar.timer = C_DurationUtil.CreateDuration()
 
 castbar.backdrop = CreateFrame("Frame", nil, castbar)
 castbar.backdrop:SetFrameStrata("BACKGROUND")
@@ -69,15 +73,11 @@ local function StopCast()
     if castbar:IsShown() then
         castbar:Hide()
     end
-    castbar.cast = nil
-    castbar.startTime = nil
-    castbar.endTime = nil
-    castbar.duration = nil
+    castbar.endSec = nil
+    castbar.lastChannel = nil
     castbar.lastSpell = nil
     castbar.lastTexture = nil
     castbar.lastInterruptible = nil
-    castbar.lastSparkX = nil
-    castbar:SetScript("OnUpdate", nil)
 end
 
 local function UpdateAnchor()
@@ -91,37 +91,6 @@ local function UpdateAnchor()
         castbar:ClearAllPoints()
         castbar:SetPoint("BOTTOM", TargetFrame, "BOTTOM", -12, yOffset)
         castbar.lastYOffset = yOffset
-    end
-end
-
-local function Castbar_OnUpdate()
-    if not castbar.startTime or not castbar.endTime or not castbar.duration then
-        StopCast()
-        return
-    end
-
-    local now = GetTime()
-    local cur
-    if castbar.isChannel then
-        cur = castbar.endTime - now
-    else
-        cur = now - castbar.startTime
-    end
-
-    if cur < 0 then cur = 0 end
-    if cur > castbar.duration then cur = castbar.duration end
-
-    castbar:SetValue(cur)
-
-    local percent = (castbar.duration > 0) and (cur / castbar.duration) or 0
-    local sparkX = math.floor(castbar:GetWidth() * percent + 0.5)
-    if castbar.lastSparkX ~= sparkX then
-        castbar.lastSparkX = sparkX
-        castbar.spark:SetPoint("CENTER", castbar, "LEFT", sparkX, 0)
-    end
-
-    if now >= castbar.endTime then
-        StopCast()
     end
 end
 
@@ -143,14 +112,21 @@ local function UpdateCast()
         if cast then isChannel = true end
     end
 
-    if cast and startTime and endTime and endTime > startTime then
-        local duration = (endTime - startTime) / 1000
-        castbar.duration = duration
-        castbar.startTime = startTime / 1000
-        castbar.endTime = endTime / 1000
-        castbar.isChannel = isChannel
-
-        castbar:SetMinMaxValues(0, duration)
+    if cast and startTime and endTime and endTime > startTime and endTime > GetTime() * 1000 then
+        local endSec = endTime / 1000
+        castbar.timer:SetTimeSpan(startTime / 1000, endSec)
+        if castbar.lastChannel ~= isChannel then
+            castbar.lastChannel = isChannel
+            castbar:SetTimerDuration(castbar.timer, Enum.StatusBarInterpolation.Immediate,
+                isChannel and Enum.StatusBarTimerDirection.RemainingTime or Enum.StatusBarTimerDirection.ElapsedTime)
+        end
+        -- The stop event normally ends the cast; this covers a missed one.
+        if castbar.endSec ~= endSec then
+            castbar.endSec = endSec
+            C_Timer.After(endSec - GetTime() + 0.05, function()
+                if castbar.endSec == endSec and GetTime() >= endSec then StopCast() end
+            end)
+        end
 
         -- Casts you cannot interrupt show in grey.
         local isUninterruptible = notInterruptible and true or false
@@ -184,12 +160,10 @@ local function UpdateCast()
         end
 
         UpdateAnchor()
-        castbar:SetScript("OnUpdate", Castbar_OnUpdate)
 
         if not castbar:IsShown() then
             castbar:Show()
         end
-        Castbar_OnUpdate()
     else
         StopCast()
     end
@@ -197,15 +171,16 @@ end
 
 -- ClassicAPI fires these once per token pointing at the caster; the "target"
 -- copy is the one this bar shows. INTERRUPTIBLE / NOT_INTERRUPTIBLE re-read
--- notInterruptible when it flips mid-cast.
+-- notInterruptible when it flips mid-cast. DELAYED, CHANNEL_UPDATE and FAILED
+-- never fire for other units (the server sends pushback to the caster only).
 local CAST_EVENTS = {
-    "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED",
-    "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
-    "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP",
+    "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP",
+    "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_STOP",
     "UNIT_SPELLCAST_INTERRUPTIBLE", "UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
 }
-local STOP_EVENTS = { UNIT_SPELLCAST_STOP = true, UNIT_SPELLCAST_FAILED = true,
-    UNIT_SPELLCAST_INTERRUPTED = true, UNIT_SPELLCAST_CHANNEL_STOP = true }
+local STOP_EVENTS = { UNIT_SPELLCAST_STOP = true, UNIT_SPELLCAST_INTERRUPTED = true,
+    UNIT_SPELLCAST_CHANNEL_STOP = true }
 
 module.enable = function(self)
     if self.frame then self:apply(); return end
