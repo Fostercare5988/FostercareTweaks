@@ -14,55 +14,34 @@ local module = FT:register({
     enabled = true,
 })
 
+local GOLD, GREY = { 1, 0.8, 0 }, { 0.65, 0.65, 0.65 }
+
+-- One frame: the bar draws its own backdrop. The icon is a plain texture.
 local castbar = CreateFrame("StatusBar", "FCTweaksTargetCastbar", TargetFrame)
-castbar:SetPoint("BOTTOM", TargetFrame, "BOTTOM", -12, -4)
-castbar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-castbar:SetStatusBarColor(1, 0.8, 0, 1)
 castbar:SetWidth(140)
 castbar:SetHeight(10)
+castbar:SetStatusBarTexture("Interface\TargetingFrame\UI-StatusBar")
+castbar:SetStatusBarColor(GOLD[1], GOLD[2], GOLD[3], 1)
+castbar:SetBackdrop({ bgFile = "Interface\Buttons\WHITE8X8", edgeFile = "Interface\Buttons\WHITE8X8", edgeSize = 1 })
+castbar:SetBackdropColor(0.1, 0.1, 0, 0.8)
+castbar:SetBackdropBorderColor(0, 0, 0, 1)
 castbar:Hide()
 
-castbar.texture = CreateFrame("Frame", nil, castbar)
-castbar.texture:SetPoint("RIGHT", castbar, "LEFT", -2, 0)
-castbar.texture:SetHeight(20)
-castbar.texture:SetWidth(20)
+castbar.icon = castbar:CreateTexture(nil, "ARTWORK")
+castbar.icon:SetPoint("RIGHT", castbar, "LEFT", -3, 0)
+castbar.icon:SetWidth(14)
+castbar.icon:SetHeight(14)
+castbar.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-castbar.texture.icon = castbar.texture:CreateTexture(nil, "BACKGROUND")
-castbar.texture.icon:SetPoint("CENTER", 0, 0)
-castbar.texture.icon:SetWidth(16)
-castbar.texture.icon:SetHeight(16)
-castbar.texture:SetBackdrop({
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 8, edgeSize = 12,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 }
-})
-
-castbar.bg = castbar:CreateTexture(nil, "BACKGROUND")
-castbar.bg:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
-castbar.bg:SetVertexColor(0.1, 0.1, 0, 0.8)
-castbar.bg:SetAllPoints(true)
-
+-- The bar fills itself from castbar.timer (SetTimerDuration, ClassicAPI), so
+-- the spark rides the bar's texture and nothing runs per frame during a cast.
+castbar.timer = C_DurationUtil.CreateDuration()
 castbar.spark = castbar:CreateTexture(nil, "OVERLAY")
-castbar.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
+castbar.spark:SetTexture("Interface\CastingBar\UI-CastingBar-Spark")
 castbar.spark:SetWidth(20)
 castbar.spark:SetHeight(20)
 castbar.spark:SetBlendMode("ADD")
--- The bar fills itself from castbar.timer (SetTimerDuration, ClassicAPI), so
--- the spark rides the bar's texture and nothing runs per frame during a cast.
 castbar.spark:SetPoint("CENTER", castbar:GetStatusBarTexture(), "RIGHT", 0, 0)
-castbar.timer = C_DurationUtil.CreateDuration()
-
-castbar.backdrop = CreateFrame("Frame", nil, castbar)
-castbar.backdrop:SetFrameStrata("BACKGROUND")
-castbar.backdrop:SetPoint("TOPLEFT", castbar, "TOPLEFT", -3, 3)
-castbar.backdrop:SetPoint("BOTTOMRIGHT", castbar, "BOTTOMRIGHT", 3, -3)
-castbar.backdrop:SetBackdrop({
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 8, edgeSize = 12,
-    insets = { left = 3, right = 3, top = 3, bottom = 3 }
-})
-castbar.backdrop:SetBackdropBorderColor(1, 0.8, 0, 1)
-castbar.texture:SetBackdropBorderColor(1, 0.8, 0, 1)
 
 castbar.text = castbar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
 castbar.text:SetPoint("CENTER", castbar, "CENTER", 0, 0)
@@ -70,9 +49,8 @@ local font, size = castbar.text:GetFont()
 castbar.text:SetFont(font, (size or 12) - 2, "THINOUTLINE")
 
 local function StopCast()
-    if castbar:IsShown() then
-        castbar:Hide()
-    end
+    -- Ctrl+Shift keeps the bar up so it can be grabbed (move-unitframes.lua).
+    if not castbar.fctForcedShown then castbar:Hide() end
     castbar.endSec = nil
     castbar.lastChannel = nil
     castbar.lastSpell = nil
@@ -80,17 +58,15 @@ local function StopCast()
     castbar.lastInterruptible = nil
 end
 
+-- Default spot under the target frame, lower while target-of-target shows.
+-- A position saved by Ctrl+Shift replaces it.
 local function UpdateAnchor()
-    if castbar:GetParent() ~= TargetFrame then castbar:SetParent(TargetFrame); castbar.lastYOffset = nil end
-    castbar:SetWidth(140)
-    -- Blizzard's own target auras are always replaced by the improved ones, so
-    -- only the target-of-target frame moves the bar down.
-    local yOffset = TargetofTargetFrame and TargetofTargetFrame:IsShown() and -24 or -4
-
+    if castbar.moved then return end
+    local yOffset = TargetofTargetFrame:IsShown() and -24 or -4
     if castbar.lastYOffset ~= yOffset then
+        castbar.lastYOffset = yOffset
         castbar:ClearAllPoints()
         castbar:SetPoint("BOTTOM", TargetFrame, "BOTTOM", -12, yOffset)
-        castbar.lastYOffset = yOffset
     end
 end
 
@@ -129,19 +105,11 @@ local function UpdateCast()
         end
 
         -- Casts you cannot interrupt show in grey.
-        local isUninterruptible = notInterruptible and true or false
-
-        if castbar.lastInterruptible ~= isUninterruptible then
-            castbar.lastInterruptible = isUninterruptible
-            if isUninterruptible then
-                castbar:SetStatusBarColor(0.65, 0.65, 0.65, 1)
-                castbar.backdrop:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
-                castbar.texture:SetBackdropBorderColor(0.7, 0.7, 0.7, 1)
-            else
-                castbar:SetStatusBarColor(1, 0.8, 0, 1)
-                castbar.backdrop:SetBackdropBorderColor(1, 0.8, 0, 1)
-                castbar.texture:SetBackdropBorderColor(1, 0.8, 0, 1)
-            end
+        local locked = notInterruptible and true or false
+        if castbar.lastInterruptible ~= locked then
+            castbar.lastInterruptible = locked
+            local c = locked and GREY or GOLD
+            castbar:SetStatusBarColor(c[1], c[2], c[3], 1)
         end
 
         if castbar.lastSpell ~= cast then
@@ -151,10 +119,10 @@ local function UpdateCast()
 
         if castbar.lastTexture ~= texture then
             if texture then
-                castbar.texture.icon:SetTexture(texture)
-                castbar.texture.icon:Show()
+                castbar.icon:SetTexture(texture)
+                castbar.icon:Show()
             else
-                castbar.texture.icon:Hide()
+                castbar.icon:Hide()
             end
             castbar.lastTexture = texture
         end
@@ -194,11 +162,15 @@ module.enable = function(self)
         if STOP_EVENTS[ev] then StopCast() else UpdateCast() end
     end)
 
-    if TargetofTarget_Update then
-        FT.hooksecurefunc("TargetofTarget_Update", function()
-            if castbar:IsShown() then UpdateAnchor() end
-        end)
-    end
+    FT.hooksecurefunc("TargetofTarget_Update", function()
+        if castbar:IsShown() then UpdateAnchor() end
+    end)
+
+    -- Ctrl+Shift moves the bar. The position follows the target frame.
+    castbar.moved = FT.RestoreFramePosition(castbar, "target_castbar", TargetFrame)
+    castbar.fctRestoreShown = function(bar) if not bar.endSec then bar:Hide() end end
+    FT.RegisterFrameMover(castbar, "target_castbar", "Cast bar", TargetFrame, function() castbar.moved = true end)
+    UpdateAnchor()
 
     self:apply()
 end
