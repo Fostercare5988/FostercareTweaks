@@ -4,7 +4,7 @@ if not FT then return end
 -- FostercareTweaks: mods/cooldown-numbers.lua
 -- The stock buttons' cooldowns are 1.12 Models, which get no native numbers.
 -- A native Cooldown draws its own while the player's countdownForCooldowns
--- CVar is 1 (ClassicAPI 1.17.9); ours stand aside there.
+-- CVar is 1 (ClassicAPI); ours stand aside there.
 
 local module = FT:register({
     title = "Cooldown Numbers",

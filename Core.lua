@@ -59,36 +59,6 @@ local function EnsureSavedTables()
     if type(FostercareTweaks_Config) ~= "table" then FostercareTweaks_Config = NewConfig() end
     if type(FostercareTweaks_Config.overwrites) ~= "table" then FostercareTweaks_Config.overwrites = {} end
     if type(FostercareTweaks_Cache) ~= "table" then FostercareTweaks_Cache = {} end
-    -- Player classes come from ClassicAPI's C_PlayerCache; drop our saved list.
-    FostercareTweaks_Cache.players = nil
-    -- Retire social-list styling; keep the chat-color choice it carried.
-    if FostercareTweaks_Config["Social Colors"] ~= nil then
-        if FostercareTweaks_Config["Chat Class Colors"] == nil then
-            FostercareTweaks_Config["Chat Class Colors"] = FostercareTweaks_Config["Social Colors"]
-        end
-        FostercareTweaks_Config["Social Colors"] = nil
-    end
-    FostercareTweaks_Config["Hide Errors"] = nil
-    -- Retired 2026-10-26: no character had them on, or every character had them
-    -- on and they are now permanent.
-    for _, key in ipairs({ "Hide Default Cast Bar", "Only Show My Debuffs on Target", "Show Bags", "Show Micro Menu",
-        "Improved Standard Auras", "Debuff Timer", "Show Buff Cooldown Spiral", "Show Buff Duration Text",
-        "Show Debuff Cooldown Spiral", "Show Debuff Duration Text", "Color Debuffs by Dispel Type",
-        "Uninterruptible Castbars" }) do
-        FostercareTweaks_Config[key] = nil
-    end
-    FostercareTweaks_Config.overwrites["panelbag.scale"] = nil
-    FostercareTweaks_Config.overwrites["panelmicro.scale"] = nil
-    -- Nameplates moved to FostercareNameplates (2026-10-12); clear their old settings.
-    for _, key in ipairs({ "Nameplate Scale", "Nameplate Details", "Nameplate Class Colors",
-        "Nameplate Castbar", "Enemy Nameplate Cooldowns", "nameplatesEnabled", "nameplate_layout_version" }) do
-        FostercareTweaks_Config[key] = nil
-    end
-    for key in pairs(FostercareTweaks_Config.overwrites) do
-        if type(key) == "string" and string.sub(key, 1, 10) == "nameplate_" then
-            FostercareTweaks_Config.overwrites[key] = nil
-        end
-    end
 end
 
 -- ClassicAPI loads SavedVariables before source; modules also read them at load.
@@ -106,8 +76,6 @@ function FT:Initialize()
         WorldMapFrame_Minimize()
     end
     FostercareTweaks_Config["WorldMap Window"] = nil
-
-    if self.MigrateFrameSettings then self.MigrateFrameSettings() end
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.
@@ -137,7 +105,7 @@ function FT:Initialize()
             xpcall(function() mod:enable() end, geterrorhandler())
         end
     end
-    if self.ActionBars then self.ActionBars:Initialize() end
+    self.ActionBars:Initialize()
 end
 
 -- Helpers load before either initialization event is delivered.

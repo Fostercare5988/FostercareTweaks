@@ -9,9 +9,10 @@ local module = FT:register({
 local movers = {}
 local unlocker = CreateFrame("Frame", "FCTweaksUnitFrameUnlocker", UIParent)
 unlocker:Hide()
+unlocker.movable = false
 
 function FT.SaveFramePosition(frame, key, relative)
-    if not FostercareTweaks_Config or not frame:GetLeft() or not frame:GetTop() then return end
+    if not frame:GetLeft() or not frame:GetTop() then return end
     relative = relative or UIParent
     local positions = FostercareTweaks_Config.unitframe_positions or {}
     FostercareTweaks_Config.unitframe_positions = positions
@@ -41,7 +42,7 @@ function FT.RestoreFramePosition(frame, key, relative)
         for i = 1, frame:GetNumPoints() do home[i] = { frame:GetPoint(i) } end
         frame.fctHome = home
     end
-    local p = FostercareTweaks_Config and FostercareTweaks_Config.unitframe_positions
+    local p = FostercareTweaks_Config.unitframe_positions
     p = p and p[key]
     if not p or not p.point or not p.relPoint or not tonumber(p.x) or not tonumber(p.y) then return false end
     frame:ClearAllPoints()
@@ -57,28 +58,31 @@ local function StopDrag(mover)
     if mover.onStop then mover.onStop() end
 end
 
+-- Held Ctrl+Shift shows the mover; mail, battleground and similar icons the
+-- game hides until needed show too, so they can be grabbed.
+local function SetMoverShown(mover, unlocked)
+    local owner = mover.owner
+    if unlocked then
+        if owner.fctRestoreShown and not owner:IsShown() then owner.fctForcedShown = true; owner:Show() end
+        mover:Show()
+    else
+        StopDrag(mover); mover:Hide()
+        if owner.fctForcedShown then owner.fctForcedShown = nil; owner.fctRestoreShown(owner) end
+    end
+end
+
+-- On every modifier key: the movers change only when Ctrl+Shift does.
 function FT.UpdateFrameMovers()
     -- ClassicAPI fires from the message hook before native merged key state
     -- catches up. Its left/right queries read the bitmap updated before firing.
-    local shiftDown = IsLeftShiftKeyDown() or IsRightShiftKeyDown()
-    local controlDown = IsLeftControlKeyDown() or IsRightControlKeyDown()
-    local unlocked = shiftDown and controlDown
-    unlocker.movable = unlocked and true or nil
+    local unlocked = (IsLeftShiftKeyDown() or IsRightShiftKeyDown())
+        and (IsLeftControlKeyDown() or IsRightControlKeyDown()) and true or false
+    if unlocked == unlocker.movable then return end
+    unlocker.movable = unlocked
     if unlocker.grid then
         if unlocked then unlocker.grid:Show() else unlocker.grid:Hide() end
     end
-    for _, mover in ipairs(movers) do
-        local owner = mover.owner
-        if unlocked then
-            -- Mail, battleground and similar icons are hidden by the game until
-            -- needed; show them while moving so they can be grabbed.
-            if owner.fctRestoreShown and not owner:IsShown() then owner.fctForcedShown = true; owner:Show() end
-            mover:Show()
-        else
-            StopDrag(mover); mover:Hide()
-            if owner.fctForcedShown then owner.fctForcedShown = nil; owner.fctRestoreShown(owner) end
-        end
-    end
+    for _, mover in ipairs(movers) do SetMoverShown(mover, unlocked) end
 end
 
 -- onStop runs after a drag; onRestore(saved) after a layout change placed the
@@ -110,7 +114,7 @@ function FT.RegisterFrameMover(frame, key, label, relative, onStop, onRestore)
     mover:SetScript("OnHide", function() StopDrag(this) end)
     frame.fctMover = mover
     table.insert(movers, mover)
-    FT.UpdateFrameMovers()
+    SetMoverShown(mover, unlocker.movable)
 end
 
 -- A layout change (Profiles.lua) replaces every saved position at once: each

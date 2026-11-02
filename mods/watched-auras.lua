@@ -21,6 +21,7 @@ FT.WatchedAuras = W
 local SIZE, GAP = 36, 6
 local FILTER = { player = "HELPFUL", target = "HARMFUL" }
 local icons, slots = {}, {}          -- icons by key; one slot buffer
+local iconOf = {}                    -- entry -> its icon (W.Rebuild); none with noIcon
 local found = {}                     -- W.Update's matches, reused
 local cooling                        -- a watched buff that shows its cooldown
 local known = {}                     -- buff name -> your spell's ID, or false
@@ -67,7 +68,7 @@ local function Icon(entry, index)
         icon.cooldown.noCooldownCount = true
         -- A cooldown shown after its buff ended: gone when the spell is ready.
         icon.cooldown:SetScript("OnCooldownDone", function()
-            if icon.fctCooling then W.Update("player") end
+            if icon.fctCooling then W.ShowMissing("player") end
         end)
         -- Above the sweep and its numbers.
         local text = CreateFrame("Frame", nil, icon)
@@ -164,9 +165,22 @@ local function ShowCooldown(icon, entry)
     return true
 end
 
+-- The watched entries of `unit` whose aura is not up: a buff of yours shows
+-- its spell's cooldown, the others hide (unless held up to be moved).
+function W.ShowMissing(unit)
+    for _, entry in ipairs(List()) do
+        local icon = iconOf[entry]
+        if icon and entry.unit == unit and not icon.fctAura and not ShowCooldown(icon, entry)
+            and icon:IsShown() and not icon.fctForcedShown then icon:Hide() end
+    end
+end
+
 -- Reads the unit's auras once and shows the watched ones it has.
 function W.Update(unit)
     table.wipe(found)
+    for entry, icon in pairs(iconOf) do
+        if entry.unit == unit then icon.fctAura = nil end
+    end
     if UnitExists(unit) then
         local _, n = C_UnitAuras.GetAuraSlots(unit, FILTER[unit], 0, nil, slots)
         for i = 1, n do
@@ -177,20 +191,13 @@ function W.Update(unit)
                     and (not entry.mine or (source and UnitIsUnit(source, "player"))) then
                     found[entry] = true
                     entry.icon = entry.icon or texture          -- for its chip in the settings
-                    local icon = not entry.noIcon and icons[Key(entry)]
+                    local icon = iconOf[entry]
                     if icon then Show(icon, texture, count, duration, expiration) end
                 end
             end
         end
     end
-    for _, entry in ipairs(List()) do
-        local icon = icons[Key(entry)]
-        if entry.unit == unit and not found[entry] and icon
-            and (entry.noIcon or not ShowCooldown(icon, entry)) then
-            icon.fctAura = nil
-            if icon:IsShown() and not icon.fctForcedShown then icon:Hide() end
-        end
-    end
+    W.ShowMissing(unit)
 end
 
 -- After a change to the list: icons for every watched entry, none for removed
@@ -198,18 +205,20 @@ end
 function W.Rebuild(refreshLists)
     local wanted, index = {}, 0
     for _, set in pairs(hidden) do table.wipe(set) end
+    table.wipe(iconOf)
     cooling = nil
     for _, entry in ipairs(List()) do
         if entry.unit == "player" and not entry.noIcon and not entry.noCooldown then cooling = true end
         if not entry.noIcon then
             index = index + 1
-            wanted[Key(entry)] = Icon(entry, index)
+            local icon = Icon(entry, index)
+            iconOf[entry], wanted[icon] = icon, true
         end
         if entry.unit == "player" and not entry.topRight then hidden.top[entry.name] = true end
         if not entry.inRow then hidden[entry.unit][entry.name] = true end
     end
-    for key, icon in pairs(icons) do
-        if not wanted[key] then icon.fctRestoreShown = nil; icon:Hide() end
+    for _, icon in pairs(icons) do
+        if not wanted[icon] then icon.fctRestoreShown = nil; icon:Hide() end
     end
     W.Update("player")
     W.Update("target")
@@ -229,8 +238,8 @@ function W.Add(text, unit)
     for _, entry in ipairs(List()) do
         if entry.unit == unit and entry.name == name then return end
     end
-    local _, _, known = GetSpellInfo(id or name)         -- your own spells: their icon now
-    table.insert(List(), { name = name, spellId = id, unit = unit, mine = unit == "target" or nil, icon = known })
+    local _, _, texture = GetSpellInfo(id or name)       -- your own spells: their icon now
+    table.insert(List(), { name = name, spellId = id, unit = unit, mine = unit == "target" or nil, icon = texture })
     W.Rebuild(true)
 end
 
@@ -255,13 +264,6 @@ function W.SetShown(index, place, shown)
 end
 
 module.enable = function()
-    -- 1.9.0 copied FostercareAuras setups once and kept their spell IDs as text.
-    FostercareTweaks_Config.watchedImported = nil
-    for _, entry in ipairs(List()) do
-        entry.spellId = tonumber(entry.spellId)
-        -- 1.10's Hide entries: one of your buffs with no icon of its own.
-        if entry.unit == "hidden" then entry.unit, entry.noIcon = "player", true end
-    end
     local events = CreateFrame("Frame")
     events:RegisterUnitEvent("UNIT_AURA_DELTA", "player", "target")
     events:RegisterEvent("PLAYER_TARGET_CHANGED")
@@ -271,7 +273,7 @@ module.enable = function()
     FT.SetEventHandler(events, function(_, ev, unit)
         if ev == "UNIT_AURA_DELTA" then W.Update(unit)
         elseif ev == "PLAYER_TARGET_CHANGED" then W.Update("target")
-        elseif ev == "SPELL_UPDATE_COOLDOWN" then if cooling then W.Update("player") end
+        elseif ev == "SPELL_UPDATE_COOLDOWN" then if cooling then W.ShowMissing("player") end
         elseif ev == "SPELLS_CHANGED" then table.wipe(known)
         else W.Update("player"); W.Update("target") end
     end)

@@ -12,7 +12,7 @@ local module = FT:register({
 })
 
 local function IsActive()
-    return not FostercareTweaks_Config or FostercareTweaks_Config["Unit Frame Class Colors"] ~= 0
+    return FostercareTweaks_Config["Unit Frame Class Colors"] ~= 0
 end
 
 -- The raid frames' (Luna) class colours; nil for a unit with no class.

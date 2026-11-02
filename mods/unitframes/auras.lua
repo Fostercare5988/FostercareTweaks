@@ -14,7 +14,7 @@ local Auras = UF.Auras
 -- One policy for player, target, raid and preview aura buttons.
 function Auras.StyleBorder(btn, dispelType)
     btn.borderDispelType = dispelType
-    local cfg = FostercareTweaks_Config or {}
+    local cfg = FostercareTweaks_Config
     local setting = btn.isDebuff and "Show Debuff Borders" or "Show Buff Borders"
     -- Every aura update restyles its button: write only when the look changes.
     local look = cfg[setting] ~= 1 and "off" or btn.isDebuff and (dispelType or "None") or "buff"
@@ -34,18 +34,18 @@ function Auras.StyleBorder(btn, dispelType)
     btn.border:Show()
 end
 
-function Auras:RefreshBorders()
-    for _, key in ipairs({ "blizzPlayerAuras", "blizzTargetAuras" }) do
-        local container = UF[key]
-        if container then
-            for _, kind in ipairs({ "buffButtons", "debuffButtons" }) do
-                for _, btn in ipairs(container[kind] or {}) do
-                    if btn:IsShown() then Auras.StyleBorder(btn, btn.borderDispelType) end
-                end
-            end
-        end
+local function RefreshRowBorders(buttons)
+    for _, btn in ipairs(buttons) do
+        if btn:IsShown() then Auras.StyleBorder(btn, btn.borderDispelType) end
     end
-    if UF.RefreshRaidAuraBorders then UF:RefreshRaidAuraBorders() end
+end
+
+function Auras:RefreshBorders()
+    for _, container in pairs({ UF.blizzPlayerAuras, UF.blizzTargetAuras }) do
+        RefreshRowBorders(container.buffButtons)
+        RefreshRowBorders(container.debuffButtons)
+    end
+    UF:RefreshRaidAuraBorders()
 end
 
 
@@ -167,9 +167,8 @@ Auras.CreateAuraButton = CreateAuraButton
 Auras.ResetAuraButton = ResetAuraButton
 
 function Auras:ResetContainer(container)
-    if not container then return end
-    for _, btn in ipairs(container.buffButtons or {}) do ResetAuraButton(btn) end
-    for _, btn in ipairs(container.debuffButtons or {}) do ResetAuraButton(btn) end
+    for _, btn in ipairs(container.buffButtons) do ResetAuraButton(btn) end
+    for _, btn in ipairs(container.debuffButtons) do ResetAuraButton(btn) end
 end
 
 local function AnchorAuraButton(btn, frame, index, size, spacing, perRow, growsUp, alignRight)
@@ -262,50 +261,34 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
     return container
 end
 
-function Auras:ApplyBuffSize(container, newSize)
-    if not container or not container.buffFrame or not container.buffButtons then return end
-    newSize = tonumber(newSize) or UF:GetBuffSize()
-    container.buffSize = newSize
-    local spacing = (container.options and container.options.spacing) or 3
-    local perRow = (container.options and container.options.perRow) or 8
-
-    container.buffFrame:SetWidth((newSize + spacing) * perRow - spacing)
-    container.buffFrame:SetHeight(newSize)
-    for i, btn in ipairs(container.buffButtons) do
-        btn:SetWidth(newSize)
-        btn:SetHeight(newSize)
-        btn.border:SetWidth(newSize + 2)
-        btn.border:SetHeight(newSize + 2)
+-- A new icon size for one row ("buff" or "debuff"): the icons take their grid
+-- places again (AnchorAuraButton) and the row its new size.
+local function ApplyRowSize(container, kind, size)
+    local row = container[kind .. "Frame"]
+    if not row then return end
+    container[kind .. "Size"] = size
+    local options = container.options
+    local spacing, perRow = options.spacing or 3, options.perRow or 8
+    local growsUp = kind == "buff" and options.buffAnchor ~= "BOTTOM" or kind == "debuff" and options.debuffAnchor == "TOP"
+    row:SetWidth((size + spacing) * perRow - spacing)
+    row:SetHeight(size)
+    for i, btn in ipairs(container[kind .. "Buttons"]) do
+        btn:SetWidth(size)
+        btn:SetHeight(size)
+        btn.border:SetWidth(size + 2)
+        btn.border:SetHeight(size + 2)
         btn:ClearAllPoints()
-        AnchorAuraButton(btn, container.buffFrame, i, newSize, spacing, perRow,
-            container.options and container.options.buffAnchor ~= "BOTTOM", container.options and container.options.alignRight)
-    end
-end
-
-function Auras:ApplyDebuffSize(container, newSize)
-    if not container or not container.debuffFrame or not container.debuffButtons then return end
-    newSize = tonumber(newSize) or UF:GetDebuffSize()
-    container.debuffSize = newSize
-    local spacing = (container.options and container.options.spacing) or 3
-    local perRow = (container.options and container.options.perRow) or 8
-
-    container.debuffFrame:SetWidth((newSize + spacing) * perRow - spacing)
-    container.debuffFrame:SetHeight(newSize)
-    for i, btn in ipairs(container.debuffButtons) do
-        btn:SetWidth(newSize)
-        btn:SetHeight(newSize)
-        btn.border:SetWidth(newSize + 2)
-        btn.border:SetHeight(newSize + 2)
-        btn:ClearAllPoints()
-        AnchorAuraButton(btn, container.debuffFrame, i, newSize, spacing, perRow,
-            container.options and container.options.debuffAnchor == "TOP", container.options and container.options.alignRight)
+        AnchorAuraButton(btn, row, i, size, spacing, perRow, growsUp, options.alignRight)
     end
     Auras:LayoutContainer(container)
 end
 
-function Auras:ApplyAuraSize(container, newSize)
-    Auras:ApplyBuffSize(container, newSize)
-    Auras:ApplyDebuffSize(container, newSize)
+function Auras:ApplyBuffSize(container, size)
+    if container then ApplyRowSize(container, "buff", tonumber(size) or UF:GetBuffSize()) end
+end
+
+function Auras:ApplyDebuffSize(container, size)
+    if container then ApplyRowSize(container, "debuff", tonumber(size) or UF:GetDebuffSize()) end
 end
 
 -- Preserve a running sweep until its actual aura identity/timing changes.
@@ -352,159 +335,51 @@ local function SetIcon(btn, icon)
 end
 Auras.SetCount, Auras.SetIcon = SetCount, SetIcon
 
+-- One row: the unit's auras of one kind (filter) in its buttons, in the plain
+-- polarity order the tooltips use. A hidden aura takes no button.
+local function FillRow(unit, buttons, slots, filter, shown, unitGUID, now)
+    local used = 0
+    if shown then
+        local _, count = C_UnitAuras.GetAuraSlots(unit, filter, 48, nil, slots)
+        for i = 1, count do
+            if used >= #buttons then break end
+            local name, icon, stacks, dispelType, duration, expirationTime, source, _, _, spellId =
+                C_UnitAuras.UnitAuraBySlot(unit, slots[i])
+            if not name then break end
+            if icon and not FT.IsAuraHidden(name, unit) then
+                used = used + 1
+                local btn = buttons[used]
+                btn.unit, btn.auraIndex, btn.spellId, btn.isOccupied = unit, i, spellId, true
+                SetIcon(btn, icon)
+                SetCount(btn, stacks)
+                UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
+                Auras.StyleBorder(btn, filter == "HARMFUL" and dispelType or nil)
+                btn:Show()
+            end
+        end
+    end
+    for j = used + 1, #buttons do ResetAuraButton(buttons[j]) end
+end
+
 function Auras:UpdateContainer(container)
-    if not container or not container.unit then return end
     local unit = container.unit
     if not UnitExists(unit) then
         self:ResetContainer(container)
         return
     end
-
-    local showBuffs = true
-    if unit == "player" and not UF:IsShowPlayerBuffs() then
-        showBuffs = false
-    elseif unit == "target" and not UF:IsShowTargetBuffs() then
-        showBuffs = false
-    end
-
-    if container.buffFrame then
-        if not showBuffs then
-            container.buffFrame:Hide()
-        else
-            container.buffFrame:Show()
-        end
-    end
-
-    local showDebuffs = true
-    if unit == "player" and not UF:IsShowPlayerDebuffs() then
-        showDebuffs = false
-    elseif unit == "target" and not UF:IsShowTargetDebuffs() then
-        showDebuffs = false
-    end
-
-    if container.debuffFrame then
-        if not showDebuffs then
-            container.debuffFrame:Hide()
-        else
-            container.debuffFrame:Show()
-        end
-    end
-
-
-    local now = GetTime()
-    local unitGUID = UnitGUID(unit)
-
-    -- Update Buffs
-    if container.buffButtons then
-        local maxBuffs = #container.buffButtons
-        if not showBuffs then
-            for _, btn in ipairs(container.buffButtons) do
-                ResetAuraButton(btn)
-            end
-        else
-            local btnIdx = 1
-            -- Slots are ordered like the plain polarity index. Refill this
-            -- scratch buffer on every refresh; opaque slots are not identities.
-            local slots = container.buffSlots
-            local countSlots = 0
-            if maxBuffs > 0 then
-                local continuation
-                continuation, countSlots = C_UnitAuras.GetAuraSlots(unit, "HELPFUL", 48, nil, slots)
-            end
-            for i = 1, countSlots do
-                if btnIdx > maxBuffs then break end
-                local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = C_UnitAuras.UnitAuraBySlot(unit, slots[i])
-                if not name then break end -- end of buffs
-
-                if icon and not FT.IsAuraHidden(name, unit) then
-                    local btn = container.buffButtons[btnIdx]
-                    if btn then
-                        btn.unit = unit
-                        btn.auraIndex = i
-                        btn.spellId = spellId
-                        btn.isOccupied = true
-
-                        SetIcon(btn, icon)
-                        SetCount(btn, count)
-                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
-
-                        Auras.StyleBorder(btn)
-                        btn:Show()
-
-                        btnIdx = btnIdx + 1
-                    end
-                end
-            end
-
-            for j = btnIdx, maxBuffs do
-                ResetAuraButton(container.buffButtons[j])
-            end
-        end
-    end
-
-    -- Update Debuffs
-    if container.debuffButtons then
-        local maxDebuffs = #container.debuffButtons
-        if not showDebuffs then
-            for _, btn in ipairs(container.debuffButtons) do
-                ResetAuraButton(btn)
-            end
-        else
-            local btnIdx = 1
-            local filter = "HARMFUL" -- Tooltip requires an index in the unfiltered polarity list.
-
-            local slots = container.debuffSlots
-            local countSlots = 0
-            if maxDebuffs > 0 then
-                local continuation
-                continuation, countSlots = C_UnitAuras.GetAuraSlots(unit, filter, 48, nil, slots)
-            end
-            for i = 1, countSlots do
-                if btnIdx > maxDebuffs then break end
-                local name, icon, count, dispelType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId, canApplyAura, isBossDebuff, castByPlayer = C_UnitAuras.UnitAuraBySlot(unit, slots[i])
-                if not name then break end -- end of debuffs
-
-                if icon and not FT.IsAuraHidden(name, unit) then
-                    local btn = container.debuffButtons[btnIdx]
-                    if btn then
-                        btn.unit = unit
-                        btn.auraIndex = i
-                        btn.spellId = spellId
-                        btn.isOccupied = true
-
-                        SetIcon(btn, icon)
-                        SetCount(btn, count)
-                        Auras.StyleBorder(btn, dispelType)
-
-                        UpdateAuraTiming(btn, unitGUID, spellId, source, duration, expirationTime, now)
-
-                        btn:Show()
-                        btnIdx = btnIdx + 1
-                    end
-                end
-            end
-
-            for j = btnIdx, maxDebuffs do
-                ResetAuraButton(container.debuffButtons[j])
-            end
-        end
-    end
+    local showBuffs, showDebuffs
+    if unit == "player" then showBuffs, showDebuffs = UF:IsShowPlayerBuffs(), UF:IsShowPlayerDebuffs()
+    else showBuffs, showDebuffs = UF:IsShowTargetBuffs(), UF:IsShowTargetDebuffs() end
+    if showBuffs then container.buffFrame:Show() else container.buffFrame:Hide() end
+    if showDebuffs then container.debuffFrame:Show() else container.debuffFrame:Hide() end
+    local now, unitGUID = GetTime(), UnitGUID(unit)
+    FillRow(unit, container.buffButtons, container.buffSlots, "HELPFUL", showBuffs, unitGUID, now)
+    FillRow(unit, container.debuffButtons, container.debuffSlots, "HARMFUL", showDebuffs, unitGUID, now)
     Auras:LayoutContainer(container)
 end
 
 local function HasSavedPosition(key)
-    local positions = FostercareTweaks_Config and FostercareTweaks_Config.unitframe_positions
-    return key and positions and positions[key]
-end
-
-local function NormalizeRightAnchor(frame, key, parent)
-    local p = HasSavedPosition(key)
-    if not p or p.point ~= "TOPLEFT" or not p.relPoint or not tonumber(p.x) or not tonumber(p.y) then return end
-    -- Preserve the current rectangle, then let future count/size changes grow left.
-    p.point = "TOPRIGHT"
-    p.x = tonumber(p.x) + frame:GetWidth()
-    frame:ClearAllPoints()
-    frame:SetPoint(p.point, parent, p.relPoint, p.x, p.y)
+    return FostercareTweaks_Config.unitframe_positions[key]
 end
 
 local function IsAreaDragging(frame)
@@ -512,49 +387,21 @@ local function IsAreaDragging(frame)
 end
 
 local KINDS = { "buff", "debuff" }
+-- The icons keep their grid places; each row takes the size of the icons it
+-- shows (not while it is being dragged).
 function Auras:LayoutContainer(container)
-    if not container then return end
-    local options = container.options or {}
+    local options = container.options
     local spacing, perRow = options.spacing or 3, options.perRow or 8
     for _, kind in ipairs(KINDS) do
-        local row, buttons = container[kind .. "Frame"], container[kind .. "Buttons"]
+        local row = container[kind .. "Frame"]
         if row then
             local count = 0
-            for _, btn in ipairs(buttons) do if btn.isOccupied then count = count + 1 end end
+            for _, btn in ipairs(container[kind .. "Buttons"]) do if btn.isOccupied then count = count + 1 end end
             local size = container[kind .. "Size"]
             row.occupiedCount = count
-            local rowW, rowH = math.min(perRow, math.max(1, count)) * (size + spacing) - spacing,
-                math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing
-            if kind == "debuff" then
-                local limit = perRow * (size + spacing) - spacing
-                local x, y, lineH, widest = 0, 0, 0, 0
-                for i, btn in ipairs(buttons) do
-                    local iconSize = size
-                    if btn:GetWidth() ~= iconSize then
-                        btn:SetWidth(iconSize); btn:SetHeight(iconSize)
-                        btn.border:SetWidth(iconSize + 2); btn.border:SetHeight(iconSize + 2)
-                    end
-                    if btn.isOccupied then
-                        if x > 0 and x + iconSize > limit then y, x, lineH = y + lineH + spacing, 0, 0 end
-                        local point = (options.debuffAnchor == "TOP" and "BOTTOM" or "TOP") .. (options.alignRight and "RIGHT" or "LEFT")
-                        btn:ClearAllPoints()
-                        btn:SetPoint(point, row, point, options.alignRight and -x or x,
-                            options.debuffAnchor == "TOP" and y or -y)
-                        lineH = math.max(lineH, iconSize)
-                        widest = math.max(widest, x + iconSize)
-                        x = x + iconSize + spacing
-                    end
-                end
-                rowW, rowH = math.max(size, widest), math.max(size, y + lineH)
-            end
-            -- Refresh aura identity while the pointer owns the area's geometry.
-            -- The mover reconciles current bounds immediately after saving the drop.
             if not IsAreaDragging(row) then
-                row:SetWidth(rowW)
-                row:SetHeight(rowH)
-                if options.alignRight and options.moveKey then
-                    NormalizeRightAnchor(row, options.moveKey .. "_" .. kind .. "s", container:GetParent())
-                end
+                row:SetWidth(math.min(perRow, math.max(1, count)) * (size + spacing) - spacing)
+                row:SetHeight(math.max(1, math.ceil(count / perRow)) * (size + spacing) - spacing)
             end
         end
     end

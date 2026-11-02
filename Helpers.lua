@@ -53,7 +53,7 @@ end
 
 function FT.GetOverride(key, default)
     local value = FostercareTweaks_Config.overwrites[key]
-    if value == nil then value = FT.overwrites and FT.overwrites[key] end
+    if value == nil then value = FT.overwrites[key] end
     if value == nil then return default end
     return value
 end
@@ -70,7 +70,6 @@ end
 
 function FT.SetOverride(key, value)
     FostercareTweaks_Config.overwrites[key] = value
-    FT.overwrites = FT.overwrites or {}
     FT.overwrites[key] = value
 end
 

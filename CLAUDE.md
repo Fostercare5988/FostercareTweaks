@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (187 tests).
+VanillaForge (244 tests).
 
 | Area | Files |
 | --- | --- |
@@ -19,7 +19,10 @@ Things to know:
 
 - The player, target and pet frames are Blizzard's; FostercareTweaks only
   improves them. The Modern replacement frames were removed on 2026-10-25
-  (no character used them); `FT.MigrateFrameSettings` clears their settings.
+  (no character used them).
+- Old migrations go once no saved file holds their keys (checked in every
+  character's SavedVariables, both client folders). Core still clears the
+  retired `WorldMap Window` switch and the saved switch of every `always` module.
 - Bars (`UF:CreateBar`) are native StatusBars; ClassicAPI supplies reverse
   fill and fill styles.
 - Each `mods/` file registers its modules with `FT:register({ title, enabled })`
@@ -81,6 +84,9 @@ Things to know:
 - Raid buttons: name and class colour are written by the roster pass and
   `UNIT_NAME_UPDATE`; `UNIT_HEALTH` writes the bar and, only when the number it
   shows changes (`fctHealthShown`), the text. A roster rebuild clears it.
+- Chat: the game makes whispers, officer chat, raid warnings and channels
+  sticky itself (FrameXML ChatFrame.lua). URL patterns run only on a word with
+  a dot or @ before a letter or digit, or "://".
 - Chat: one `AddMessage` wrapper per non-combat window (`FT.AddChatFilter` in
   chat-tweaks.lua) runs the filters of links, timestamps and class colours.
 - Auto Dismount covers what ClassicAPI's `autoDismount`/`autoUnshift`/
@@ -112,6 +118,10 @@ Things to know:
   compare is deferred a frame: ClassicAPI's docs warn that a tooltip rebuilt
   inside `OnTooltipSet*` can crash the client. Vendor Values keeps its `Set*`
   hooks for that reason (money lines and `Show()`) and for stack counts.
+- Frame movers change only when Ctrl+Shift does (`FT.UpdateFrameMovers` runs on
+  every modifier key); a new mover takes the current state.
+- Timer callbacks on event paths are one named function per module, never a
+  new closure per event (`C_Timer.After(t, function ...)` only at setup).
 - Unchanged writes are skipped through remembered values (`fct*` fields):
   raid bars (`SetBarRange`/`SetBarColor`), aura icons, counts and borders
   (`Auras.SetIcon`/`SetCount`/`StyleBorder`). Write those widgets through

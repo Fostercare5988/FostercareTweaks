@@ -1,5 +1,5 @@
 -- Independent actions for Extra Rows 2-7. The 120 native action slots and
--- class/stealth pages remain owned by the client. ClassicAPI 1.15.15 supplies
+-- class/stealth pages remain owned by the client. ClassicAPI supplies
 -- cursor descriptors, button attributes and PreClick/PostClick dispatch.
 local FT = FostercareTweaks
 if not FT then return end

@@ -150,18 +150,20 @@ module.enable = function(self)
             driver.start, driver.period, driver.synced = at, 2, true
         end
     end
+    -- A Reset in between (a new generation) drops the gain being settled.
+    local settleToken
+    local function Settle()
+        if not settling or settleToken ~= generation then return end
+        settling = false
+        local known = spellAt and math.abs(pendingAt - spellAt) <= 0.35 and spellGain or 0
+        ObserveGain(pendingAt, math.max(0, pendingGain - known), pendingValue, pendingMax)
+        pendingGain, pendingAt, spellGain, spellAt = 0, nil, 0, nil
+        Refresh()
+    end
     local function SettleGain()
         if settling then return end
-        settling = true
-        local token = generation
-        C_Timer.After(0.15, function()
-            if generation ~= token then return end
-            settling = false
-            local known = spellAt and math.abs(pendingAt - spellAt) <= 0.35 and spellGain or 0
-            ObserveGain(pendingAt, math.max(0, pendingGain - known), pendingValue, pendingMax)
-            pendingGain, pendingAt, spellGain, spellAt = 0, nil, 0, nil
-            Refresh()
-        end)
+        settling, settleToken = true, generation
+        C_Timer.After(0.15, Settle)
     end
     FT.SetEventHandler(driver, function(_, ev, unit, caster, spellID, ptype, amount)
         if ev == "SPELL_ENERGIZE_ON_SELF" then

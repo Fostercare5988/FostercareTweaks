@@ -14,30 +14,6 @@ end
 FT.UnitFrames = FT.UnitFrames or {}
 local UF = FT.UnitFrames
 
--- The Modern player, target and target-of-target frames were removed on
--- 2026-10-25 (no character used them). Clear their saved settings once.
-function FT.MigrateFrameSettings()
-    local cfg = FostercareTweaks_Config
-    for _, key in ipairs({ "Show Aura Cooldown Spiral", "Show Aura Duration Text", "Unit Frames (Modern)",
-        "Modern Player Frame", "Modern Target Frame", "Modern Combo Points", "Modern Target's Target",
-        "Use Standard Player Frame", "Use Standard Target Frame", "Use Standard Target's Target",
-        "Show PvP Emblem", "Show Target Level", "Show Target Class", "Show Unit Name",
-        "Unit Frame Class Portraits", "Larger Armor Debuffs" }) do
-        cfg[key] = nil
-    end
-    for _, key in ipairs({ "uf_scale", "uf_player_width", "uf_player_height", "uf_target_width",
-        "uf_target_height", "uf_tot_width", "uf_tot_height", "uf_power_height", "uf_font_name",
-        "uf_font_level", "uf_font_health", "uf_font_power", "uf_health_format", "uf_power_format",
-        "uf_aura_size", "uf_armor_debuff_scale" }) do
-        cfg.overwrites[key] = nil
-    end
-    local positions = cfg.unitframe_positions
-    if type(positions) == "table" then
-        for _, key in ipairs({ "player", "target", "targettarget", "modern_player_buffs",
-            "modern_player_debuffs", "modern_target_buffs", "modern_target_debuffs" }) do positions[key] = nil end
-    end
-end
-
 -- Settings ---------------------------------------------------------------------
 
 function UF:IsShowPlayerBuffs() return FT.IsEnabled("Show Player Buffs", true) end
@@ -126,35 +102,26 @@ end
 -- Party frames -----------------------------------------------------------------
 
 function UF:SuppressPartyFrames()
-    for i = 1, 4 do
-        local pf = _G["PartyMemberFrame" .. i]
-        if pf then pf:Hide() end
-    end
+    for i = 1, 4 do _G["PartyMemberFrame" .. i]:Hide() end
 end
 
 function UF:RestorePartyFrames()
     -- The compact native grid owns party visibility when it replaces party UI.
     if GROUP_ENABLED == "1" and GROUP_REPLACE_PARTY == "1" and GroupFrame then return end
-    for i = 1, 4 do
+    for i = 1, math.min(GetNumPartyMembers(), 4) do
         local pf = _G["PartyMemberFrame" .. i]
-        if pf and GetNumPartyMembers() >= i then
-            local oldThis = this
-            this = pf
-            pf:Show()
-            if PartyMemberFrame_UpdateMember then PartyMemberFrame_UpdateMember() end
-            this = oldThis
-        end
+        local oldThis = this
+        this = pf
+        pf:Show()
+        PartyMemberFrame_UpdateMember()
+        this = oldThis
     end
 end
 
 for i = 1, 4 do
-    local pf = _G["PartyMemberFrame" .. i]
-    if pf then
-        FT.HookScript(pf, "OnShow", function(frame)
-            local groupDims = UF.GetGroupDimensions and UF:GetGroupDimensions()
-            if groupDims and groupDims.enabled then frame:Hide() end
-        end)
-    end
+    FT.HookScript(_G["PartyMemberFrame" .. i], "OnShow", function(frame)
+        if UF:GetGroupDimensions().enabled then frame:Hide() end
+    end)
 end
 
 -- Applying settings --------------------------------------------------------------
@@ -174,19 +141,13 @@ function UF:ApplyConfiguration()
         UF:RestorePartyFrames()
     end
 
-    if UF.Auras then
-        UF.Auras:UpdateBlizzTargetAuras()
-        UF.Auras:UpdateBlizzPlayerAuras()
-    end
+    UF.Auras:UpdateBlizzTargetAuras()
+    UF.Auras:UpdateBlizzPlayerAuras()
     if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end
     if FT.RefreshTargetCastbar then FT.RefreshTargetCastbar() end
 end
 
-if TargetFrame then
-    FT.HookScript(TargetFrame, "OnShow", function()
-        if UF.Auras then UF.Auras:UpdateBlizzTargetAuras() end
-    end)
-end
+FT.HookScript(TargetFrame, "OnShow", function() UF.Auras:UpdateBlizzTargetAuras() end)
 
 local loginFrame = CreateFrame("Frame")
 loginFrame:RegisterEvent("PLAYER_LOGIN")

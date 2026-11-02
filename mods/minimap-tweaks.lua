@@ -12,21 +12,9 @@ local module = FT:register({
     always = true,
 })
 
--- Put a minimap piece (zone name, clock, icon) where the player left it, against
--- the screen. Earlier versions saved it against the map's corner (mapKey), which
--- moved when the map was resized: that position is converted once, keeping the
--- piece where it stands now. screenKey is an older screen position, same meaning.
-function FT.PlaceIcon(frame, key, label, screenKey, mapKey)
-    local saved = FostercareTweaks_Config.unitframe_positions
-    if saved and not saved[key] then
-        if mapKey and saved[mapKey] then
-            FT.RestoreFramePosition(frame, mapKey, Minimap)
-            FT.SaveFramePosition(frame, key)
-            if saved[key] then saved[mapKey] = nil end
-        elseif screenKey and saved[screenKey] then
-            saved[key], saved[screenKey] = saved[screenKey], nil
-        end
-    end
+-- A minimap piece (zone name, clock, icon) where the player left it, against
+-- the screen, moved with Ctrl+Shift.
+function FT.PlaceIcon(frame, key, label)
     FT.RestoreFramePosition(frame, key)
     FT.RegisterFrameMover(frame, key, label)
 end
@@ -58,8 +46,6 @@ function FT.ApplyMinimapScale(scale)
 end
 
 module.enable = function(self)
-    -- Retired: a larger frame only enlarged the picture.
-    FostercareTweaks_Config.overwrites.minimap_view = nil
     FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
     -- Ctrl+Shift moves the map with its zone name; the handle covers the map itself.
     MinimapCluster.fctPositionPoint = "TOPRIGHT"
@@ -96,7 +82,7 @@ module.enable = function(self)
     clock.text:SetAllPoints(clock)
 
     -- Ctrl+Shift moves it; placed once the map's own layout is final.
-    C_Timer.After(0, function() FT.PlaceIcon(clock, "minimap_clock_s", "Clock", "minimap_clock", "minimap_clock_r") end)
+    C_Timer.After(0, function() FT.PlaceIcon(clock, "minimap_clock_s", "Clock") end)
 
     -- Refresh only when the displayed minute changes.
     local function UpdateClock()
@@ -177,20 +163,20 @@ module.enable = function(self)
     MinimapToggleButton:Hide()
     MinimapZoneTextButton:SetPoint("CENTER", 7, 85)
     -- The zone name moves with Ctrl+Shift like the icons.
-    C_Timer.After(0, function() FT.PlaceIcon(MinimapZoneTextButton, "minimap_zone_s", "Zone", nil, "minimap_zone") end)
+    C_Timer.After(0, function() FT.PlaceIcon(MinimapZoneTextButton, "minimap_zone_s", "Zone") end)
 
     -- Ctrl+Shift moves the mail, battleground and tracking (herbs, ...) icons. The
     -- game hides them until needed; the mover shows each one while it is held and
     -- then asks the game's own rule again.
     local movable = {
-        { "MiniMapMailFrame", "minimap_mail", "Mail", function(f) if HasNewMail() then f:Show() else f:Hide() end end },
-        { "MiniMapBattlefieldFrame", "minimap_bg", "BG", function() BattlefieldFrame_UpdateStatus() end },
-        { "MiniMapTrackingFrame", "minimap_tracking", "Track", function(f) if GetTrackingTexture() then f:Show() else f:Hide() end end },
+        { "MiniMapMailFrame", "minimap_mail_s", "Mail", function(f) if HasNewMail() then f:Show() else f:Hide() end end },
+        { "MiniMapBattlefieldFrame", "minimap_bg_s", "BG", function() BattlefieldFrame_UpdateStatus() end },
+        { "MiniMapTrackingFrame", "minimap_tracking_s", "Track", function(f) if GetTrackingTexture() then f:Show() else f:Hide() end end },
     }
     for _, entry in ipairs(movable) do
         local frame = _G[entry[1]]
         frame.fctRestoreShown = entry[4]
-        C_Timer.After(0, function() FT.PlaceIcon(frame, entry[2] .. "_s", entry[3], entry[2], entry[2] .. "_r") end)
+        C_Timer.After(0, function() FT.PlaceIcon(frame, entry[2], entry[3]) end)
     end
 
     MinimapZoomIn:Hide()
