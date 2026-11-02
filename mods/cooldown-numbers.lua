@@ -5,12 +5,9 @@ if not FT then return end
 -- The stock buttons' cooldowns are 1.12 Models, which get no native numbers.
 -- A native Cooldown draws its own while the player's countdownForCooldowns
 -- CVar is 1 (ClassicAPI 1.17.9); ours stand aside there.
-local TimeConvert = FT.TimeConvert
 
 local module = FT:register({
     title = "Cooldown Numbers",
-    description = "Show remaining cooldown time on the stock action buttons.",
-    category = "Action Bar",
     always = true,
 })
 
@@ -55,7 +52,7 @@ local function UpdateNumber(frame, now)
             if not frame:IsVisible() then return end
             local alpha = parent:GetAlpha()
             if frame.lastAlpha ~= alpha then frame.lastAlpha = alpha; frame:SetAlpha(alpha) end
-            local text = TimeConvert(remaining)
+            local text = FT.Countdown:FormatNumber(remaining)
             if frame.lastText ~= text then
                 frame.lastText = text
                 frame.text:SetText(text)
@@ -82,22 +79,13 @@ local function CreateCoolDown(cooldown)
 
     cooldown.cooldowntext:SetAllPoints(cooldown)
 
-    local parentLevel = (parent.GetFrameLevel and parent:GetFrameLevel()) or 1
-    local cdLevel = (cooldown.GetFrameLevel and cooldown:GetFrameLevel()) or parentLevel
-    local frameLevel = (cdLevel > parentLevel and cdLevel or parentLevel) + 2
-    cooldown.cooldowntext:SetFrameLevel(frameLevel)
+    cooldown.cooldowntext:SetFrameLevel(math.max(parent:GetFrameLevel(), cooldown:GetFrameLevel()) + 2)
     cooldown.cooldowntext:EnableMouse(false)
+    cooldown.cooldowntext.text = cooldown.cooldowntext:CreateFontString(nil, "OVERLAY")
 
-    if not cooldown.cooldowntext.text then
-        cooldown.cooldowntext.text = cooldown.cooldowntext:CreateFontString(nil, "OVERLAY")
-    end
-
-    local size = (parent.GetHeight and parent:GetHeight()) or 0
-    size = size > 0 and size * 0.64 or 12
-    size = size > 16 and 16 or size
-
-    local font = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
-    cooldown.cooldowntext.text:SetFont(font, size, "OUTLINE")
+    local size = parent:GetHeight()
+    size = size > 0 and math.min(16, size * 0.64) or 12
+    cooldown.cooldowntext.text:SetFont(STANDARD_TEXT_FONT, size, "OUTLINE")
     cooldown.cooldowntext.text:SetPoint("CENTER", cooldown.cooldowntext, "CENTER", 0, 0)
 end
 
@@ -136,18 +124,25 @@ local ACTION_BAR_BUTTON_PREFIXES = {
     "MultiBarLeftButton",
 }
 
+-- The stock buttons and their cooldowns, looked up once.
+local stockCooldowns
 local function SyncActiveCooldowns()
-    for _, bar in ipairs(ACTION_BAR_BUTTON_PREFIXES) do
-        for i = 1, 12 do
-            local btn = _G[bar .. i]
-            if btn and btn:IsVisible() then
-                local cd = _G[bar .. i .. "Cooldown"]
-                local slot = ActionButton_GetPagedID and ActionButton_GetPagedID(btn)
-                if cd and slot and HasAction(slot) then
-                    local start, duration, enable = GetActionCooldown(slot)
-                    if start and duration and duration >= 2 and enable and enable > 0 then
-                        SetCooldown(cd, start, duration, enable)
-                    end
+    if not stockCooldowns then
+        stockCooldowns = {}
+        for _, bar in ipairs(ACTION_BAR_BUTTON_PREFIXES) do
+            for i = 1, 12 do
+                local btn = _G[bar .. i]
+                if btn then stockCooldowns[btn] = _G[bar .. i .. "Cooldown"] end
+            end
+        end
+    end
+    for btn, cd in pairs(stockCooldowns) do
+        if btn:IsVisible() then
+            local slot = ActionButton_GetPagedID(btn)
+            if slot and HasAction(slot) then
+                local start, duration, enable = GetActionCooldown(slot)
+                if start and duration and duration >= 2 and enable and enable > 0 then
+                    SetCooldown(cd, start, duration, enable)
                 end
             end
         end
@@ -157,7 +152,7 @@ end
 module.enable = function(self)
     if enabled then return end
     enabled = true
-    FT.hooksecurefunc("CooldownFrame_SetTimer", SetCooldown)
+    hooksecurefunc("CooldownFrame_SetTimer", SetCooldown)
 
     local syncFrame = CreateFrame("Frame", "FCTweaksCooldownSync", UIParent)
     syncFrame:RegisterEvent("PLAYER_ENTERING_WORLD")

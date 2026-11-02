@@ -4,11 +4,8 @@ if not FT then return end
 -- FostercareTweaks: mods/sell-junk.lua
 -- Adds a "Sell Junk" button to merchant windows that automatically sells grey items
 
-
 local module = FT:register({
     title = "Sell Junk",
-    description = "Adds a “Sell Junk” button to every merchant window, that sells all grey items.",
-    category = "Tooltip & Items",
     enabled = true,
 })
 
@@ -70,6 +67,6 @@ module.enable = function(self)
         UpdateButton()
     end)
 
-    FT.hooksecurefunc("MerchantFrame_Update", UpdateButton)
+    hooksecurefunc("MerchantFrame_Update", UpdateButton)
     UpdateButton()
 end

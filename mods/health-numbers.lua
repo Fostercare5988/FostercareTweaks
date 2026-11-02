@@ -2,12 +2,10 @@ local FT = FostercareTweaks
 if not FT then return end
 
 -- FostercareTweaks: mods/health-numbers.lua
-local Abbreviate = FT.Abbreviate
+local Abbreviate = AbbreviateNumbers
 
 local module = FT:register({
     title = "Real Health Numbers",
-    description = "Shows real health numbers on player, pet, and target unit frames.",
-    category = "Unit Frames",
     enabled = true,
 })
 
@@ -16,15 +14,13 @@ local GetUnitHealthValues = FT.GetUnitHealthValues
 module.enable = function(self)
     -- Native redraws may show these FontStrings again. Suppress their pixels
     -- without replacing widget methods or native lifecycle handlers.
-    if TargetHPText then TargetHPText:SetAlpha(0) end
-    if TargetHPPercText then TargetHPPercText:SetAlpha(0) end
-    if TargetFrameHealthBarText then TargetFrameHealthBarText:SetAlpha(0) end
-    if TargetHealthCheck then
-        FT.hooksecurefunc("TargetHealthCheck", function()
-            if TargetHPText then TargetHPText:Hide() end
-            if TargetHPPercText then TargetHPPercText:Hide() end
-        end)
-    end
+    TargetHPText:SetAlpha(0)
+    TargetHPPercText:SetAlpha(0)
+    TargetFrameHealthBarText:SetAlpha(0)
+    hooksecurefunc("TargetHealthCheck", function()
+        TargetHPText:Hide()
+        TargetHPPercText:Hide()
+    end)
 
     TargetFrame.StatusTexts = CreateFrame("Frame", nil, TargetFrame)
     TargetFrame.StatusTexts:SetAllPoints(TargetFrame)
@@ -38,8 +34,8 @@ module.enable = function(self)
     PetFrameHealthBar.TextString:SetPoint("CENTER", PetFrameHealthBar, "CENTER", -2, 0)
     PetFrameManaBar.TextString:SetPoint("CENTER", PetFrameManaBar, "CENTER", -2, -2)
 
-    if PlayerFrameHealthBar and not PlayerFrameHealthBar.unit then PlayerFrameHealthBar.unit = "player" end
-    if PlayerFrameManaBar and not PlayerFrameManaBar.unit then PlayerFrameManaBar.unit = "player" end
+    PlayerFrameHealthBar.unit = PlayerFrameHealthBar.unit or "player"
+    PlayerFrameManaBar.unit = PlayerFrameManaBar.unit or "player"
 
     local targetPlayerBars = { TargetFrameHealthBar, TargetFrameManaBar, PlayerFrameHealthBar, PlayerFrameManaBar }
     for _, frame in ipairs(targetPlayerBars) do
@@ -59,19 +55,19 @@ module.enable = function(self)
     local ownedBars = {}
     for _, bar in ipairs(targetPlayerBars) do ownedBars[bar] = true end
     for _, bar in ipairs(petBars) do ownedBars[bar] = true end
+    local healthBars = { [TargetFrameHealthBar] = true, [PlayerFrameHealthBar] = true, [PetFrameHealthBar] = true }
 
     local function UpdateHealthTextString(sb)
         local bar = sb or this
         if not ownedBars[bar] then return end
 
         local str = bar.TextString
-        local unit = bar.unit or ((bar == PlayerFrameHealthBar or bar == PlayerFrameManaBar) and "player")
-        if str and unit then
+        if str and bar.unit then
             bar.lockShow = 1
             bar:Show()
 
             local cur, max, minVal
-            if bar:GetName() == "TargetFrameHealthBar" then
+            if bar == TargetFrameHealthBar then
                 cur, max = GetUnitHealthValues(bar.unit)
             else
                 minVal, max = bar:GetMinMaxValues()
@@ -81,9 +77,9 @@ module.enable = function(self)
             local percent = (max > 0) and floor(cur / max * 100) or 0
 
             local text
-            if cur == percent and string.find(bar:GetName(), "Health") and max <= 100 then
+            if cur == percent and healthBars[bar] and max <= 100 then
                 text = percent .. "%"
-            elseif bar:GetName() == "TargetFrameHealthBar" and cur < max then
+            elseif bar == TargetFrameHealthBar and cur < max then
                 text = Abbreviate(cur) .. " - " .. percent .. "%"
             else
                 text = Abbreviate(cur)
@@ -98,7 +94,7 @@ module.enable = function(self)
                 end
             else
                 -- Native redraws also write this FontString, even at unchanged health.
-                if str:GetText() ~= tostring(text) then
+                if str:GetText() ~= text then
                     str:SetText(text)
                 end
                 str:Show()
@@ -106,9 +102,9 @@ module.enable = function(self)
         end
     end
 
-    FT.hooksecurefunc("TextStatusBar_UpdateTextString", UpdateHealthTextString)
+    hooksecurefunc("TextStatusBar_UpdateTextString", UpdateHealthTextString)
     -- Death changes no mana value, so the mana number needs this refresh too.
-    FT.hooksecurefunc("TargetFrame_CheckDead", function()
+    hooksecurefunc("TargetFrame_CheckDead", function()
         UpdateHealthTextString(TargetFrameHealthBar)
         UpdateHealthTextString(TargetFrameManaBar)
     end)

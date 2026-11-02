@@ -3,8 +3,7 @@ if not FT then return end
 
 local module = FT:register({
     title = "Show Energy Ticks",
-    description = "Show estimated energy ticks and the mana five-second rule on the player power bar.",
-    category = "Unit Frames", enabled = true,
+    enabled = true,
     config = { energytick_contrast = 1, energytick_flash = 1, energytick_width = 3 },
 })
 

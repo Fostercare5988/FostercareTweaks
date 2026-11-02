@@ -49,12 +49,11 @@ mods\equip-compare.lua
 
 # Chat & Social Modules
 mods\chat-tweaks.lua
-mods\chat-class-colors.lua
 
 # General & Gameplay Modules
 mods\gameplay.lua
 mods\blue-shaman.lua
 
-# Settings (VanillaForge ForgeUI kit)
+# Settings (ForgeUI kit)
 ForgeUI.lua
 Settings.lua

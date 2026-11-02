@@ -1,20 +1,15 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Related modules; settings remain independent.
-
 do
 
 local module = FT:register({
     title = "Hide Gryphons",
-    description = "Hides the gryphons left and right of the action bar.",
-    category = "Action Bar",
-    enabled = nil,
 })
 
 module.enable = function(self)
-    if MainMenuBarLeftEndCap then MainMenuBarLeftEndCap:Hide() end
-    if MainMenuBarRightEndCap then MainMenuBarRightEndCap:Hide() end
+    MainMenuBarLeftEndCap:Hide()
+    MainMenuBarRightEndCap:Hide()
 end
 end
 
@@ -22,9 +17,6 @@ do
 
 local module = FT:register({
     title = "Floating Actionbar",
-    description = "Removes all background textures and lets the actionbar float.",
-    category = "Action Bar",
-    enabled = nil,
 })
 
 local actionbars = {
@@ -50,9 +42,7 @@ module.enable = function(self)
         end
     end
 
-    if MainMenuBarPerformanceBarFrameButton then
-        FT.AddBorder(MainMenuBarPerformanceBarFrameButton, { -12, -0.5, -8, 4.5 }, { r = 0.7, g = 0.7, b = 0.7, a = 1 })
-    end
+    FT.AddBorder(MainMenuBarPerformanceBarFrameButton, { -12, -0.5, -8, 4.5 }, { r = 0.7, g = 0.7, b = 0.7, a = 1 })
 
     ReputationWatchStatusBar:SetStatusBarTexture("Interface\\AddOns\\FostercareTweaks\\img\\xpbar")
     ReputationWatchStatusBarBackground:SetTexture("Interface\\AddOns\\FostercareTweaks\\img\\xpbar")
@@ -66,19 +56,17 @@ module.enable = function(self)
     end
 
     local function UpdateReputationWatchBar()
-        if ReputationWatchBar and ReputationWatchBar:IsShown() then
-            if MainMenuExpBar then
-                MainMenuExpBar:ClearAllPoints()
-                MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, -5)
-            end
+        if ReputationWatchBar:IsShown() then
+            MainMenuExpBar:ClearAllPoints()
+            MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, -5)
             ReputationWatchBar:ClearAllPoints()
             ReputationWatchBar:SetPoint("BOTTOM", MainMenuBar, "TOP", 0, -5)
-        elseif MainMenuExpBar then
+        else
             MainMenuExpBar:ClearAllPoints()
             MainMenuExpBar:SetPoint("TOP", MainMenuBar, "TOP", 0, 0)
         end
     end
-    FT.hooksecurefunc("ReputationWatchBar_Update", UpdateReputationWatchBar)
+    hooksecurefunc("ReputationWatchBar_Update", UpdateReputationWatchBar)
     UpdateReputationWatchBar()
 
     local hideTextures = {
@@ -90,13 +78,11 @@ module.enable = function(self)
         BonusActionBarTexture0, BonusActionBarTexture1
     }
     for _, tex in ipairs(hideTextures) do
-        if tex and tex.SetTexture then tex:SetTexture("") end
+        tex:SetTexture("")
     end
 
-    if MainMenuBarMaxLevelBar then
-        MainMenuBarMaxLevelBar:Hide()
-        FT.HookScript(MainMenuBarMaxLevelBar, "OnShow", function(frame) frame:Hide() end)
-    end
+    MainMenuBarMaxLevelBar:Hide()
+    FT.HookScript(MainMenuBarMaxLevelBar, "OnShow", function(frame) frame:Hide() end)
 end
 end
 
@@ -104,15 +90,10 @@ do
 
 local module = FT:register({
     title = "Center Vertical Actionbar",
-    description = "Center the vertical actionbar on the right side.",
-    category = "Action Bar",
-    enabled = nil,
 })
 
 module.enable = function(self)
-    if MultiBarRight then
-        MultiBarRight:ClearAllPoints()
-        MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", 0, -16)
-    end
+    MultiBarRight:ClearAllPoints()
+    MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", 0, -16)
 end
 end

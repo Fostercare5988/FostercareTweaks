@@ -330,8 +330,7 @@ local function Display(button, full)
 end
 
 local function UpdateHotkey(button)
-    local command = "FCTWEAKSEXTRA" .. button.fctBar.definition.extraIndex .. "_" .. button:GetID()
-    local key = GetBindingKey(command)
+    local key = GetBindingKey(button.fctCommand)
     SetText(button.hotkey, key and GetBindingText(key, "KEY_", 1) or "")
 end
 
@@ -446,15 +445,18 @@ local function RefreshVisible(full)
     end
 end
 
+-- One callback for every queued refresh (a closure per event burst was
+-- garbage). Hiding the rows clears pending, so an older callback does nothing.
+local function FlushRefresh()
+    if not EA.pending then return end
+    EA.pending = nil
+    RefreshVisible(true)
+end
+
 local function QueueRefresh()
     if EA.pending then return end
-    local generation = EA.generation
     EA.pending = true
-    C_Timer.After(0, function()
-        if generation ~= EA.generation then return end
-        EA.pending = nil
-        RefreshVisible(true)
-    end)
+    C_Timer.After(0, FlushRefresh)
 end
 
 local function SyncOwner()
@@ -585,6 +587,7 @@ function EA:CreateButton(bar, id)
     local name = bar.definition.prefix .. "Button" .. id
     local button = CreateFrame("CheckButton", name, bar.holder)
     button.fctBar, button.fctExtraOwner = bar, self
+    button.fctCommand = "FCTWEAKSEXTRA" .. bar.definition.extraIndex .. "_" .. id
     button:SetID(id)
     button:SetWidth(36); button:SetHeight(36)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
@@ -603,6 +606,7 @@ function EA:CreateButton(bar, id)
     button.count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
     button.cooldown = CreateFrame("Cooldown", name .. "Cooldown", button, "CooldownFrameTemplate")
     button.cooldown:SetAllPoints(button)
+    button.cooldown:SetCountdownFormatter(FT.Countdown)
     button:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
     local normal = button:GetNormalTexture()
     normal:SetWidth(FT.IsEnabled("Floating Actionbar") and 60 or 66)

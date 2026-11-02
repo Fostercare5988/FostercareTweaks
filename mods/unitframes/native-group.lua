@@ -93,8 +93,8 @@ for _, name in ipairs({"GroupFrame_Update", "GroupFrame_UpdateLayout",
     "GroupFrame_UpdateMemberPets", "GroupFrame_ToggleMovement"}) do
     local original = _G[name]
     if type(original) == "function" then
-        _G[name] = function(...)
-            if not owned then return original(...) end
+        _G[name] = function(state)
+            if not owned then return original(state) end
         end
     end
 end

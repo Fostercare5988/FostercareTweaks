@@ -8,8 +8,6 @@ if not FT then return end
 
 local module = FT:register({
     title = "Equip Compare",
-    description = "Shows currently equipped items on tooltips while the shift key is pressed.",
-    category = "Tooltip & Items",
     enabled = true,
 })
 

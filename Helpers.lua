@@ -4,9 +4,6 @@
 local FT = FostercareTweaks
 if not FT then return end
 
--- Required ClassicAPI posthooks preserve native return values and ownership.
-FT.hooksecurefunc = hooksecurefunc
-
 -- Script wrappers take fixed parameters, never `...`: Lua 5.0 builds a table
 -- for every call of a vararg function (ClassicAPI docs/LuaCAPI.md,
 -- adjust_varargs), and these run for every event. Events carry at most nine
@@ -133,25 +130,21 @@ FT.rgbhex = function(r, g, b, a)
     return ""
 end
 
-FT.Abbreviate = AbbreviateNumbers
-
-FT.TimeConvert = function(remaining)
-    local color = "|cffffffff"
-    if remaining < 5 then
-        color = "|cffff5555"
-    elseif remaining < 10 then
-        color = "|cffffff55"
-    end
-
-    if remaining < 60 then
-        return color .. ceil(remaining)
-    elseif remaining < 3600 then
-        return color .. ceil(remaining / 60) .. "m"
-    elseif remaining < 86400 then
-        return color .. ceil(remaining / 3600) .. "h"
-    else
-        return color .. ceil(remaining / 86400) .. "d"
-    end
+-- One countdown look for aura buttons, raid badges and the stock action
+-- buttons: tenths in red under 5 s, yellow under 10 s, then whole seconds,
+-- minutes, hours and days (ClassicAPI numeric-rule formatter). A native
+-- Cooldown takes it with SetCountdownFormatter; FormatNumber serves the rest.
+do
+    local Up = Enum.NumericRuleFormatRounding.Up
+    FT.Countdown = C_StringUtil.CreateNumericRuleFormatter()
+    FT.Countdown:SetBreakpoints({
+        { threshold = 0, step = 0.1, rounding = Up, format = "|cffff4444%.1f|r" },
+        { threshold = 5, step = 1, rounding = Up, format = "|cffffff33%d|r" },
+        { threshold = 10, step = 1, rounding = Up, format = "|cffffffff%d|r" },
+        { threshold = 60, format = "|cffffffff%dm|r", components = { { div = 60, step = 1, rounding = Up } } },
+        { threshold = 3600, format = "|cffffffff%dh|r", components = { { div = 3600, step = 1, rounding = Up } } },
+        { threshold = 86400, format = "|cffffffff%dd|r", components = { { div = 86400, step = 1, rounding = Up } } },
+    })
 end
 
 local borderDef = {

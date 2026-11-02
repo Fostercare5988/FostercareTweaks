@@ -4,11 +4,8 @@ if not FT then return end
 -- FostercareTweaks: mods/blue-shaman.lua
 -- Changes shaman class color to blue
 
-
 local module = FT:register({
     title = "Blue Shaman Class Colors",
-    description = "Changes the class color code of shamans to blue, as known from TBC+.",
-    category = "Social & Chat",
     enabled = true,
 })
 
