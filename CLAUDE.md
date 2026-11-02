@@ -66,7 +66,9 @@ Things to know:
   reads the row again. `RegisterUnitEvent` filters every event whose first
   argument is a unit (ClassicAPI docs), so it carries only `player`/`target`
   and the raid members.
-- Solo, `SetRaidTargetIcon` sets NamPower local marks (raid-target-marks.lua).
+- Solo, NamPower's own `SetRaidTarget` sets a local mark (its
+  `NP_EnableLocalSetRaidTarget`, on by default); raid-target-marks.lua only
+  redraws the target and raid frames after it.
 - Unit events: ClassicAPI fires each one once per token, including every
   `nameplateN`, `markN` and `focus`. Register `UNIT_*` events with
   `frame:RegisterUnitEvent(event, units...)` for the units the frame shows.
@@ -88,9 +90,10 @@ Things to know:
   error reaches !ErrorLog with its stack and the other modules still start.
 - Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
   Icon positions use mover keys `watch_*`. A buff of yours that ends shows its
-  spell's own cooldown greyed (ClassicAPI `C_Spell.GetSpellCooldown`, the spell
-  from `GetSpellInfo(name)`, on `SPELL_UPDATE_COOLDOWN`, gone on
-  `OnCooldownDone`) unless `noCooldown`. Each entry decides where it shows
+  spell's own cooldown greyed (the spell from `GetSpellInfo(name)`, on
+  `SPELL_UPDATE_COOLDOWN`, gone on `OnCooldownDone`) unless `noCooldown`. The
+  stock `GetSpellCooldown` is read first; ClassicAPI's `C_Spell.GetSpellCooldown`
+  (`isOnGCD`, a new table) only for a cooldown not seen before. Each entry decides where it shows
   (`noIcon`, `topRight`, `inRow`): `FT.IsAuraHidden(name, unit, place)` is asked
   by Blizzard's buff buttons (place "top", standard-player-auras.lua, via
   SuperWoW `GetPlayerBuffID`) and the player and target rows (unitframes/auras.lua).

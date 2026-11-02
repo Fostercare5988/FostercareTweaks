@@ -24,6 +24,8 @@ local icons, slots = {}, {}          -- icons by key; one slot buffer
 local found = {}                     -- W.Update's matches, reused
 local cooling                        -- a watched buff that shows its cooldown
 local known = {}                     -- buff name -> your spell's ID, or false
+local own = {}                       -- spell ID -> start of its own cooldown, seen
+local gcdStart, gcdDuration          -- the global cooldown, as last seen
 
 -- Names kept out of each list: Blizzard's top right, and each unit's row.
 local hidden = { top = {}, player = {}, target = {} }
@@ -118,6 +120,22 @@ local function Show(icon, texture, count, duration, expiration)
     if not icon:IsShown() then icon:Show() end
 end
 
+-- A spell's own cooldown (start, duration), not the global one. The stock
+-- read returns numbers; ClassicAPI's isOnGCD (a new table per call) is asked
+-- only for a cooldown not seen before: a spell's own, or the next GCD.
+local function OwnCooldown(id)
+    local slot, book = FindSpellBookSlotByID(id)
+    if not slot then return end
+    local start, duration = GetSpellCooldown(slot, book)
+    if not start or duration == 0 or start + duration <= GetTime()
+        or (start == gcdStart and duration == gcdDuration) then return end
+    if own[id] == start then return start, duration end
+    local info = C_Spell.GetSpellCooldown(id)
+    if not info or info.isOnGCD then gcdStart, gcdDuration = start, duration; return end
+    own[id] = start
+    return start, duration
+end
+
 -- One of your buffs has ended: its spell's own cooldown (not the global one),
 -- greyed with a filling sweep, until it is ready. Stealth after you unstealth.
 local function ShowCooldown(icon, entry)
@@ -128,9 +146,9 @@ local function ShowCooldown(icon, entry)
         id = spellId or false
         known[entry.name] = id
     end
-    local info = id and C_Spell.GetSpellCooldown(id)
-    if not info or info.isOnGCD or info.duration <= 1.5
-        or info.startTime + info.duration <= GetTime() then return false end
+    if not id then return false end
+    local start, duration = OwnCooldown(id)
+    if not start then return false end
     icon.fctAura = nil
     if not icon.fctCooling then
         icon.fctCooling, icon.fctStart = true, nil
@@ -138,9 +156,9 @@ local function ShowCooldown(icon, entry)
         icon.cooldown:SetReverse(false)
     end
     if icon.fctCount then icon.fctCount = nil; icon.count:SetText("") end
-    if icon.fctStart ~= info.startTime or icon.fctDuration ~= info.duration then
-        icon.fctStart, icon.fctDuration = info.startTime, info.duration
-        icon.cooldown:SetCooldown(info.startTime, info.duration)
+    if icon.fctStart ~= start or icon.fctDuration ~= duration then
+        icon.fctStart, icon.fctDuration = start, duration
+        icon.cooldown:SetCooldown(start, duration)
     end
     if not icon:IsShown() then icon:Show() end
     return true

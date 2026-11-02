@@ -255,19 +255,17 @@ end
 
 local function Display(button, full)
     local action = Descriptor(button)
-    local spellID, itemID, icon
-    if action and action.kind == "spell" then
-        spellID = action.id
-        if full or button.fctSpellID ~= spellID then
-            local _, _, texture = GetSpellInfo(spellID)
-            icon = texture
-        else icon = button.icon.fctTexture end
-    elseif action and action.kind == "item" then
-        itemID = action.id
-        icon = full and C_Item.GetItemIconByID(itemID) or button.icon.fctTexture
-    end
+    local spellID = action and action.kind == "spell" and action.id or nil
+    local itemID = action and action.kind == "item" and action.id or nil
     if spellID ~= button.fctSpellID or itemID ~= button.fctItemID then full = true end
     button.fctSpellID, button.fctItemID = spellID, itemID
+    local icon = button.icon.fctTexture
+    if full then
+        if spellID then
+            local _, _, texture = GetSpellInfo(spellID)
+            icon = texture
+        else icon = itemID and C_Item.GetItemIconByID(itemID) end
+    end
     SetTexture(button.icon, icon or (action and "Interface\\Icons\\INV_Misc_QuestionMark"))
     SetShown(button.icon, action ~= nil)
     SetShown(button, action ~= nil or button.fctBar.showEmpty == true)
