@@ -150,80 +150,21 @@ coreFrame:RegisterEvent("VARIABLES_LOADED")
 coreFrame:RegisterEvent("PLAYER_LOGIN")
 coreFrame:SetScript("OnEvent", InitializeOnEvent)
 
--- Slash Command Registration
+-- /ft opens the settings, or one page (/ft uf, auras, raid, bars). /ft testraid
+-- shows the sample raid grid; /ft resetuf puts moved frames back and reloads.
 SLASH_FOSTERCARETWEAKS1 = "/ft"
 SLASH_FOSTERCARETWEAKS2 = "/ftweaks"
 SLASH_FOSTERCARETWEAKS3 = "/fostercaretweaks"
+local PAGES = { general = "general", uf = "unit", unit = "unit", auras = "auras", raid = "raid", bars = "bars" }
 
 SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
-    local cmd = strsplittable(" ", msg or "")
-    if cmd[1] == "reset" then
-        FostercareTweaks_Config.overwrites = {}
+    local cmd = string.lower(strsplittable(" ", msg or "")[1] or "")
+    if cmd == "resetuf" then
+        FostercareTweaks_Config.unitframe_positions = nil
         ReloadUI()
-    elseif cmd[1] == "resetuf" or cmd[1] == "ufreset" then
-        if FostercareTweaks_Config then
-            FostercareTweaks_Config.unitframe_positions = nil
-        end
-        ReloadUI()
-    elseif cmd[1] == "testraid" or cmd[1] == "raidtest" or cmd[1] == "testgroup" or cmd[1] == "grouptest" then
-        if FT.UnitFrames and FT.UnitFrames.ToggleRaidTest then
-            FT.UnitFrames:ToggleRaidTest()
-        end
-    elseif cmd[1] == "bars" or cmd[1] == "actionbars" then
-        FT.OpenSettings("bars")
-    elseif cmd[1] == "uf" or cmd[1] == "unitframes" or cmd[1] == "unitframe" then
-        FT.OpenSettings("unit")
-    elseif cmd[1] == "auras" then
-        FT.OpenSettings("auras")
-    elseif cmd[1] == "groupconfig" or cmd[1] == "groupsettings" or cmd[1] == "gfconfig" or cmd[1] == "raid" or cmd[1] == "raidframes" then
-        FT.OpenSettings("raid")
-    elseif cmd[1] == "groupsize" then
-        local w = tonumber(cmd[2])
-        local h = tonumber(cmd[3])
-        if w and h and FT.UnitFrames and FT.UnitFrames.ApplyGroupDimensions then
-            local dims = FT.UnitFrames:GetGroupDimensions()
-            FT.UnitFrames:ApplyGroupDimensions(w, h, dims.scale)
-            dims = FT.UnitFrames:GetGroupDimensions()
-            if DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[FostercareTweaks]|r Group frame size set to " .. dims.width .. "x" .. dims.height, 1, 1, 1)
-            end
-        elseif DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Usage:|r /ft groupsize <width> <height> (e.g. /ft groupsize 64 34)", 1, 1, 1)
-        end
-    elseif cmd[1] == "groupscale" then
-        local s = tonumber(cmd[2])
-        if s and FT.UnitFrames and FT.UnitFrames.ApplyGroupDimensions then
-            local dims = FT.UnitFrames:GetGroupDimensions()
-            FT.UnitFrames:ApplyGroupDimensions(dims.width, dims.height, s)
-            dims = FT.UnitFrames:GetGroupDimensions()
-            if DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[FostercareTweaks]|r Group frame scale set to " .. dims.scale, 1, 1, 1)
-            end
-        elseif DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffcc00Usage:|r /ft groupscale <scale> (e.g. /ft groupscale 1.0)", 1, 1, 1)
-        end
-    elseif cmd[1] == "options" or cmd[1] == "gui" or cmd[1] == "menu" or cmd[1] == "" then
-        FT.OpenSettings()
-    elseif cmd[1] then
-        local index = cmd[1]
-        local input = cmd[2] or ""
-
-        local value
-        local _, _, r, g, b, a = string.find(input, "(.+),(.+),(.+),(.+)")
-
-        if r and g and b and a then
-            value = { r = tonumber(r), g = tonumber(g), b = tonumber(b), a = tonumber(a) }
-        elseif tonumber(input) then
-            value = tonumber(input)
-        else
-            value = input
-        end
-
-        if FT.overwrites[index] == nil then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff5555Error:|r Overwrite |cffffcc00" .. index .. "|r does not exist.", 1, 1, 1)
-        else
-            FT.SetOverride(index, value)
-            DEFAULT_CHAT_FRAME:AddMessage("Overwrite |cffffcc00" .. index .. "|r is now set to: |cffffcc00" .. input .. "|r", 1, 1, 1)
-        end
+    elseif cmd == "testraid" then
+        FT.UnitFrames:ToggleRaidTest()
+    else
+        FT.OpenSettings(PAGES[cmd])
     end
 end

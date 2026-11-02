@@ -9,7 +9,7 @@ local HookAddonOrVariable = FT.HookAddonOrVariable
 
 local module = FT:register({
     title = "Item Rarity Borders",
-    enabled = true,
+    always = true,
 })
 
 local paperdoll_slots = {

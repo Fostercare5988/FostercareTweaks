@@ -1,11 +1,11 @@
 # FostercareTweaks User Guide
 
-Configuration and controls for **FostercareTweaks 1.6.0**.
+Configuration and controls for **FostercareTweaks**.
 
 Open the settings with `/ft`, or from **Game Menu > AddOn Options >
 FostercareTweaks**. The window has five pages: **General**, **Unit Frames**,
 **Auras**, **Raid** and **Action Bars**. `/ft uf`, `/ft auras`, `/ft raid` and
-`/ft bars` open a page directly.
+`/ft bars` open a page directly; `/ft testraid` shows sample raid frames.
 
 Every change saves at once. A feature that can only start or stop with a fresh
 interface shows a **Reload UI** button; click it when ready. Hover any switch
@@ -22,26 +22,28 @@ for a short explanation; a dimmed control waits for the switch above it.
 - **Dismount, leave form, stand up when casting** are ClassicAPI settings:
   **Game Menu > AddOn Options > ClassicAPI**. They dismount and cast on the same
   press, when the cast can go off.
-- **Items**: sell prices on tooltips (times the stack), **Shift** to compare
-  with what you wear, quality borders in bags, bank, character and inspect, and
-  a **Sell Junk** button at merchants. Walking away cancels unsent sales.
+- **Always on**: sell prices on item tooltips (times the stack), **Shift** to
+  compare with what you wear, quality borders in bags, bank, character and
+  inspect, a **Sell Junk** button at merchants (walking away cancels unsent
+  sales), copyable web links in chat, and coordinates and class-colored group
+  members on the world map.
 - **Minimap**: a 24-hour clock, a square minimap, tidy buttons and wheel zoom.
-- **Chat**: wheel scrolling and sticky channels, copyable web links, history
-  restored after a reload, timestamps (not in the combat log), class-colored
-  names and blue shamans.
+- **Chat**: wheel scrolling and sticky channels, history restored after a
+  reload, timestamps (not in the combat log), class-colored names and blue
+  shamans.
   Classes come from ClassicAPI, which knows your group, nearby players, friends
   and everyone seen this session. To remember players between sessions, turn on
   the player cache in **AddOn Options > ClassicAPI**.
-- **World map**: coordinates, and group members in class colors. For a map
-  window, use the minimize button on the map (the game's own windowed map).
+- **World map**: for a map window, use the minimize button on the map (the
+  game's own windowed map).
   **Map window size** sets its size; so does **Ctrl + mouse wheel** on the map.
 
 ## Unit Frames
 
 These improve Blizzard's player, target and pet frames.
 
-- **Class colors behind names**, exact **health numbers** (they hide when the
-  target dies, under Blizzard's "Dead").
+- **Class colors behind names**. Exact **health numbers** are always shown
+  (they hide when the target dies, under Blizzard's "Dead").
 - **Ctrl+Shift moves things**: hold both keys to show handles on the frames, aura
   areas, raid frames and minimap pieces, and drag them. Action bars move with
   **Move bars** on the Action Bars page. **Reset all positions** puts them back
@@ -50,7 +52,7 @@ These improve Blizzard's player, target and pet frames.
   be interrupted. Hold Ctrl+Shift to move it; it follows the target frame.
 - **Your cast bar**: hold Ctrl+Shift to move it off the action bars.
 - **No castbar borders**: removes the border art from your cast bar and the target's (needs a reload).
-- **Raid marks**: bigger marks on the target frame and raid frames, on the
+- **Raid marks**: their size on the target and raid frames, and on the
   portrait or beside the frame. When you are not in a group, the raid mark keys
   set marks only you can see.
 - **Energy ticks**: estimated energy ticks and the five-second mana rule on your
@@ -88,8 +90,9 @@ One grid serves both parties and raids.
 ## Action Bars
 
 - **Look**: hide the gryphons, remove the bar background, a short main bar
-  (without the bag and game menu buttons), centered right-side bars, cooldown
-  numbers and reagent counts (how many casts your reagents allow).
+  (without the bag and game menu buttons), centered right-side bars and reagent
+  counts (how many casts your reagents allow). Cooldowns always count down on
+  the buttons, in the auras' look: tenths in red under 5 seconds.
 - **Custom layouts** lets you move and reshape bars. Off keeps the game's layout.
 - **Move bars** shows a handle on each bar; drag it, then click again or close
   the window to lock. Not in combat.

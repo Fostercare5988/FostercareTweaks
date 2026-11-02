@@ -83,8 +83,8 @@ end
 local tab = 1
 local TABS = { "general", "unit", "auras", "raid", "bars" }
 local pages, ShowTab = UI.Tabs(panel, "FTOpt", {
-    { label = "General", height = 590 },
-    { label = "Unit Frames", height = 452 },
+    { label = "General", height = 540 },
+    { label = "Unit Frames", height = 440 },
     { label = "Auras", height = 400 },
     { label = "Raid", height = 590 },
     { label = "Action Bars", height = 574 },
@@ -108,58 +108,50 @@ Feature(general, "Auto Stance", "Switch stance for spells",
     "A warrior or druid spell that needs another stance or form switches to the first one you can use.", LEFT, -144)
 Feature(general, "Hide Stealth / Stance Bar", "Hide the stance bar", "Hide the stealth, stance and form buttons.",
     LEFT, -170, function(value) FT.mods["Hide Stealth / Stance Bar"]:apply(value) end)
-UI.Heading(general, "Items", LEFT, -210)
-Feature(general, "Vendor Values", "Sell prices on tooltips", "Show what a merchant pays for an item.", LEFT, -230)
-Feature(general, "Equip Compare", "Compare with Shift", "Hold Shift over an item to see what you wear in its slot.", LEFT, -256)
-Feature(general, "Item Rarity Borders", "Quality borders", "Color item borders by quality in bags, bank, character and inspect.", LEFT, -282)
-Feature(general, "Sell Junk", "Sell Junk button", "A merchant button that sells every grey item.", LEFT, -308)
-UI.Heading(general, "Minimap", LEFT, -348)
-Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", LEFT, -368)
-Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", LEFT, -394)
-Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", LEFT, -420)
-Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", LEFT, -450,
+UI.Heading(general, "Minimap", LEFT, -210)
+Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", LEFT, -230)
+Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", LEFT, -256)
+Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", LEFT, -282)
+Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", LEFT, -312,
     function(value) FT.ApplyMinimapScale(value) end, nil, Times)
+Hint(general, "Always on: sell prices, Shift to compare, quality borders, the Sell Junk button, copyable web links, "
+    .. "and coordinates and class colors on the world map.", LEFT, -366)
 UI.Heading(general, "Chat", RIGHT, -98)
 Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
     "Scroll with the mouse wheel, keep the last channel, repeat messages with the arrow keys.", RIGHT, -118)
-Feature(general, "Chat Hyperlinks", "Copyable links", "Click web links to copy them; quest and item links open.", RIGHT, -144)
-Feature(general, "Chat History", "Keep chat history", "Restore chat windows after a reload or login.", RIGHT, -170)
-Feature(general, "Chat Timestamps", "Timestamps", "The time before each chat message. The combat log has none.", RIGHT, -196)
+Feature(general, "Chat History", "Keep chat history", "Restore chat windows after a reload or login.", RIGHT, -144)
+Feature(general, "Chat Timestamps", "Timestamps", "The time before each chat message. The combat log has none.", RIGHT, -170)
 Feature(general, "Chat Class Colors", "Class colors for names",
-    "Player names in their class color. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.", RIGHT, -222)
-Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue instead of pink.", RIGHT, -248)
-UI.Heading(general, "World map", RIGHT, -288)
-Feature(general, "WorldMap Coordinates", "Coordinates", "Your and the cursor's coordinates under the map.", RIGHT, -308)
-Feature(general, "WorldMap Class Colors", "Class colors", "Group members in class colors on the world and battleground map.", RIGHT, -334)
-Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel", RIGHT, -364,
+    "Player names in their class color. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.", RIGHT, -196)
+Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue instead of pink.", RIGHT, -222)
+UI.Heading(general, "World map", RIGHT, -262)
+Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel", RIGHT, -282,
     function() FT.ApplyWorldMapScale() end, nil, Times)
-UI.Heading(general, "Moving", RIGHT, -420)
-Hint(general, MOVE_HINT, RIGHT, -440)
+UI.Heading(general, "Moving", RIGHT, -342)
+Hint(general, MOVE_HINT, RIGHT, -362)
 Hint(general, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.",
-    LEFT, -518, 444)
+    LEFT, -446, 444)
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
-local function Marks() if FT.RefreshRaidMarks then FT:RefreshRaidMarks() end end
+local function Marks() FT:RefreshRaidMarks() end
 local function Ticks() if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end end
 local function On(title, default) return function() return FT.IsEnabled(title, default) end end
 UI.Heading(unit, "Player and target", LEFT, -98)
 Feature(unit, "Unit Frame Class Colors", "Class colors behind names", "Players' names on a bar in their class color.",
     LEFT, -118, function() FT.mods["Unit Frame Class Colors"]:apply() end)
-Feature(unit, "Real Health Numbers", "Health numbers", "Exact health and mana numbers on the player, target and pet frames.", LEFT, -144)
-UI.Heading(unit, "Target castbar", LEFT, -184)
+UI.Heading(unit, "Target castbar", LEFT, -158)
 Feature(unit, "Enemy Castbars", "Castbar under the target", "Your target's casts under the target frame; grey when you cannot interrupt them.",
-    LEFT, -204, function() FT.mods["Enemy Castbars"]:apply() end)
-UI.Heading(unit, "Raid marks", LEFT, -244)
-Feature(unit, "Clear Raid Target Marks", "Bigger marks on frames", "Larger raid marks on the target and raid frames.", LEFT, -264)
-local marks = On("Clear Raid Target Marks", true)
-local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait", "The target's mark outside its portrait.",
-    INDENT, -290, function(value)
+    LEFT, -178, function() FT.mods["Enemy Castbars"]:apply() end)
+UI.Heading(unit, "Raid marks", LEFT, -218)
+local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait",
+    "The target's mark beside its frame instead of on the portrait.", LEFT, -238, function(value)
         FT.SetOverride("raidmark_position", value and "outside" or "portrait"); Marks(); Refresh()
-    end, 172)
-table.insert(syncs, function() UI.Sync(outside, FT.GetOverride("raidmark_position") == "outside", marks()) end)
-Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", LEFT, -320, Marks, marks)
-Hint(unit, MOVE_HINT, LEFT, -372, 444)
+    end, 190)
+table.insert(syncs, function() UI.Sync(outside, FT.GetOverride("raidmark_position") == "outside") end)
+Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", LEFT, -268, Marks)
+Hint(unit, "On the target and raid frames. Solo, the raid mark keys set marks only you see.", LEFT, -320)
+Hint(unit, MOVE_HINT, LEFT, -360, 444)
 UI.Heading(unit, "Energy ticks", RIGHT, -98)
 Feature(unit, "Show Energy Ticks", "Energy and mana ticks",
     "Estimated energy ticks and the five-second mana rule on your power bar.", RIGHT, -118, ApplyUnitFrames)

@@ -50,7 +50,7 @@ do
 -- it. The labels belong to the map, so their timer stops when it closes.
 local module = FT:register({
     title = "WorldMap Coordinates",
-    enabled = true,
+    always = true,
 })
 
 module.enable = function(self)
@@ -97,7 +97,7 @@ do
 -- open, so a 0.2 s timer colours them, and only then.
 local module = FT:register({
     title = "WorldMap Class Colors",
-    enabled = true,
+    always = true,
 })
 
 local myPartyNames = {}
