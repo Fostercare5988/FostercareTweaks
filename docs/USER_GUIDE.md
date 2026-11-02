@@ -76,6 +76,12 @@ These improve Blizzard's player, target and pet frames.
 - **Top right of the screen**: show or hide Blizzard's buffs, debuffs and weapon
   enchants; **Ctrl+Shift** moves them.
 - **Borders** for buffs, debuffs and weapon enchants (the weapon's quality color).
+- **Watched auras**: type a spell's name (or ID) and click **Add your buff** or
+  **Add target debuff**. Each gets its own icon with the time left, shown while
+  the aura is up; hold **Ctrl+Shift** to move it, and each zone layout keeps its
+  own places. Target debuffs count only yours unless you turn **Only mine** off.
+  The first time, the buffs and debuffs of a FostercareAuras setup are copied
+  over with their places (its weapon poison slots are the Weapon enchants area).
 
 ## Raid
 

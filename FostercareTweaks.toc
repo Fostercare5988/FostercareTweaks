@@ -3,9 +3,9 @@
 ## Interface: 11200
 ## Title: |cffff9e38FostercareTweaks|r |cffffd6a8[Fostercare5988]|r
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI, SuperWoW, NamPower and UnitXP SP3.
-## OptionalDeps: AtlasLoot
+## OptionalDeps: AtlasLoot, FostercareAuras
 ## Author: Fostercare5988
-## Version: 1.8.0
+## Version: 1.9.0
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 
@@ -28,6 +28,7 @@ mods\standard-player-auras.lua
 mods\player-castbar.lua
 mods\unitframes\core.lua
 mods\unitframes\auras.lua
+mods\watched-auras.lua
 mods\unitframes\raid.lua
 mods\unitframes\native-group.lua
 mods\health-numbers.lua
