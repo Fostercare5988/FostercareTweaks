@@ -87,7 +87,10 @@ Things to know:
 - A module's `enable` runs under `xpcall` with the error handler, so an
   error reaches !ErrorLog with its stack and the other modules still start.
 - Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
-  Icon positions use mover keys `watch_*`. Each entry decides where it shows
+  Icon positions use mover keys `watch_*`. A buff of yours that ends shows its
+  spell's own cooldown greyed (ClassicAPI `C_Spell.GetSpellCooldown`, the spell
+  from `GetSpellInfo(name)`, on `SPELL_UPDATE_COOLDOWN`, gone on
+  `OnCooldownDone`) unless `noCooldown`. Each entry decides where it shows
   (`noIcon`, `topRight`, `inRow`): `FT.IsAuraHidden(name, unit, place)` is asked
   by Blizzard's buff buttons (place "top", standard-player-auras.lua, via
   SuperWoW `GetPlayerBuffID`) and the player and target rows (unitframes/auras.lua).

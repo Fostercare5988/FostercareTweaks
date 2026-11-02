@@ -450,6 +450,7 @@ end
 card.icon = Where("Icon", "Own icon", "Its own icon with the time left. Hold Ctrl+Shift to move it.", "icon")
 card.top = Where("Top", "Top right", "Also in Blizzard's buffs at the top right of the screen.", "topRight")
 card.row = Where("Row", "Player row", "Also in the row under the player or target frame.", "inRow")
+card.cool = Where("Cooldown", "Cooldown", "When it ends, the icon stays greyed with its spell's cooldown until it is ready.", "cooldown")
 card.mine = UI.Switch("FTOpt_WatchMine", card, "Only mine", "Only the debuff you cast; off shows anyone's.",
     0, 0, function(value) WA.SetMine(selected, value); Refresh() end, 100)
 card.remove = UI.Button("FTOpt_WatchRemove", card, "Remove", 0, 0, 78, function()
@@ -462,7 +463,7 @@ Add(auras, L, { place = function(x, y, width)
     card:ClearAllPoints(); card:SetPoint("TOPLEFT", auras, "TOPLEFT", x, y - 4)
     card:SetWidth(width)
     local perLine, n = width >= 440 and 3 or 2, 0
-    for _, switch in ipairs({ card.icon, card.top, card.row, card.mine }) do
+    for _, switch in ipairs({ card.icon, card.top, card.row, card.cool, card.mine }) do
         if switch:IsShown() then
             switch:ClearAllPoints()
             switch:SetPoint("TOPLEFT", card, "TOPLEFT", 10 + (n % perLine) * 140, -34 - math.floor(n / perLine) * 28)
@@ -494,7 +495,12 @@ table.insert(syncs, function()
     if entry then
         card.title:SetText(entry.name .. (entry.unit == "player" and "  -  your buff" or "  -  target debuff"))
         UI.Sync(card.icon, not entry.noIcon)
-        if entry.unit == "player" then card.top:Show(); UI.Sync(card.top, entry.topRight) else card.top:Hide() end
+        if entry.unit == "player" then
+            card.top:Show(); UI.Sync(card.top, entry.topRight)
+            card.cool:Show(); UI.Sync(card.cool, not entry.noCooldown)
+        else
+            card.top:Hide(); card.cool:Hide()
+        end
         card.row.label:SetText(entry.unit == "player" and "Player row" or "Target row")
         UI.Sync(card.row, entry.inRow)
         if entry.unit == "target" then card.mine:Show(); UI.Sync(card.mine, entry.mine) else card.mine:Hide() end
