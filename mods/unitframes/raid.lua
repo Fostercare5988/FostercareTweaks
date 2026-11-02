@@ -850,7 +850,8 @@ function UF:UpdateGroupRoster(force)
         groupCounters[1] = 1
         for i = 1, math.min(numParty, 4) do
             local unit = "party" .. i
-            Assign(groups[1].buttons[i + 1], unit, force, i, 0, UnitName(unit), nil, UnitIsConnected(unit))
+            Assign(groups[1].buttons[i + 1], unit, force, i, UnitIsPartyLeader(unit) and 2 or 0, UnitName(unit), nil,
+                UnitIsConnected(unit))
             groupCounters[1] = i + 1
         end
 
@@ -896,14 +897,16 @@ end
 
 local function RaidFrame_OnEvent(_, ev, a1, a2)
 
-    if ev == "RAID_ROSTER_UPDATE" or ev == "PARTY_MEMBERS_CHANGED" or ev == "PLAYER_ENTERING_WORLD" then
+    -- A leader change moves the crown: ranks come from the roster pass.
+    if ev == "RAID_ROSTER_UPDATE" or ev == "PARTY_MEMBERS_CHANGED" or ev == "PARTY_LEADER_CHANGED"
+        or ev == "PLAYER_ENTERING_WORLD" then
         if not rosterPending then
             rosterPending = true
             C_Timer.After(0, FlushRoster)
         end
     elseif ev == "PLAYER_TARGET_CHANGED" or ev == "UNIT_TARGET" then
         RefreshAggro()
-    elseif ev == "RAID_TARGET_UPDATE" or ev == "PARTY_LEADER_CHANGED" then
+    elseif ev == "RAID_TARGET_UPDATE" then
         for _, btn in pairs(unitToButton) do
             UpdateButtonIndicators(btn)
             LayoutButtonAuras(btn)
