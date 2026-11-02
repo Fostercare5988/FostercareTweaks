@@ -80,8 +80,6 @@ These improve Blizzard's player, target and pet frames.
   **Add target debuff**. Each gets its own icon with the time left, shown while
   the aura is up; hold **Ctrl+Shift** to move it, and each zone layout keeps its
   own places. Target debuffs count only yours unless you turn **Only mine** off.
-  The first time, the buffs and debuffs of a FostercareAuras setup are copied
-  over with their places (its weapon poison slots are the Weapon enchants area).
 
 ## Raid
 
