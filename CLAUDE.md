@@ -7,7 +7,7 @@ VanillaForge (187 tests).
 | Area | Files |
 | --- | --- |
 | Core | `Core.lua` (module registry `FT:register`, `/ft`), `Helpers.lua` |
-| Settings | `Settings.lua` (one ForgeUI window, five tabs; each tab's page also a category under the AddOn Options entry, moved into its scroll frame while shown), `ForgeUI.lua` and `Media/` (VanillaForge kit, copied unchanged) |
+| Settings | `Settings.lua` (one ForgeUI window, five tabs; each tab's page also a category under the AddOn Options entry, moved into its scroll frame and scaled to its width while shown), `ForgeUI.lua` and `Media/` (VanillaForge kit, copied unchanged) |
 | Action bars | `ActionBars.lua`, `ExtraActions.lua` (extra rows 2-7), `mods/actionbar-*.lua`, `mods/cooldown-numbers.lua`, `mods/reduced-actionbar.lua` |
 | Unit frames | `mods/unitframes/` (core: shared settings, colors, bars; auras: improved auras on Blizzard frames and raid icons; raid; native-group), `mods/unitframe*.lua`, `mods/health-numbers.lua`, `mods/target-*.lua`, `mods/raid-target-marks.lua` |
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |
@@ -87,10 +87,12 @@ Things to know:
 - A module's `enable` runs under `xpcall` with the error handler, so an
   error reaches !ErrorLog with its stack and the other modules still start.
 - Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
-  Icon positions use mover keys `watch_*`. The list also decides where auras
-  show: `FT.IsAuraHidden(name, unit)` is asked by Blizzard's buff buttons
-  (standard-player-auras.lua, via SuperWoW `GetPlayerBuffID`) and the player
-  and target rows (unitframes/auras.lua).
+  Icon positions use mover keys `watch_*`. Each entry decides where it shows
+  (`noIcon`, `topRight`, `inRow`): `FT.IsAuraHidden(name, unit, place)` is asked
+  by Blizzard's buff buttons (place "top", standard-player-auras.lua, via
+  SuperWoW `GetPlayerBuffID`) and the player and target rows (unitframes/auras.lua).
+- Weapon enchant buttons are placed by `GetID()` (16 left, 17 right): the native
+  updater hands TempEnchant1 to whichever hand is enchanted first.
 - Weapon enchants draw the enchant's icon over the weapon's (`fctPoison`): ClassicAPI
   `C_Item.GetWeaponEnchantInfo` IDs, read on `UNIT_INVENTORY_CHANGED`,
   `WEAPON_SLOT_CHANGED` or a hand gaining an enchant; the icon is the bag item
