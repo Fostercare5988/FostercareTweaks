@@ -7,6 +7,41 @@ local module = FT:register({
     title = "Blizzard Aura Controls", always = true,
 })
 local areas
+
+-- The poison, oil or imbue on each weapon. ClassicAPI gives the enchant ID; its
+-- icon is the item of that name in the bags (the poison itself), else the
+-- enchant's proc spell. handIcon[16|17] is read when the weapons or their
+-- enchants change, never per frame.
+local enchantIcons, bagRetry, bagItem, handIcon = {}, {}, {}, {}
+local function EnchantIcon(id)
+    if not id or id == 0 then return nil end
+    if enchantIcons[id] then return enchantIcons[id] end
+    local info = C_Item.GetEnchantInfo(id)
+    if not info then return nil end
+    local now = GetTime()
+    if (bagRetry[id] or 0) <= now then
+        for bag = 0, 4 do
+            for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                local item = C_Container.GetContainerItemInfo(bag, slot, bagItem)
+                local name = item and item.itemName
+                if name and item.iconFileID and string.find(name, info.name, 1, true) == 1 then
+                    enchantIcons[id] = item.iconFileID
+                    return item.iconFileID
+                end
+            end
+        end
+        bagRetry[id] = now + 60        -- not carried: the spell's icon, look again later
+    end
+    if info.spellID then
+        local _, _, icon = GetSpellInfo(info.spellID)
+        return icon
+    end
+end
+local function ReadEnchants()
+    local _, _, _, mainID, _, _, _, offID = C_Item.GetWeaponEnchantInfo()
+    handIcon[16], handIcon[17] = EnchantIcon(mainID), EnchantIcon(offID)
+end
+
 local function StyleAuraIcon(button, weaponEnchant, force)
     local cfg = FostercareTweaks_Config or {}
     -- Looked up once: the native enchant updater calls this every frame.
@@ -23,6 +58,19 @@ local function StyleAuraIcon(button, weaponEnchant, force)
         if weaponEnchant then button.fctAuraCropped = icon end
     end
     if weaponEnchant then
+        -- Over the weapon's icon, which the native updater rewrites each frame.
+        local hand = button:GetID()
+        local poison = handIcon[hand]
+        if button.fctPoisonIcon ~= poison then
+            button.fctPoisonIcon = poison
+            if poison and not button.fctPoison then
+                button.fctPoison = button:CreateTexture(nil, "OVERLAY")
+                button.fctPoison:SetAllPoints(icon or button)
+                button.fctPoison:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+            end
+            if poison then button.fctPoison:SetTexture(poison); button.fctPoison:Show()
+            elseif button.fctPoison then button.fctPoison:Hide() end
+        end
         -- Quality belongs to the equipped item, not the enchant spell.
         if nativeBorder and nativeBorder:GetAlpha() ~= 0 then nativeBorder:SetAlpha(0) end
         if cfg["Show Weapon Enchant Borders"] == 0 then
@@ -70,20 +118,53 @@ local function StyleAuraIcon(button, weaponEnchant, force)
 end
 local function StyleWeaponEnchants(force)
     if not areas then return end
-    for _, button in ipairs(areas[3].buttons) do StyleAuraIcon(button, true, force) end
+    for _, button in ipairs(areas[3].buttons) do
+        -- A hand that just got its enchant: read what it is.
+        local shown = button:IsShown()
+        if button.fctEnchantShown ~= shown then
+            button.fctEnchantShown = shown
+            if shown then ReadEnchants() end
+        end
+        StyleAuraIcon(button, true, force)
+    end
 end
 local function AnchorButtons()
     if not areas then return end
-    for _, area in ipairs(areas) do
-        for i, button in ipairs(area.buttons) do
-            -- Native icons are 30px. Keep eight per row, right-to-left,
-            -- including room for the original duration labels underneath.
-            button:ClearAllPoints()
-            button:SetPoint("TOPRIGHT", area.frame, "TOPRIGHT",
-                -((i - 1) % 8) * 35,
-                -math.floor((i - 1) / 8) * (SHOW_BUFF_DURATIONS == "1" and 45 or 35))
+    for index, area in ipairs(areas) do
+        -- Buffs and debuffs close up around hidden ones; the two weapon
+        -- buttons keep their places (the native updater shows them each frame).
+        local i = 0
+        for _, button in ipairs(area.buttons) do
+            if index == 3 or button:IsShown() then
+                i = i + 1
+                -- Native icons are 30px. Keep eight per row, right-to-left,
+                -- including room for the original duration labels underneath.
+                button:ClearAllPoints()
+                button:SetPoint("TOPRIGHT", area.frame, "TOPRIGHT",
+                    -((i - 1) % 8) * 35,
+                    -math.floor((i - 1) / 8) * (SHOW_BUFF_DURATIONS == "1" and 45 or 35))
+            end
         end
     end
+end
+
+-- One layout per frame after native buttons change what they show.
+local anchorPending
+local function AnchorSoon()
+    if anchorPending then return end
+    anchorPending = true
+    C_Timer.After(0, function() anchorPending = nil; AnchorButtons() end)
+end
+
+-- Native BuffButton_Update has shown the button: hide it when its aura shows
+-- elsewhere (watched or hidden). SuperWoW names the aura behind the index.
+local function HideIfElsewhere(button)
+    if button.buffIndex and button.buffIndex >= 0 and button:IsShown()
+        and FT.IsAuraHidden(GetSpellInfo(GetPlayerBuffID(button.buffIndex)), "player") then
+        button:Hide()
+    end
+    local shown = button:IsShown()
+    if button.fctShown ~= shown then button.fctShown = shown; AnchorSoon() end
 end
 
 function FT.ApplyStandardAuraSettings()
@@ -102,7 +183,6 @@ function FT.ApplyStandardAuraSettings()
             for _, button in ipairs(area.buttons) do
                 this = button
                 BuffButton_Update()
-                StyleAuraIcon(button)
             end
         end
     end
@@ -154,14 +234,16 @@ module.enable = function()
     -- duration display changes. Restore only icon anchors, never mover positions.
     hooksecurefunc("BuffButtons_UpdatePositions", AnchorButtons)
     hooksecurefunc("BuffButton_Update", function()
-        if this and this.buffFilter then StyleAuraIcon(this) end
+        if this and this.buffFilter then StyleAuraIcon(this); HideIfElsewhere(this) end
     end)
     hooksecurefunc("BuffFrame_Enchant_OnUpdate", function() StyleWeaponEnchants(false) end)
     local inventory = CreateFrame("Frame", nil, UIParent)
     inventory:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
+    inventory:RegisterEvent("WEAPON_SLOT_CHANGED")
     inventory:RegisterEvent("GET_ITEM_INFO_RECEIVED")
     FT.SetEventHandler(inventory, function(_, ev, unitOrItem)
-        if ev == "UNIT_INVENTORY_CHANGED" then
+        if ev == "UNIT_INVENTORY_CHANGED" or ev == "WEAPON_SLOT_CHANGED" then
+            ReadEnchants()
             StyleWeaponEnchants(true)
         elseif ev == "GET_ITEM_INFO_RECEIVED" then
             for _, button in ipairs(areas[3].buttons) do

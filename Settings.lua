@@ -220,9 +220,9 @@ Feature(auras, "Show Weapon Enchant Borders", "Enchant borders", "The weapon's q
 -- Watched auras: type a name, pick where it shows; one row per aura.
 local WA = FT.WatchedAuras
 UI.Heading(auras, "Watched auras", LEFT, -352)
-Hint(auras, "Each its own icon with the time left, while the aura is up. Hold Ctrl+Shift to move them.", LEFT, -372, 444)
+Hint(auras, "Each its own icon with the time left, shown only there. Hide takes one out of every list.", LEFT, -372, 444)
 local watchName = CreateFrame("EditBox", "FTOpt_WatchName", auras)
-watchName:SetWidth(180); watchName:SetHeight(22)
+watchName:SetWidth(140); watchName:SetHeight(22)
 watchName:SetPoint("TOPLEFT", auras, "TOPLEFT", LEFT, -398)
 watchName:SetAutoFocus(false)
 watchName:SetFontObject(GameFontHighlightSmall)
@@ -235,8 +235,9 @@ local function AddWatch(unit)
 end
 watchName:SetScript("OnEscapePressed", function() watchName:ClearFocus() end)
 watchName:SetScript("OnEnterPressed", function() AddWatch("player") end)
-UI.Button("FTOpt_WatchBuff", auras, "Add your buff", LEFT + 190, -398, 120, function() AddWatch("player") end)
-UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", LEFT + 316, -398, 128, function() AddWatch("target") end)
+UI.Button("FTOpt_WatchBuff", auras, "Add your buff", LEFT + 146, -398, 108, function() AddWatch("player") end)
+UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", LEFT + 260, -398, 122, function() AddWatch("target") end)
+UI.Button("FTOpt_WatchHide", auras, "Hide", LEFT + 388, -398, 56, function() AddWatch("hidden") end)
 local watchRows = {}
 local function WatchRow(i)
     if watchRows[i] then return watchRows[i] end
@@ -260,7 +261,7 @@ table.insert(syncs, function()
     for i, entry in ipairs(list) do
         local row = WatchRow(i)
         row.name:SetText(entry.name)
-        row.kind:SetText(entry.unit == "player" and "Your buff" or "Target debuff")
+        row.kind:SetText(entry.unit == "player" and "Your buff" or entry.unit == "target" and "Target debuff" or "Hidden")
         if entry.unit == "target" then row.mine:Show(); UI.Sync(row.mine, entry.mine) else row.mine:Hide() end
         row:Show()
     end
