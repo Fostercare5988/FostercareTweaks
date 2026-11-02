@@ -52,7 +52,7 @@ local function Load(record)
     for _, key in ipairs(VALUES) do
         -- Every reader carries its own default, so nil is a real value here.
         cfg.overwrites[key] = record.values[key]
-        if FT.overwrites then FT.overwrites[key] = record.values[key] end
+        FT.overwrites[key] = record.values[key]
     end
     cfg.unitframe_positions = Copy(record.positions)
     cfg.groupframe_dimensions = Copy(record.group)
@@ -73,29 +73,23 @@ end
 -- Puts the loaded layout on screen, module by module.
 local function Show()
     local AB, UF = FT.ActionBars, FT.UnitFrames
-    if AB then
-        local enabled = FostercareTweaks_Config.actionbars.enabled == true
-        if AB.enabled ~= enabled then AB:SetEnabled(enabled)
-        else
-            for _, bar in pairs(AB.bars) do bar.layoutDirty = true end
-            AB:Apply()
-        end
+    if AB.enabled ~= (FostercareTweaks_Config.actionbars.enabled == true) then
+        AB:SetEnabled(not AB.enabled)
+    else
+        for _, bar in pairs(AB.bars) do bar.layoutDirty = true end
+        AB:Apply()
     end
-    if FT.RestoreFramePositions then FT.RestoreFramePositions() end
-    if UF then
-        if UF.ApplyGroupDimensions then UF:ApplyGroupDimensions() end
-        if UF.Auras then
-            for _, key in ipairs({ "blizzPlayerAuras", "blizzTargetAuras" }) do
-                UF.Auras:ApplyBuffSize(UF[key], UF:GetBuffSize())
-                UF.Auras:ApplyDebuffSize(UF[key], UF:GetDebuffSize())
-            end
-        end
-        UF:ApplyConfiguration()
-        if UF.UpdateAllRaidFrames then UF:UpdateAllRaidFrames() end
+    FT.RestoreFramePositions()
+    UF:ApplyGroupDimensions()
+    for _, container in pairs({ UF.blizzPlayerAuras, UF.blizzTargetAuras }) do
+        UF.Auras:ApplyBuffSize(container, UF:GetBuffSize())
+        UF.Auras:ApplyDebuffSize(container, UF:GetDebuffSize())
     end
-    if FT.ApplyMinimapScale then FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6)) end
+    UF:ApplyConfiguration()
+    UF:UpdateAllRaidFrames()
+    FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
     FT:RefreshRaidMarks()
-    if FT.RefreshSettings then FT.RefreshSettings() end
+    FT.RefreshSettings()
 end
 
 local waiting = CreateFrame("Frame")
@@ -121,9 +115,7 @@ function FT.SwitchLayout(name)
         Load(record)
         Show()
     end
-    if DEFAULT_CHAT_FRAME then
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff9e38FostercareTweaks:|r " .. FT.LAYOUT_NAMES[name] .. " layout.")
-    end
+    DEFAULT_CHAT_FRAME:AddMessage("|cffff9e38FostercareTweaks:|r " .. FT.LAYOUT_NAMES[name] .. " layout.")
 end
 
 -- The active layout goes to all three.

@@ -28,7 +28,8 @@ for a short explanation; a dimmed control waits for the switch above it.
   sales), copyable web links in chat, and coordinates and class-colored group
   members on the world map.
 - **Minimap**: a 24-hour clock, a square minimap, tidy buttons and wheel zoom.
-- **Chat**: wheel scrolling and sticky channels, history restored after a
+- **Chat**: wheel scrolling (Shift: to the top or bottom) and arrow-key message
+  history, history restored after a
   reload, timestamps (not in the combat log), class-colored names and blue
   shamans.
   Classes come from ClassicAPI, which knows your group, nearby players, friends

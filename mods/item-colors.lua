@@ -118,19 +118,20 @@ module.enable = function()
     local function RefreshVisible()
         RefreshPaperdoll(); RefreshInspect(); RefreshBags(); RefreshBank()
     end
+    -- Item records and native inspect slots arrive in bursts. Publish the
+    -- union once after this build, reading the current views at execution.
     local refreshPending, refreshAll, refreshInspect
+    local function FlushRefresh()
+        local allViews, inspectView = refreshAll, refreshInspect
+        refreshPending, refreshAll, refreshInspect = nil, nil, nil
+        if allViews then RefreshVisible()
+        elseif inspectView then RefreshInspect() end
+    end
     local function QueueRefresh(all)
         if all then refreshAll = true else refreshInspect = true end
         if refreshPending then return end
         refreshPending = true
-        -- Item records and native inspect slots arrive in bursts. Publish the
-        -- union once after this build, reading the current views at execution.
-        C_Timer.After(0, function()
-            local allViews, inspectView = refreshAll, refreshInspect
-            refreshPending, refreshAll, refreshInspect = nil, nil, nil
-            if allViews then RefreshVisible()
-            elseif inspectView then RefreshInspect() end
-        end)
+        C_Timer.After(0, FlushRefresh)
     end
     local controller = CreateFrame("Frame", "FCTweaksItemBorders", UIParent)
     for _, ev in ipairs({"BAG_UPDATE_DELAYED", "BAG_UPDATE", "PLAYERBANKSLOTS_CHANGED",

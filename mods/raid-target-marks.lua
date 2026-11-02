@@ -26,8 +26,7 @@ end
 
 function FT:RefreshRaidMarks(includeRaid)
     LayoutTargetMark()
-    local UF = self.UnitFrames
-    if includeRaid ~= false and UF and UF.RefreshRaidMarks then UF:RefreshRaidMarks() end
+    if includeRaid ~= false then self.UnitFrames:RefreshRaidMarks() end
 end
 
 -- Solo, the server refuses raid marks. NamPower's SetRaidTarget then sets a

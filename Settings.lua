@@ -38,8 +38,8 @@ local function Refresh()
 end
 local function Config() return FostercareTweaks_Config end
 local function UF() return FT.UnitFrames end
-local function ApplyUnitFrames() if UF() then UF():ApplyConfiguration() end end
-local function RefreshRaid() if UF() then UF():UpdateAllRaidFrames() end end
+local function ApplyUnitFrames() UF():ApplyConfiguration() end
+local function RefreshRaid() UF():UpdateAllRaidFrames() end
 local function NeedReload() reloadNeeded = true end
 local function Always() return true end
 local function Pixels(value) return value .. " px" end
@@ -129,8 +129,8 @@ Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", L, { before 
 Hint(general, L, "Always on: sell prices, Shift to compare, quality borders, the Sell Junk button, copyable web links, "
     .. "and coordinates and class colors on the world map.")
 Heading(general, R, "Chat")
-Feature(general, "Chat Tweaks", "Wheel scroll, sticky channels",
-    "Scroll with the mouse wheel, keep the last channel, repeat messages with the arrow keys.", R)
+Feature(general, "Chat Tweaks", "Wheel scroll, arrow keys",
+    "Scroll with the mouse wheel (Shift: to the top or bottom) and repeat messages with the arrow keys.", R)
 Feature(general, "Chat History", "Keep chat history", "Restore chat windows after a reload or login.", R)
 Feature(general, "Chat Timestamps", "Timestamps", "The time before each chat message. The combat log has none.", R)
 Feature(general, "Chat Class Colors", "Class colors for names",
@@ -200,8 +200,8 @@ end, "Put every moved frame, aura area, the raid frames and the minimap pieces b
 -- Auras -------------------------------------------------------------------------
 local auras = pages[3]
 local function StandardAuras()
-    if FT.ApplyStandardAuraSettings then FT.ApplyStandardAuraSettings() end
-    if UF() and UF().Auras then UF().Auras:RefreshBorders() end
+    FT.ApplyStandardAuraSettings()
+    UF().Auras:RefreshBorders()
 end
 Heading(auras, L, "Player and target")
 Feature(auras, "Show Player Buffs", "Player buffs", "Under the player frame, with sweeps and countdowns.", L, nil, ApplyUnitFrames)
@@ -380,7 +380,7 @@ end)
 
 -- Raid --------------------------------------------------------------------------
 local raid = pages[4]
-local function Raid() return UF() and UF():GetGroupDimensions().enabled end
+local function Raid() return UF():GetGroupDimensions().enabled end
 local function Dimension(index)
     return function(value)
         local args = {}

@@ -34,8 +34,6 @@ end
 function AB:GetSettings(id)
     local config = Settings()
     if type(config.bars[id]) ~= "table" then config.bars[id] = {} end
-    -- Retired direction option: all bars now fill left to right.
-    config.bars[id].growLeft = nil
     return config.bars[id]
 end
 

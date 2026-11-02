@@ -43,7 +43,7 @@ local function ReadEnchants()
 end
 
 local function StyleAuraIcon(button, weaponEnchant, force)
-    local cfg = FostercareTweaks_Config or {}
+    local cfg = FostercareTweaks_Config
     -- Looked up once: the native enchant updater calls this every frame.
     local icon, nativeBorder = button.fctIcon, button.fctNativeBorder
     if icon == nil then
@@ -162,10 +162,11 @@ end
 
 -- One layout per frame after native buttons change what they show.
 local anchorPending
+local function AnchorNow() anchorPending = nil; AnchorButtons() end
 local function AnchorSoon()
     if anchorPending then return end
     anchorPending = true
-    C_Timer.After(0, function() anchorPending = nil; AnchorButtons() end)
+    C_Timer.After(0, AnchorNow)
 end
 
 -- Native BuffButton_Update has shown the button: hide it when its aura shows
@@ -181,7 +182,7 @@ end
 
 function FT.ApplyStandardAuraSettings()
     if not areas then return end
-    local cfg = FostercareTweaks_Config or {}
+    local cfg = FostercareTweaks_Config
     for _, area in ipairs(areas) do
         local enabled = cfg[area.setting] ~= 0
         if enabled then area.frame:Show() else area.frame:Hide() end
@@ -202,7 +203,6 @@ function FT.ApplyStandardAuraSettings()
     BuffFrame_Enchant_OnUpdate(0)
     StyleWeaponEnchants(true)
     AnchorButtons()
-    FT.UpdateFrameMovers()
 end
 
 module.enable = function()

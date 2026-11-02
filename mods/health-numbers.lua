@@ -65,23 +65,26 @@ module.enable = function(self)
             bar.lockShow = 1
             bar:Show()
 
-            local cur, max, minVal
+            local cur, max, _
             if bar == TargetFrameHealthBar then
                 cur, max = GetUnitHealthValues(bar.unit)
             else
-                minVal, max = bar:GetMinMaxValues()
+                _, max = bar:GetMinMaxValues()
                 cur = bar:GetValue()
             end
 
-            local percent = (max > 0) and floor(cur / max * 100) or 0
-
-            local text
-            if cur == percent and healthBars[bar] and max <= 100 then
-                text = percent .. "%"
-            elseif bar == TargetFrameHealthBar and cur < max then
-                text = Abbreviate(cur) .. " - " .. percent .. "%"
-            else
-                text = Abbreviate(cur)
+            -- Built only when the numbers change: power moves on every tick.
+            local text = bar.fctText
+            if bar.fctCur ~= cur or bar.fctMax ~= max then
+                local percent = (max > 0) and floor(cur / max * 100) or 0
+                if cur == percent and healthBars[bar] and max <= 100 then
+                    text = percent .. "%"
+                elseif bar == TargetFrameHealthBar and cur < max then
+                    text = Abbreviate(cur) .. " - " .. percent .. "%"
+                else
+                    text = Abbreviate(cur)
+                end
+                bar.fctCur, bar.fctMax, bar.fctText = cur, max, text
             end
 
             -- The native "Dead" label shows at 0 health (TargetFrame_CheckDead),

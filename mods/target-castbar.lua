@@ -53,6 +53,11 @@ local function StopCast()
     castbar.lastInterruptible = nil
 end
 
+-- The stop event normally ends the cast; this one-shot check covers a missed one.
+local function EndIfOver()
+    if castbar.endSec and GetTime() >= castbar.endSec then StopCast() end
+end
+
 -- Default spot under the target frame, lower while target-of-target shows.
 -- A position saved by Ctrl+Shift replaces it.
 local function UpdateAnchor()
@@ -91,12 +96,9 @@ local function UpdateCast()
             castbar:SetTimerDuration(castbar.timer, Enum.StatusBarInterpolation.Immediate,
                 isChannel and Enum.StatusBarTimerDirection.RemainingTime or Enum.StatusBarTimerDirection.ElapsedTime)
         end
-        -- The stop event normally ends the cast; this covers a missed one.
         if castbar.endSec ~= endSec then
             castbar.endSec = endSec
-            C_Timer.After(endSec - GetTime() + 0.05, function()
-                if castbar.endSec == endSec and GetTime() >= endSec then StopCast() end
-            end)
+            C_Timer.After(endSec - GetTime() + 0.05, EndIfOver)
         end
 
         -- Casts you cannot interrupt show in grey.

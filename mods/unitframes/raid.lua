@@ -54,6 +54,22 @@ local function SetBarColor(bar, r, g, b)
     end
 end
 
+-- The number a button shows for its health (missing, percent or current), and
+-- its text; offline, ghost and dead are -1, -2 and -3.
+local function HealthShown(fmt, cur, max)
+    if fmt == "percent" then return max > 0 and math.floor(cur / max * 100 + 0.5) or 0
+    elseif fmt == "current" then return cur end
+    return max > 0 and cur < max and max - cur or 0
+end
+local function HealthText(fmt, shown)
+    if shown == -1 then return "|cff888888Off|r"
+    elseif shown == -2 then return "|cffaaaaaaGhost|r"
+    elseif shown == -3 then return "|cffff2020Dead|r"
+    elseif fmt == "percent" then return shown .. "%"
+    elseif fmt == "current" then return AbbreviateNumbers(shown) end
+    return shown > 0 and "-" .. AbbreviateNumbers(shown) or ""
+end
+
 -- Name and class colour belong to the member, not to its health: the roster
 -- pass and UNIT_NAME_UPDATE write them.
 local function UpdateButtonIdentity(btn)
@@ -82,18 +98,10 @@ local function UpdateButtonHealth(btn)
     local shown
     if not UnitIsConnected(unit) then shown = -1
     elseif UnitIsDeadOrGhost(unit) then shown = UnitIsGhost(unit) and -2 or -3
-    elseif fmt == "percent" then shown = max > 0 and math.floor(cur / max * 100 + 0.5) or 0
-    elseif fmt == "current" then shown = cur
-    else shown = max > 0 and cur < max and max - cur or 0 end
+    else shown = HealthShown(fmt, cur, max) end
     if btn.fctHealthShown == shown and btn.fctHealthFormat == fmt then return end
     btn.fctHealthShown, btn.fctHealthFormat = shown, fmt
-    local text
-    if shown == -1 then text = "|cff888888Off|r"
-    elseif shown == -2 then text = "|cffaaaaaaGhost|r"
-    elseif shown == -3 then text = "|cffff2020Dead|r"
-    elseif fmt == "percent" then text = shown .. "%"
-    elseif fmt == "current" then text = AbbreviateNumbers(shown)
-    else text = shown > 0 and "-" .. AbbreviateNumbers(shown) or "" end
+    local text = HealthText(fmt, shown)
     -- Text lanes depend on marks, leader icons and the aura strip, which
     -- their own updates lay out. Health changes only replace the text.
     if btn.healthText:GetText() ~= text then btn.healthText:SetText(text) end
@@ -122,22 +130,15 @@ local HOT_NAMES = {
 }
 
 function UF:GetRaidBuffSettings()
-    local cfg = FostercareTweaks_Config or {}
-    local values = cfg.overwrites or {}
-    local count = math.max(1, math.min(8, math.floor(tonumber(values.raid_buff_count) or 4)))
-    local size = math.max(8, math.min(18, math.floor(tonumber(values.raid_buff_size) or 10)))
-    return cfg["Show Raid Buffs"] ~= 0, count, size, cfg["Show All Raid Buffs"] == 1
+    return FT.IsEnabled("Show Raid Buffs", true), math.floor(FT.GetNumber("raid_buff_count", 4, 1, 8)),
+        math.floor(FT.GetNumber("raid_buff_size", 10, 8, 18)), FT.IsEnabled("Show All Raid Buffs", false)
 end
 
-function UF:IsShowGroupLabels()
-    return not FostercareTweaks_Config or FostercareTweaks_Config["Show Group Labels"] ~= 0
-end
+function UF:IsShowGroupLabels() return FT.IsEnabled("Show Group Labels", true) end
 
 function UF:GetRaidAuraLayout()
-    local v = FostercareTweaks_Config and FostercareTweaks_Config.overwrites or {}
-    return math.max(8, math.min(18, tonumber(v.raid_debuff_size) or 11)),
-        math.max(1, math.min(8, math.floor(tonumber(v.raid_debuff_count) or 3))),
-        math.max(0, math.min(6, tonumber(v.raid_aura_spacing) or 2))
+    return FT.GetNumber("raid_debuff_size", 11, 8, 18), math.floor(FT.GetNumber("raid_debuff_count", 3, 1, 8)),
+        FT.GetNumber("raid_aura_spacing", 2, 0, 6)
 end
 
 -- Roster geometry never depends on aura count; hidden headers consume no space.
@@ -177,8 +178,10 @@ local function AuraPriority(a, b)
     return a.priority < b.priority
 end
 
+-- A member's auras of one kind, in display order. Their tables stay in the
+-- button's pool when an aura goes, for the next one.
 local function ReadRaidAuras(btn, kind, enabled)
-    local list = btn[kind .. "Candidates"]
+    local list, pool = btn[kind .. "Candidates"], btn[kind .. "Pool"]
     local total, hot = 0, nil
     if enabled then
         local count
@@ -197,7 +200,9 @@ local function ReadRaidAuras(btn, kind, enabled)
             end
             if name and icon then
                 total = total + 1
-                local a = list[total] or {}; list[total] = a
+                local a = pool[total]
+                if not a then a = {}; pool[total] = a end
+                list[total] = a
                 a.index, a.name, a.icon, a.stacks, a.dtype = i, name, icon, stacks, dtype
                 a.duration, a.expiration, a.source, a.id = duration, expiration, source, id
                 -- Dispel-type debuffs precede other debuffs; HoTs/shields precede
@@ -307,14 +312,17 @@ local function LayoutButtonAuras(btn)
     for i = 1, shownD do ShowRaidAura(btn, btn.debuffBadges[i], btn.debuffCandidates[i], dsize, x + (i - 1) * (dsize + spacing), y) end
     for i = shownB + 1, #btn.buffBadges do UF.Auras.ResetAuraButton(btn.buffBadges[i]) end
     for i = shownD + 1, #btn.debuffBadges do UF.Auras.ResetAuraButton(btn.debuffBadges[i]) end
-    btn.auraOverflowCount = bn + dn - shownB - shownD
-    btn.auraOverflow:SetText(btn.auraOverflowCount > 0 and ("+" .. btn.auraOverflowCount) or "")
+    local overflow = bn + dn - shownB - shownD
+    if btn.auraOverflowCount ~= overflow then
+        btn.auraOverflowCount = overflow
+        btn.auraOverflow:SetText(overflow > 0 and ("+" .. overflow) or "")
+        if overflow > 0 then btn.auraOverflow:Show() else btn.auraOverflow:Hide() end
+    end
     if btn.fctOverflowY ~= y then
         btn.fctOverflowY = y
         btn.auraOverflow:ClearAllPoints(); btn.auraOverflow:SetPoint("TOPRIGHT", btn, "TOPRIGHT", -2, -y)
     end
     UF.SetFontSize(btn.auraOverflow, math.max(6, math.min(9, maxSize)))
-    if btn.auraOverflowCount > 0 then btn.auraOverflow:Show() else btn.auraOverflow:Hide() end
     btn.auraStripHeight = strip
     LayoutRaidText(btn, strip)
 end
@@ -328,7 +336,7 @@ local function UpdateButtonAuras(btn)
     LayoutButtonAuras(btn)
 end
 
--- ClassicAPI 1.17.10 UNIT_AURA_DELTA: a refresh or stack change rewrites its
+-- ClassicAPI's UNIT_AURA_DELTA: a refresh or stack change rewrites its
 -- own entry and badge; neither moves it in the priority order. A new or lost
 -- aura, or a change with no entry, reads the button's auras again.
 local deltaAura = {}
@@ -389,7 +397,8 @@ local function UpdateButtonIndicators(btn)
     UpdateButtonAggro(btn)
 
     -- Raid Target Icon
-    local targetIndex = testMode and (btn.memberIdx == 1 and btn.groupNum or nil) or (not testMode and GetRaidTargetIndex(unit))
+    local targetIndex
+    if testMode then targetIndex = btn.memberIdx == 1 and btn.groupNum or nil else targetIndex = GetRaidTargetIndex(unit) end
     if targetIndex and targetIndex > 0 and targetIndex <= 8 then
         SetRaidTargetIconTexture(btn.raidIcon, targetIndex)
         btn.raidIcon:Show()
@@ -448,10 +457,7 @@ local function RaidButton_OnEnter()
     if not unit then return end
     GameTooltip_SetDefaultAnchor(GameTooltip, this)
     GameTooltip:SetUnit(unit)
-    local r, g, b = GameTooltip_UnitColor(unit)
-    if GameTooltipTextLeft1 and r and g and b then
-        GameTooltipTextLeft1:SetTextColor(r, g, b)
-    end
+    GameTooltipTextLeft1:SetTextColor(GameTooltip_UnitColor(unit))
     GameTooltip:Show()
 end
 
@@ -464,7 +470,7 @@ local function BindRaidAuraInteraction(badge)
     badge:SetScript("OnClick", AuraBadge_OnClick)
     local enter, leave = badge:GetScript("OnEnter"), badge:GetScript("OnLeave")
     badge:SetScript("OnEnter", function()
-        -- NamPower: the member stays the mouseover unit for mouseover casts.
+        -- SuperWoW: the member stays the mouseover unit for mouseover casts.
         if this.unit then SetMouseoverUnit(this.unit) end
         enter()
         if this.fctHideDuration and this.expirationTime and this.expirationTime > GetTime() then
@@ -607,6 +613,7 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     btn.buffBadges = {}
     btn.buffSlots, btn.debuffSlots = {}, {}
     btn.buffCandidates, btn.debuffCandidates = {}, {}
+    btn.buffPool, btn.debuffPool = {}, {}
     btn.auraOverflow = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     btn.auraOverflow:Hide()
     for b = 1, 8 do CreateRaidBuffBadge(btn, b) end
@@ -702,18 +709,12 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
         enabled = (enabled == true or enabled == 1)
     end
 
-    if FostercareTweaks_Config then
-        if type(FostercareTweaks_Config.groupframe_dimensions) ~= "table" then
-            FostercareTweaks_Config.groupframe_dimensions = {}
-        end
-        local gfd = FostercareTweaks_Config.groupframe_dimensions
-        gfd.enabled = enabled
-        gfd.width = width
-        gfd.height = height
-        gfd.scale = scale
-        gfd.spacingX = spacingX
-        gfd.spacingY = spacingY
+    if type(FostercareTweaks_Config.groupframe_dimensions) ~= "table" then
+        FostercareTweaks_Config.groupframe_dimensions = {}
     end
+    local gfd = FostercareTweaks_Config.groupframe_dimensions
+    gfd.enabled, gfd.width, gfd.height, gfd.scale = enabled, width, height, scale
+    gfd.spacingX, gfd.spacingY = spacingX, spacingY
 
     if not enabled then
         UF:DisableRaidFrames()
@@ -1026,12 +1027,11 @@ end
 function UF:RefreshRaidAuraBorders()
     for _, group in pairs(groups) do
         for _, btn in ipairs(group.buttons) do
-            for _, kind in ipairs({ "buffBadges", "debuffBadges" }) do
-                for _, badge in ipairs(btn[kind]) do
-                    if badge:IsShown() then
-                        UF.Auras.StyleBorder(badge, badge.borderDispelType)
-                    end
-                end
+            for _, badge in ipairs(btn.buffBadges) do
+                if badge:IsShown() then UF.Auras.StyleBorder(badge, badge.borderDispelType) end
+            end
+            for _, badge in ipairs(btn.debuffBadges) do
+                if badge:IsShown() then UF.Auras.StyleBorder(badge, badge.borderDispelType) end
             end
         end
     end
@@ -1058,20 +1058,8 @@ function UF:UpdateAllRaidFrames()
                 for m = 1, 5 do
                     local btn = groups[g].buttons[m]
                     if btn and btn:IsShown() then
-                        local cur = btn.healthBar:GetValue()
                         local _, max = btn.healthBar:GetMinMaxValues()
-                        if fmt == "percent" then
-                            local pct = (max > 0) and math.floor((cur / max) * 100 + 0.5) or 0
-                            btn.healthText:SetText(pct .. "%")
-                        elseif fmt == "current" then
-                            btn.healthText:SetText(AbbreviateNumbers(cur))
-                        else
-                            if max > 0 and cur < max then
-                                btn.healthText:SetText("-" .. AbbreviateNumbers(max - cur))
-                            else
-                                btn.healthText:SetText("")
-                            end
-                        end
+                        btn.healthText:SetText(HealthText(fmt, HealthShown(fmt, btn.healthBar:GetValue(), max)))
                         UpdateButtonIndicators(btn)
                         UpdateButtonAuras(btn)
                     end

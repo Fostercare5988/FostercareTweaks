@@ -25,9 +25,7 @@ function FT.AddChatFilter(filter)
 end
 
 do
--- Mouse wheel chat scrolling, sticky chat channels, and arrow key history
-
-local scrollspeed = 1
+-- Mouse wheel chat scrolling and arrow key history
 
 local module = FT:register({
     title = "Chat Tweaks",
@@ -37,42 +35,20 @@ local module = FT:register({
 local function ChatOnMouseWheel()
     local delta = _G.arg1 or 0
     if delta > 0 then
-        if IsShiftKeyDown() then
-            this:ScrollToTop()
-        else
-            for i = 1, scrollspeed do
-                this:ScrollUp()
-            end
-        end
+        if IsShiftKeyDown() then this:ScrollToTop() else this:ScrollUp() end
     elseif delta < 0 then
-        if IsShiftKeyDown() then
-            this:ScrollToBottom()
-        else
-            for i = 1, scrollspeed do
-                this:ScrollDown()
-            end
-        end
+        if IsShiftKeyDown() then this:ScrollToBottom() else this:ScrollDown() end
     end
 end
 
+-- Whispers, officer chat, raid warnings and channels are sticky in the game
+-- already (FrameXML ChatFrame.lua).
 module.enable = function(self)
-    if ChatTypeInfo then
-        if ChatTypeInfo.WHISPER then ChatTypeInfo.WHISPER.sticky = 1 end
-        if ChatTypeInfo.OFFICER then ChatTypeInfo.OFFICER.sticky = 1 end
-        if ChatTypeInfo.RAID_WARNING then ChatTypeInfo.RAID_WARNING.sticky = 1 end
-        if ChatTypeInfo.CHANNEL then ChatTypeInfo.CHANNEL.sticky = 1 end
-    end
-
-    if ChatFrameEditBox then
-        ChatFrameEditBox:SetAltArrowKeyMode(false)
-    end
-
+    ChatFrameEditBox:SetAltArrowKeyMode(false)
     for i = 1, NUM_CHAT_WINDOWS do
         local frame = _G["ChatFrame" .. i]
-        if frame then
-            frame:EnableMouseWheel(true)
-            frame:SetScript("OnMouseWheel", ChatOnMouseWheel)
-        end
+        frame:EnableMouseWheel(true)
+        frame:SetScript("OnMouseWheel", ChatOnMouseWheel)
     end
 end
 end
@@ -153,21 +129,29 @@ local URLFuncs = {
 }
 
 local URLKinds = {"WWW", "PROTOCOL", "EMAIL", "PORTIP", "IP", "SHORTURL", "URLIP", "URL"}
-local function ConvertPlainURLs(text)
-    return string.gsub(text, "(%S+)", function(word)
-        if not string.find(word, "[%.@:]") then return word end
-        -- Recognize each word once. Prefixing a space also handles a URL at the
-        -- start of a message; subsequent patterns cannot nest generated links.
-        for _, kind in ipairs(URLKinds) do
-            local converted, count = string.gsub(" " .. word, URLPattern[kind].rx, URLFuncs[kind])
-            if count > 0 then return string.match(converted, "^%s*(.-)%s*$") end
-        end
-        return word
-    end)
+-- Every link pattern needs a dot or @ before a letter or digit, or "://".
+-- "[1. General]", "Bob:" and the end of a sentence have none.
+local function MayLink(text)
+    return string.find(text, "[%.@][%w_-]") or string.find(text, "://", 1, true)
 end
+local function ConvertWord(word)
+    if not MayLink(word) then return word end
+    -- Prefixing a space also handles a URL at the start of a message;
+    -- subsequent patterns cannot nest generated links.
+    for _, kind in ipairs(URLKinds) do
+        local converted, count = string.gsub(" " .. word, URLPattern[kind].rx, URLFuncs[kind])
+        if count > 0 then return string.match(converted, "^%s*(.-)%s*$") end
+    end
+    return word
+end
+local function ConvertPlainURLs(text)
+    return (string.gsub(text, "(%S+)", ConvertWord))
+end
+local parts = {}
 local function HandleLink(text)
-    if not string.find(text, "[%.@:]") then return text end
-    local parts, cursor = {}, 1
+    if not MayLink(text) then return text end
+    table.wipe(parts)
+    local cursor = 1
     while cursor <= #text do
         local first, last = string.find(text, "|H[^|]*|h.-|h", cursor)
         if not first then parts[#parts + 1] = ConvertPlainURLs(string.sub(text, cursor)); break end

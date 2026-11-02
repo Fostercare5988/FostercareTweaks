@@ -20,7 +20,7 @@ module.enable = function(self)
     local isShiftDown = leftShiftDown or rightShiftDown
     -- Tooltips that compare, in the order a Shift press looks at them.
     local hooked = {}
-    local scheduled, wantedLinks = {}, {}
+    local pending, wantedLinks = false, {}
 
     local function GetTooltipLink(tooltip)
         local _, link = tooltip:GetItem()
@@ -51,19 +51,26 @@ module.enable = function(self)
         tooltip.lastComparedItem = link
     end
 
+    -- Next frame: each tooltip still showing the item it asked about compares it.
+    local function FlushCompare()
+        pending = false
+        for _, tooltip in ipairs(hooked) do
+            local expected = wantedLinks[tooltip]
+            if expected then
+                wantedLinks[tooltip] = nil
+                if tooltip:IsShown() and GetTooltipLink(tooltip) == expected then ShowCompare(tooltip) end
+            end
+        end
+    end
+
     local function QueueCompare(tooltip)
         if not (isShiftDown or IsShiftKeyDown()) then wantedLinks[tooltip] = nil; HideCompare(); return end
         wantedLinks[tooltip] = GetTooltipLink(tooltip)
-        if not wantedLinks[tooltip] or scheduled[tooltip] then return end
-        scheduled[tooltip] = true
+        if not wantedLinks[tooltip] or pending then return end
+        pending = true
         -- OnTooltipSetItem fires inside the native build. Rebuilding comparison
         -- tooltips there can reenter DLL hooks. Coalesce until the next frame.
-        C_Timer.After(0, function()
-            scheduled[tooltip] = nil
-            local expected = wantedLinks[tooltip]
-            wantedLinks[tooltip] = nil
-            if expected and tooltip:IsShown() and GetTooltipLink(tooltip) == expected then ShowCompare(tooltip) end
-        end)
+        C_Timer.After(0, FlushCompare)
     end
 
     local function Forget(tooltip)

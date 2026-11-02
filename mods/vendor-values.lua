@@ -22,29 +22,29 @@ end
 module.enable = function(self)
   -- Vendor values are a post-call decoration. Never replace Blizzard's item
   -- methods: other tooltip owners may hook them in either load order.
+  local TOOLTIPS = { GameTooltip, ItemRefTooltip }
   local function ShowValue(frame, link, count, ignoreMerchant)
     frame.itemLink = link
     frame.itemCount = count
     frame.ignoreMerchant = ignoreMerchant
-    if not link or (not ignoreMerchant and MerchantFrame and MerchantFrame:IsShown()) then return end
+    if not link or (not ignoreMerchant and MerchantFrame:IsShown()) then return end
     count = math.max(tonumber(count) or 1, 1)
-    local signature = tostring(link) .. ":" .. count
-    if frame.vendorValueSignature == signature and frame.vendorValueLines
+    if frame.vendorValueLink == link and frame.vendorValueCount == count and frame.vendorValueLines
       and frame:NumLines() >= frame.vendorValueLines then return end
     local id = GetItemIDFromLink(link)
     local price = GetSellPrice(id or link)
     if price <= 0 then return end
     SetTooltipMoney(frame, price * count)
     frame:Show()
-    frame.vendorValueSignature = signature
+    frame.vendorValueLink, frame.vendorValueCount = link, count
     frame.vendorValueLines = frame:NumLines()
   end
 
   local function ClearValue(frame)
     frame.itemLink, frame.itemCount, frame.ignoreMerchant = nil, nil, nil
-    frame.vendorValueSignature, frame.vendorValueLines = nil, nil
+    frame.vendorValueLink, frame.vendorValueCount, frame.vendorValueLines = nil, nil, nil
   end
-  for _, frame in ipairs({GameTooltip, ItemRefTooltip}) do
+  for _, frame in ipairs(TOOLTIPS) do
     FT.HookScript(frame, "OnHide", ClearValue)
     FT.HookScript(frame, "OnTooltipCleared", ClearValue)
   end
@@ -52,7 +52,7 @@ module.enable = function(self)
   pending:RegisterEvent("GET_ITEM_INFO_RECEIVED")
   FT.SetEventHandler(pending, function(_, ev, itemID, success)
     if success == false then return end
-    for _, frame in ipairs({GameTooltip, ItemRefTooltip}) do
+    for _, frame in ipairs(TOOLTIPS) do
       if frame:IsShown() and itemID == GetItemIDFromLink(frame.itemLink) then
         ShowValue(frame, frame.itemLink, frame.itemCount, frame.ignoreMerchant)
       end
