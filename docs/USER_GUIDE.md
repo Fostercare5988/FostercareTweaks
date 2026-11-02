@@ -2,9 +2,9 @@
 
 Configuration and controls for **FostercareTweaks**.
 
-Open the settings with `/ft`, or from **Game Menu > AddOn Options >
-FostercareTweaks**. The window has five pages: **General**, **Unit Frames**,
-**Auras**, **Raid** and **Action Bars**. `/ft uf`, `/ft auras`, `/ft raid` and
+Open the settings with `/ft`, or in **Game Menu > AddOn Options**: expand
+**FostercareTweaks** for its five pages, **General**, **Unit Frames**, **Auras**,
+**Raid** and **Action Bars** (the same pages as the `/ft` window). `/ft uf`, `/ft auras`, `/ft raid` and
 `/ft bars` open a page directly; `/ft testraid` shows sample raid frames.
 
 Every change saves at once. A feature that can only start or stop with a fresh
