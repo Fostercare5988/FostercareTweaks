@@ -8,7 +8,6 @@ local UI = ns.UI
 -- Every change saves at once; a feature that can only start or stop with a
 -- fresh UI shows the Reload UI button instead.
 local LEFT, RIGHT, SIDE, INDENT = 28, 264, 208, 16
-local L, R = 1, 2                       -- the columns
 local panel = UI.Window("FostercareTweaksSettingsGUI", "FostercareTweaks", 500, 480,
     GetAddOnMetadata("FostercareTweaks", "Version"))
 
@@ -22,110 +21,20 @@ local TAB_LIST = {
 }
 local pages, ShowTab
 local tab = 1
-local hosts, hosted = {}, nil           -- AddOn Options categories; the one shown
-local SHIFT = 84                        -- the window's title and tabs above each page
+local book                              -- the pages in AddOn Options (ForgeLayout.lua)
 
--- Layout --------------------------------------------------------------------------
--- A page is built top to bottom as sections of one or two columns. An item is
--- a group of regions placed together, or a block that places itself for the
--- width it gets (the aura chips, the bar rows). The window sets the columns side
--- by side; narrower than 460 (AddOn Options) the second goes under the first.
-local START, GAP, NARROW = -98, 14, 460
-local flows = {}
-local function Flow(page)
-    flows[page] = flows[page] or { sections = {}, footers = {} }
-    return flows[page]
-end
-local function Section(page, full)
-    table.insert(Flow(page).sections, { full = full, {}, {} })
-end
--- item: regions = { { region, point, relativePoint, dx, dy } }, height (number or
--- function(width)), or place(x, y, width) -> height; before (a number, or
--- { two columns, one column }), indent, heading, fill.
-local function Add(page, column, item)
-    local sections = Flow(page).sections
-    if #sections == 0 then Section(page) end
-    local section = sections[#sections]
-    table.insert(section[section.full and L or column], item)
-    return item
-end
-local function Place(page, item, x, y, width)
-    if item.place then return item.place(x, y, width) end
-    for _, r in ipairs(item.regions) do
-        r[1]:ClearAllPoints()
-        r[1]:SetPoint(r[2], page, r[3], x + r[4], y + r[5])
-    end
-    if item.fill then item.fill:SetWidth(width) end
-    if type(item.height) == "function" then return item.height(width) end
-    return item.height
-end
--- Items top to bottom from y; a heading keeps a gap above it, and nothing
--- adds space right under a heading.
-local function Stack(page, items, x, width, y, narrow)
-    local previous
-    for _, item in ipairs(items) do
-        local before = item.before or 0
-        if type(before) == "table" then before = before[narrow and 2 or 1] end
-        if item.heading and y ~= START then before = GAP end
-        if previous and previous.heading then before = 0 end
-        local indent = item.indent or 0
-        y = y - before
-        y = y - Place(page, item, x + indent, y, width - indent)
-        previous = item
-    end
-    return y
-end
--- Places a page for its width and returns its height.
-local function Layout(page, width)
-    local flow = Flow(page)
-    local narrow = width < NARROW
-    local inner = narrow and width - LEFT - 12 or width - 2 * LEFT
-    local y = START
-    for _, section in ipairs(flow.sections) do
-        if section.full then
-            y = Stack(page, section[L], LEFT, inner, y, narrow)
-        elseif narrow then
-            y = Stack(page, section[R], LEFT, inner, Stack(page, section[L], LEFT, inner, y, true), true)
-        else
-            y = math.min(Stack(page, section[L], LEFT, SIDE, y), Stack(page, section[R], RIGHT, SIDE, y))
-        end
-    end
-    if narrow then
-        -- Footer buttons follow the page, one under the other.
-        y = y - 6
-        for _, footer in ipairs(flow.footers) do
-            footer.button:ClearAllPoints()
-            if footer.button:IsShown() then
-                footer.button:SetPoint("TOPLEFT", page, "TOPLEFT", LEFT, y - 8)
-                y = y - 30
-            end
-        end
-        return 24 - y
-    end
-    for _, footer in ipairs(flow.footers) do
-        footer.button:ClearAllPoints()
-        footer.button:SetPoint("BOTTOMLEFT", page, "BOTTOMLEFT", footer.x, 18)
-    end
-    return 56 - y
-end
+-- Pages are built as sections of one or two columns (ForgeLayout.lua): side
+-- by side in the window, one column in AddOn Options.
+local L, R = UI.L, UI.R
+local layout = UI.NewLayout()
+local function Section(page, full) layout:Section(page, full) end
+local function Add(page, column, item) return layout:Add(page, column, item) end
 
 local syncs = {}
 local reloadNeeded = false
 local function Refresh()
     for _, sync in ipairs(syncs) do sync() end
-    if panel:IsShown() then
-        TAB_LIST[tab].height = Layout(pages[tab], panel.width)
-        panel:SetHeight(TAB_LIST[tab].height)
-    end
-    local host = hosts[hosted]
-    if host then
-        local width = host.scroll:GetWidth()
-        if not width or width < 200 then width = 360 end
-        local page = pages[hosted]
-        page:SetWidth(width); host.holder:SetWidth(width)
-        local height = Layout(page, width)
-        page:SetHeight(height); host.holder:SetHeight(height - SHIFT)
-    end
+    book:Place(tab)
 end
 local function Config() return FostercareTweaks_Config end
 local function UF() return FT.UnitFrames end
@@ -145,40 +54,11 @@ local function Dim(slider, on)
 end
 
 -- Items --------------------------------------------------------------------------
-local function Heading(page, column, text)
-    local label = UI.Heading(page, text, 0, 0)
-    Add(page, column, { heading = true, height = 20, regions = { { label, "TOPLEFT", "TOPLEFT", 0, 0 } } })
-end
-
--- UI.Switch sits 2 below its line.
-local function SwitchItem(page, column, widget, options)
-    options = options or {}
-    options.height, options.regions = 26, { { widget, "TOPLEFT", "TOPLEFT", 0, -2 } }
-    Add(page, column, options)
-end
-
-local function ButtonItem(page, column, button, options)
-    options = options or {}
-    options.height, options.regions = 24, { { button, "TOPLEFT", "TOPLEFT", 0, 0 } }
-    Add(page, column, options)
-end
-
--- A slider is three regions: its label, the bar 16 below, the value at its right end.
-local function MoveSlider(slider, parent, x, y, width)
-    slider.label:ClearAllPoints(); slider.label:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    slider:ClearAllPoints(); slider:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y - 16)
-    slider:SetWidth(width)
-    slider.valueText:ClearAllPoints(); slider.valueText:SetPoint("TOPRIGHT", parent, "TOPLEFT", x + width, y)
-end
-local function SliderItem(page, column, slider, options)
-    options = options or {}
-    options.height, options.regions = 42, {
-        { slider.label, "TOPLEFT", "TOPLEFT", 0, 0 },
-        { slider, "TOPLEFT", "TOPLEFT", 0, -16 },
-        { slider.valueText, "TOPRIGHT", "TOPLEFT", SIDE, 0 },
-    }
-    Add(page, column, options)
-end
+local function Heading(page, column, text) layout:Heading(page, column, text) end
+local function SwitchItem(page, column, widget, options) layout:Switch(page, column, widget, options) end
+local function ButtonItem(page, column, button, options) layout:Button(page, column, button, options) end
+local function SliderItem(page, column, slider, options) layout:Slider(page, column, slider, options) end
+local MoveSlider = UI.MoveSlider
 
 -- A switch for one module's own saved key. after(value) applies the change
 -- live; without it the change waits for a reload. needs() dims the switch.
@@ -218,25 +98,13 @@ local function Slider(page, key, default, minimum, maximum, step, text, column, 
     return slider
 end
 
--- Hint text fills its column; its height follows the lines it wraps to.
-local function Hint(page, column, text, options)
-    local label = UI.Label(page, text, 0, 0, "GameFontDisableSmall")
-    options = options or {}
-    options.before = options.before or 8
-    options.fill, options.regions = label, { { label, "TOPLEFT", "TOPLEFT", 0, 0 } }
-    options.height = function(width)
-        return 13 * math.max(1, math.ceil((label:GetStringWidth() or 0) * 1.08 / width))
-    end
-    Add(page, column, options)
-    return label
-end
+local function Hint(page, column, text, options) return layout:Hint(page, column, text, options) end
 
 -- Footer buttons: along the window's bottom, under the page in AddOn Options.
 local function FooterButton(page, name, text, x, width, onClick, tip)
     local button = UI.Button(name, page, text, 0, 0, width, onClick)
     if tip then UI.Tooltip(button, tip) end
-    table.insert(Flow(page).footers, { button = button, x = x })
-    return button
+    return layout:Footer(page, button, x)
 end
 
 pages, ShowTab = UI.Tabs(panel, "FTOpt", TAB_LIST, function(index) tab = index; Refresh() end)
@@ -732,60 +600,19 @@ FT.HookScript(panel, "OnHide", function() AB:SetEditing(false) end)
 panel:RegisterEvent("PLAYER_REGEN_DISABLED")
 
 -- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI): the same five pages,
--- one category each, in one column in a scroll frame. A page lives in one place
--- at a time: it moves into the category that opens and back into the window
--- when it closes.
-local function Shown() return panel:IsShown() or hosted ~= nil end
-FT.SetEventHandler(panel, function() if Shown() then Refresh() end end)
-
-local entry = CreateFrame("Frame", "FostercareTweaksOptionsEntry")
-entry.name = "FostercareTweaks"
-local entryTitle = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-entryTitle:SetPoint("TOPLEFT", entry, "TOPLEFT", 16, -16)
-entryTitle:SetText("FostercareTweaks")
-local entryText = entry:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-entryText:SetPoint("TOPLEFT", entryTitle, "BOTTOMLEFT", 0, -8)
-entryText:SetText("Open a page under FostercareTweaks, or type /ft for the settings window.")
-local openWindow = UI.Button("FostercareTweaksOptionsOpen", entry, "Open settings window", 16, -70, 172, function()
-    if GameMenuFrame:IsShown() then HideUIPanel(GameMenuFrame) end
-    FT.OpenSettings("general")
-end)
-UI.Select(openWindow, true)
-InterfaceOptions_AddCategory(entry)
-
-for index, info in ipairs(TAB_LIST) do
-    local host = CreateFrame("Frame", "FostercareTweaksOptions" .. index)
-    host.name, host.parent = info.label, "FostercareTweaks"
-    local scroll = CreateFrame("ScrollFrame", "FostercareTweaksOptions" .. index .. "Scroll", host, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
-    scroll:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -28, 8)
-    local holder = CreateFrame("Frame", nil, scroll)
-    scroll:SetScrollChild(holder)
-    host.scroll, host.holder = scroll, holder
-    -- The window sizes the category after showing it: place the page again then.
-    scroll:SetScript("OnSizeChanged", function() if hosted == index then Refresh() end end)
-    host:SetScript("OnShow", function()
-        if panel:IsShown() then panel:Hide() end
-        hosted, tab = index, index
-        local page = pages[index]
-        page:SetParent(holder); page:ClearAllPoints()
-        page:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, SHIFT)
-        page:Show()
-        Refresh()
-    end)
-    host:SetScript("OnHide", function()
-        if hosted == index then hosted = nil end
-        AB:SetEditing(false)
-        local page = pages[index]
-        page:Hide(); page:SetParent(panel); page:ClearAllPoints(); page:SetAllPoints(panel)
-    end)
-    hosts[index] = host
-    InterfaceOptions_AddCategory(host)
-end
+-- one category each, in one column (ForgeLayout.lua).
+book = UI.Book({
+    name = "FostercareTweaks", text = "Open a page under FostercareTweaks, or type /ft for the settings window.",
+    open = function() FT.OpenSettings("general") end,
+    panel = panel, pages = pages, tabs = TAB_LIST, layout = layout, refresh = Refresh,
+    select = function(index) tab = index end,
+    hide = function() AB:SetEditing(false) end,
+})
+FT.SetEventHandler(panel, function() if book:Shown() then Refresh() end end)
 
 -- Opening ------------------------------------------------------------------------
 -- A layout change elsewhere shows in the open window or category.
-function FT.RefreshSettings() if Shown() then Refresh() end end
+function FT.RefreshSettings() if book:Shown() then Refresh() end end
 
 -- FT.OpenSettings() toggles the window; a page name opens that page.
 function FT.OpenSettings(name)
