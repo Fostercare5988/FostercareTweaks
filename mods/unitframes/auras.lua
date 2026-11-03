@@ -251,11 +251,11 @@ function Auras:CreateAuraContainer(parentFrame, unit, maxBuffs, maxDebuffs, opti
         local function Layout() Auras:LayoutContainer(container) end
         if container.buffFrame then
             FT.RestoreFramePosition(container.buffFrame, options.moveKey .. "_buffs", parentFrame)
-            FT.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, Layout, Layout)
+            FT.RegisterFrameMover(container.buffFrame, options.moveKey .. "_buffs", "Buffs", parentFrame, Layout)
         end
         if container.debuffFrame then
             FT.RestoreFramePosition(container.debuffFrame, options.moveKey .. "_debuffs", parentFrame)
-            FT.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame, Layout, Layout)
+            FT.RegisterFrameMover(container.debuffFrame, options.moveKey .. "_debuffs", "Debuffs", parentFrame, Layout)
         end
     end
     return container

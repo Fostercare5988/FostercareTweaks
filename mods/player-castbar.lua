@@ -20,8 +20,7 @@ module.enable = function()
     CastingBarFrame.fctRestoreShown = function(bar)
         if not (bar.casting or bar.channeling or bar.fadeOut) then bar:Hide() end
     end
-    FT.RegisterFrameMover(CastingBarFrame, KEY, "Cast Bar", nil, function() saved = true end,
-        function(restored) saved = restored; if not saved then UIParent_ManageFramePositions() end end)
+    FT.RegisterFrameMover(CastingBarFrame, KEY, "Cast Bar", nil, function() saved = true end)
 end
 
 -- Takes effect after a reload (the settings switch asks for one). The target

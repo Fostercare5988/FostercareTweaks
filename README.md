@@ -11,7 +11,6 @@ interface tweaks for World of Warcraft 1.12.1.
   energy ticks on Blizzard's player and target frames.
 - Item quality borders, equipment comparison, sell prices and a Sell Junk button.
 - World map coordinates, square minimap, chat history, timestamps and copyable links.
-- Separate layouts for the world, battlegrounds, and dungeons and raids, switched by zone.
 - Watched auras: your chosen buffs and target debuffs as movable icons with their time left; each chooses where else it shows.
 - Weapon enchants show the poison, oil or imbue on each weapon.
 

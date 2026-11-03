@@ -76,6 +76,10 @@ function FT:Initialize()
         WorldMapFrame_Minimize()
     end
     FostercareTweaks_Config["WorldMap Window"] = nil
+    -- Layouts by zone retired 2026-11-03: the live settings stay as they are.
+    FostercareTweaks_Config["Zone Layouts"] = nil
+    FostercareTweaks_Config["profile"] = nil
+    FostercareTweaks_Config["profiles"] = nil
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.

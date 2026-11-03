@@ -37,13 +37,6 @@ for a short explanation; a dimmed control waits for the switch above it.
   the player cache in **AddOn Options > ClassicAPI**.
 - **World map**: for a map window, use the minimize button on the map (the
   game's own windowed map).
-- **Layouts by zone**: the world, battlegrounds, and dungeons and raids each keep
-  their own frame positions, raid frames, aura sizes, raid marks, minimap size
-  and action bars. Set things up in a battleground and they stay there; the
-  layout changes after the loading screen (after combat if you are fighting).
-  A new layout starts as a copy of the one you were using. **Use this layout
-  everywhere** copies the current one to the other two. Spells and items on the
-  extra rows are the same in every layout.
   **Map window size** sets its size; so does **Ctrl + mouse wheel** on the map.
 
 ## Unit Frames
@@ -82,8 +75,8 @@ These improve Blizzard's player, target and pet frames.
 - **Watched auras**: type a spell's name (or ID) and click **Add your buff** or
   **Add target debuff**. Each gets its own icon with the time left, shown while
   the aura is up, in front of unit frames and bars. A new icon starts in a row
-  above your character; hold **Ctrl+Shift** to move it, and each zone layout keeps its
-  own places. Target debuffs count only yours unless you turn **Only mine** off.
+  above your character; hold **Ctrl+Shift** to move it.
+  Target debuffs count only yours unless you turn **Only mine** off.
   The list is a grid; click an aura for its card. **Own icon**, **Top right**
   (Blizzard's buffs, for your buffs) and **Player row** / **Target row** choose
   where it shows: at first only its own icon. Turn the icon off too to hide an

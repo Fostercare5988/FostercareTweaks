@@ -141,25 +141,7 @@ Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel"
     function() FT.ApplyWorldMapScale() end, nil, Times)
 Heading(general, R, "Moving")
 Hint(general, R, MOVE_HINT)
-Section(general)
-Heading(general, L, "Layouts by zone")
-Feature(general, "Zone Layouts", "Own layout per zone",
-    "The world, battlegrounds, and dungeons and raids each keep their own frame positions, raid frames, aura sizes, "
-    .. "raid marks, minimap size and action bars. The layout changes after the loading screen.",
-    L, nil, function(value) if value then FT.SwitchLayout(FT.ZoneLayout()) end end)
-local copyLayout = UI.Button("FTOpt_CopyLayout", general, "Use this layout everywhere", 0, 0, 172, function()
-    FT.CopyLayoutToAll(); Refresh()
-end)
-UI.Tooltip(copyLayout, "The other two layouts become copies of this one.")
-ButtonItem(general, R, copyLayout, { before = { 32, 4 }, indent = 36 })      -- beside the switch, or under it
 Section(general, true)
-local layoutNow = Hint(general, L, "", { before = 0 })
-table.insert(syncs, function()
-    local on = FT.IsEnabled("Zone Layouts")
-    layoutNow:SetText(on and ("Now: " .. FT.LAYOUT_NAMES[Config().profile or FT.ZoneLayout()] .. ".")
-        or "One layout everywhere.")
-    UI.SetEnabled(copyLayout, on)
-end)
 Hint(general, L, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.")
 
 -- Unit Frames -------------------------------------------------------------------
@@ -612,7 +594,6 @@ FT.SetEventHandler(panel, function() if book:Shown() then Refresh() end end)
 
 -- Opening ------------------------------------------------------------------------
 -- A layout change elsewhere shows in the open window or category.
-function FT.RefreshSettings() if book:Shown() then Refresh() end end
 
 -- FT.OpenSettings() toggles the window; a page name opens that page.
 function FT.OpenSettings(name)
