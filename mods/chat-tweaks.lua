@@ -147,20 +147,19 @@ end
 local function ConvertPlainURLs(text)
     return (string.gsub(text, "(%S+)", ConvertWord))
 end
-local parts = {}
+-- The line is built by concatenation: a reused table read back with
+-- table.concat came out empty in game (the stored length of a wiped table).
 local function HandleLink(text)
     if not MayLink(text) then return text end
-    table.wipe(parts)
-    local cursor = 1
+    local out, cursor = "", 1
     while cursor <= #text do
         local first, last = string.find(text, "|H[^|]*|h.-|h", cursor)
-        if not first then parts[#parts + 1] = ConvertPlainURLs(string.sub(text, cursor)); break end
-        parts[#parts + 1] = ConvertPlainURLs(string.sub(text, cursor, first - 1))
+        if not first then return out .. ConvertPlainURLs(string.sub(text, cursor)) end
         -- Item/player/quest links belong to their native or optional owners.
-        parts[#parts + 1] = string.sub(text, first, last)
+        out = out .. ConvertPlainURLs(string.sub(text, cursor, first - 1)) .. string.sub(text, first, last)
         cursor = last + 1
     end
-    return table.concat(parts)
+    return out
 end
 
 local CopyLinkDialog = CreateFrame("Frame", "FCTweaksURLCopy", UIParent)
