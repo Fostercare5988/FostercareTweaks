@@ -107,7 +107,11 @@ local function CreateExtraButton(bar, id)
     button.buttonType = "FCTWEAKSEXTRA"
     ownedSlots[button] = 12 + id
     button:SetScript("OnEvent", function() ActionButton_OnEvent(event) end)
-    button:SetScript("OnUpdate", function() ActionButton_OnUpdate(arg1) end)
+    -- Range arrives by ACTION_RANGE_CHECK_UPDATE; the stock update only has
+    -- work while the button flashes or shows its tooltip.
+    button:SetScript("OnUpdate", function()
+        if this.flashing == 1 or this.updateTooltip then ActionButton_OnUpdate(arg1) end
+    end)
     button:SetScript("OnClick", function()
         if IsShiftKeyDown() then PickupAction(ActionButton_GetPagedID(this)) else
             if MacroFrame_SaveMacro then MacroFrame_SaveMacro() end
@@ -140,6 +144,27 @@ local function CreateExtraButton(bar, id)
         FT.AddBorder(button, 3, { r = 0.7, g = 0.7, b = 0.7, a = 1 })
     end
     return button
+end
+
+-- Row 1 mirrors action slots 13 to 24. The range check runs only while the
+-- row is shown, and the controller listens only for as long.
+function AB:SetRangeCheck(bar, on)
+    if (bar.rangeChecked or false) == on then return end
+    bar.rangeChecked = on
+    for _, button in ipairs(bar.buttons) do C_ActionBar.EnableActionRangeCheck(ownedSlots[button], on) end
+    if on then self.controller:RegisterEvent("ACTION_RANGE_CHECK_UPDATE")
+    else self.controller:UnregisterEvent("ACTION_RANGE_CHECK_UPDATE") end
+end
+
+-- The stock range colours, set when the range changes instead of every 0.2 s.
+function AB:ShowRange(slot, inRange, checksRange)
+    local button = self.bars.extra and AB.bars.extra.buttons[slot - 12]
+    if not button or not HasAction(slot) then return end
+    local hotkey = _G[button:GetName() .. "HotKey"]
+    local inside = checksRange and inRange
+    if hotkey:GetText() == RANGE_INDICATOR then SetShown(hotkey, not inside) end
+    if checksRange and not inRange then hotkey:SetVertexColor(1.0, 0.1, 0.1)
+    else hotkey:SetVertexColor(0.6, 0.6, 0.6) end
 end
 
 function AB:CreateBar(definition)
@@ -296,6 +321,7 @@ function AB:Apply()
                 bar.layoutDirty = nil
             end
             SetShown(bar.holder, bar.visible)
+            if definition.extraIndex and not definition.custom then self:SetRangeCheck(bar, bar.visible and true or false) end
             if bar.frame and definition.id ~= "main" then
                 -- Native pet/stance/cast placement uses these frame bounds.
                 -- Keep the frame parent/name but align its bounds with its buttons.
@@ -334,6 +360,7 @@ function AB:SetEnabled(enabled)
             if bar.frameSnapshot then Restore(bar.frameSnapshot) end
             bar.captured = nil
             bar.holder:Hide()
+            if bar.definition.extraIndex and not bar.definition.custom then self:SetRangeCheck(bar, false) end
             if bar.definition.custom then FT.ExtraActions:RefreshBar(bar) end
             if bar.frame and bar.definition.id ~= "main" then SetShown(bar.frame, bar.nativeVisible) end
         end
@@ -416,8 +443,10 @@ function AB:Initialize()
     local controller = CreateFrame("Frame", "FCTweaksActionBarController", UIParent)
     controller:RegisterEvent("PLAYER_ENTERING_WORLD")
     controller:RegisterEvent("PLAYER_REGEN_DISABLED")
-    FT.SetEventHandler(controller, function(_, ev)
-        if ev == "PLAYER_REGEN_DISABLED" then AB:SetEditing(false)
+    self.controller = controller
+    FT.SetEventHandler(controller, function(_, ev, slot, inRange, checksRange)
+        if ev == "ACTION_RANGE_CHECK_UPDATE" then AB:ShowRange(slot, inRange, checksRange)
+        elseif ev == "PLAYER_REGEN_DISABLED" then AB:SetEditing(false)
         elseif not AB.worldPending then
             -- UIParent restores saved Blizzard bar toggles on this event.
             -- Capture only after all native entering-world handlers finish.
