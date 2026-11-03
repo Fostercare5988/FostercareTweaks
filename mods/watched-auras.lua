@@ -55,8 +55,9 @@ local function Icon(entry, index)
     if not icon then
         icon = CreateFrame("Frame", "FCTweaksWatch_" .. key, UIParent)
         icon:SetWidth(SIZE); icon:SetHeight(SIZE)
-        -- Above unit frames, bars and their movers; under menus and the map.
-        icon:SetFrameStrata("HIGH")
+        -- Above unit frames and bars; the game raises windows (the battleground
+        -- scoreboard, the map, menus) over everything else in this strata.
+        icon:SetFrameLevel(10)
         icon.texture = icon:CreateTexture(nil, "ARTWORK")
         icon.texture:SetAllPoints(icon)
         icon.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)

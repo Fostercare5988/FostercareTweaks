@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (251 tests).
+VanillaForge (246 tests).
 
 | Area | Files |
 | --- | --- |
@@ -33,12 +33,9 @@ Things to know:
   Coordinates and Class Colors, Real Health Numbers, Clear Raid Target Marks.
   Core clears their saved switches. `/ft` opens the window or a page;
   `testraid` and `resetuf` are the only other commands.
-- Layouts by zone (Profiles.lua): the live settings hold the active layout
-  (`profile`: world, bg, instance); `profiles` stores the others. A switch
-  captures the layout keys, loads the next record and re-applies bars, frame
-  positions (`FT.RestoreFramePositions`: saved spot or `fctHome`, then each
-  mover's `onRestore`), raid frames, aura sizes, minimap and marks. A new layout
-  key belongs in Profiles.lua's lists; the extra rows' actions stay shared.
+- Layouts by zone were retired on 2026-11-03 (one character used them, and
+  the window never showed what a layout held). Core clears `Zone Layouts`,
+  `profile` and `profiles`.
 - Settings: each control saves at once and calls the module's live update;
   a module without one marks the window as needing a reload. Controls refresh
   through the `syncs` list; never write settings from a refresh.
