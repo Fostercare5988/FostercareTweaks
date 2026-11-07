@@ -6,7 +6,7 @@ if not FT then return end
 
 local EA = { bars = {}, visible = {}, generation = 0 }
 FT.ExtraActions = EA
-local itemCounts, reagentSpells, castCounts = {}, {}, {}
+local itemCounts, castCounts = {}, {}
 -- These four signals retain attack state while all rows are hidden. They do
 -- no painting, queries or timer work; combat state is not autoattack state.
 local stateEvents = {"PLAYER_ENTER_COMBAT", "PLAYER_LEAVE_COMBAT", "START_AUTOREPEAT_SPELL", "STOP_AUTOREPEAT_SPELL"}
@@ -277,11 +277,7 @@ local function Display(button, full)
         if C_Spell.IsAutoAttackSpell(spellID) then current = EA.meleeActive == true
         elseif C_Spell.IsRangedAutoAttackSpell(spellID) then current = EA.rangedActive == true end
         if full and FT.IsEnabled("Reagent Counter") then
-            if reagentSpells[spellID] == nil then
-                local list = C_Spell.GetSpellReagents(spellID)
-                reagentSpells[spellID] = list and list[1] and true or false
-            end
-            if reagentSpells[spellID] then
+            if IsConsumableSpell(spellID) then
                 local n = castCounts[spellID]
                 if n == nil then n = C_Spell.GetSpellCastCount(spellID); castCounts[spellID] = n end
                 count = n > 999 and "*" or tostring(n)

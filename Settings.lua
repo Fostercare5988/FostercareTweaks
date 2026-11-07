@@ -114,8 +114,6 @@ panel:SetScript("OnShow", function() ShowTab(tab); pages[tab]:Show() end)
 -- General ---------------------------------------------------------------------
 local general = pages[1]
 Heading(general, L, "Gameplay")
-Feature(general, "Auto Dismount", "Dismount to attack, fly, talk",
-    "Dismount or leave your form when you attack, take a flight, talk to an NPC or use an item.", L)
 Feature(general, "Auto Stance", "Switch stance for spells",
     "A warrior or druid spell that needs another stance or form switches to the first one you can use.", L)
 Feature(general, "Hide Stealth / Stance Bar", "Hide the stance bar", "Hide the stealth, stance and form buttons.",
@@ -142,7 +140,7 @@ Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel"
 Heading(general, R, "Moving")
 Hint(general, R, MOVE_HINT)
 Section(general, true)
-Hint(general, L, "For spells, dismounting, leaving forms and standing up are ClassicAPI settings: AddOn Options > ClassicAPI.")
+Hint(general, L, "Dismounting, leaving forms and standing up for spells, attacks, flights and NPCs are ClassicAPI settings: AddOn Options > ClassicAPI.")
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]
