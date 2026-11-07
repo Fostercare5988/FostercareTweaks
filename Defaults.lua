@@ -4,7 +4,6 @@
 -- saved settings yet (Core.lua), never over existing ones. Chat history and the
 -- extra bars' spell and item lists are not included.
 FostercareTweaks_Defaults = {
-    ["Auto Dismount"] = 1,
     ["Auto Stance"] = 1,
     ["Blue Shaman Class Colors"] = 1,
     ["Borderless Castbars"] = 1,

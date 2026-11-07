@@ -80,6 +80,9 @@ function FT:Initialize()
     FostercareTweaks_Config["Zone Layouts"] = nil
     FostercareTweaks_Config["profile"] = nil
     FostercareTweaks_Config["profiles"] = nil
+    -- Auto Dismount retired 2026-11-07: ClassicAPI's autoDismount, autoUnshift
+    -- and autoStand (1.20.1) now act before attacks, flights, NPCs and items too.
+    FostercareTweaks_Config["Auto Dismount"] = nil
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.

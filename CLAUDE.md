@@ -2,7 +2,7 @@
 
 Action bars, unit and raid frames and many interface tweaks. Player guide:
 `docs/USER_GUIDE.md`. Regression tests: `regressions/FostercareTweaks` in
-VanillaForge (251 tests).
+VanillaForge (250 tests).
 
 | Area | Files |
 | --- | --- |
@@ -13,7 +13,7 @@ VanillaForge (251 tests).
 | World and minimap | `mods/worldmap-window.lua`, `mods/minimap-tweaks.lua` |
 | Bags and items | `mods/vendor-values.lua`, `mods/sell-junk.lua`, `mods/item-colors.lua`, `mods/equip-compare.lua` |
 | Chat | `mods/chat-tweaks.lua` |
-| Gameplay | `mods/gameplay.lua` (Auto Dismount, Auto Stance, stance bar), `mods/blue-shaman.lua` |
+| Gameplay | `mods/gameplay.lua` (Auto Stance, stance bar), `mods/blue-shaman.lua` |
 
 Things to know:
 
@@ -86,9 +86,16 @@ Things to know:
   a dot or @ before a letter or digit, or "://".
 - Chat: one `AddMessage` wrapper per non-combat window (`FT.AddChatFilter` in
   chat-tweaks.lua) runs the filters of links, timestamps and class colours.
-- Auto Dismount covers what ClassicAPI's `autoDismount`/`autoUnshift`/
-  `autoStand` miss (they act before spell casts only): melee attack, flight
-  masters, NPCs and items in a form. Spell errors stay with ClassicAPI.
+- Auto Dismount was retired on 2026-11-07: ClassicAPI's `autoDismount`/
+  `autoUnshift`/`autoStand` (1.20.1) act before casts, attacks, flight
+  masters, NPCs, objects, loot and items. Core clears its saved switch. (The
+  first retirement, 2026-10-25, turned those settings on for characters that
+  had ours on.)
+- Reagent Counter reads each button live in the `ActionButton_UpdateCount`
+  hook: `C_ActionBar.GetSpell(slot)` (the spell of a spell or macro slot),
+  `IsConsumableSpell` and `C_Spell.GetSpellCastCount`. No slot scan, no saved
+  lists. Bags refresh every button; a modifier or target change only macro
+  buttons whose spell changed (`fctReagentSpell`).
 - A module's `enable` runs under `xpcall` with the error handler, so an
   error reaches !ErrorLog with its stack and the other modules still start.
 - Watched auras (mods/watched-auras.lua) replace the retired FostercareAuras.
