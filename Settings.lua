@@ -139,8 +139,6 @@ Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel"
     function() FT.ApplyWorldMapScale() end, nil, Times)
 Heading(general, R, "Moving")
 Hint(general, R, MOVE_HINT)
-Section(general, true)
-Hint(general, L, "Dismounting, leaving forms and standing up for spells, attacks, flights and NPCs are ClassicAPI settings: AddOn Options > ClassicAPI.")
 
 -- Unit Frames -------------------------------------------------------------------
 local unit = pages[2]

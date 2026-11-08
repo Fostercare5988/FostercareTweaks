@@ -17,9 +17,6 @@ for a short explanation; a dimmed control waits for the switch above it.
 
 - **Gameplay**: **Switch stance for spells** changes a warrior's stance or a
   druid's form when a spell needs it. Hide the stance bar.
-- **Dismount, leave form, stand up** are ClassicAPI settings: **Game Menu >
-  AddOn Options > ClassicAPI**. They act on the same press for spells, attacks,
-  flight masters, NPCs, objects, loot and items.
 - **Always on**: sell prices on item tooltips (times the stack), **Shift** to
   compare with what you wear, quality borders in bags, bank, character and
   inspect, a **Sell Junk** button at merchants (walking away cancels unsent

@@ -19,9 +19,8 @@ interface tweaks for World of Warcraft 1.12.1.
 WoW 1.12.1 build 5875 with **ClassicAPI**, **SuperWoW**, **NamPower** and
 **UnitXP SP3** loaded.
 
-FostercareTweaks leaves to ClassicAPI what ClassicAPI does: dismounting, leaving
-forms and standing up (its AddOn Options), remembering players' classes (its player cache) and the raid frames'
-click actions.
+FostercareTweaks leaves to ClassicAPI what ClassicAPI does: remembering players'
+classes (its player cache) and the raid frames' click actions.
 
 ## Installation
 
