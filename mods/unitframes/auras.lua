@@ -379,7 +379,8 @@ function Auras:UpdateContainer(container)
 end
 
 local function HasSavedPosition(key)
-    return FostercareTweaks_Config.unitframe_positions[key]
+    local positions = FostercareTweaks_Config.unitframe_positions
+    return positions and positions[key]
 end
 
 local function IsAreaDragging(frame)
