@@ -130,15 +130,15 @@ local HOT_NAMES = {
 }
 
 function UF:GetRaidBuffSettings()
-    return FT.IsEnabled("Show Raid Buffs", true), math.floor(FT.GetNumber("raid_buff_count", 4, 1, 8)),
-        math.floor(FT.GetNumber("raid_buff_size", 10, 8, 18)), FT.IsEnabled("Show All Raid Buffs", false)
+    return FT.IsEnabled("Show Raid Buffs"), math.floor(FT.GetNumber("raid_buff_count")),
+        math.floor(FT.GetNumber("raid_buff_size")), FT.IsEnabled("Show All Raid Buffs")
 end
 
-function UF:IsShowGroupLabels() return FT.IsEnabled("Show Group Labels", true) end
+function UF:IsShowGroupLabels() return FT.IsEnabled("Show Group Labels") end
 
 function UF:GetRaidAuraLayout()
-    return FT.GetNumber("raid_debuff_size", 11, 8, 18), math.floor(FT.GetNumber("raid_debuff_count", 3, 1, 8)),
-        FT.GetNumber("raid_aura_spacing", 2, 0, 6)
+    return FT.GetNumber("raid_debuff_size"), math.floor(FT.GetNumber("raid_debuff_count")),
+        FT.GetNumber("raid_aura_spacing")
 end
 
 -- Roster geometry never depends on aura count; hidden headers consume no space.

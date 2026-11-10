@@ -15,7 +15,7 @@ if type(CLASSIC_API_VERSION) ~= "number" or not SUPERWOW_VERSION then
 end
 
 local coreFrame = CreateFrame("Frame", "FostercareTweaksFrame", UIParent)
-local FT = { mods = {}, moduleOrder = {}, overwrites = {} }
+local FT = { mods = {}, moduleOrder = {} }
 FostercareTweaks = FT
 
 -- Component Registration
@@ -94,15 +94,6 @@ function FT:Initialize()
         elseif FostercareTweaks_Config[title] == nil then
             FostercareTweaks_Config[title] = mod.enabled and 1 or 0
         end
-
-        if mod.config then
-            for name, value in pairs(mod.config) do
-                local saved = FostercareTweaks_Config.overwrites[name]
-                if saved ~= nil then value = saved; mod.config[name] = saved end
-                self.overwrites[name] = value
-            end
-        end
-
     end
     for _, title in ipairs(self.moduleOrder) do
         local mod = self.mods[title]
@@ -125,12 +116,13 @@ coreFrame:RegisterEvent("VARIABLES_LOADED")
 coreFrame:RegisterEvent("PLAYER_LOGIN")
 coreFrame:SetScript("OnEvent", InitializeOnEvent)
 
--- /ft opens the settings, or one page (/ft uf, auras, raid, bars). /ft testraid
+-- /ft opens the settings, or one page (/ft frames, auras, watched, raid, bars). /ft testraid
 -- shows the sample raid grid; /ft resetuf puts moved frames back and reloads.
 SLASH_FOSTERCARETWEAKS1 = "/ft"
 SLASH_FOSTERCARETWEAKS2 = "/ftweaks"
 SLASH_FOSTERCARETWEAKS3 = "/fostercaretweaks"
-local PAGES = { general = "general", uf = "unit", unit = "unit", auras = "auras", raid = "raid", bars = "bars" }
+local PAGES = { general = "general", uf = "unit", unit = "unit", frames = "unit", auras = "auras",
+    watched = "watched", raid = "raid", bars = "bars" }
 
 SlashCmdList["FOSTERCARETWEAKS"] = function(msg)
     local cmd = string.lower(strsplittable(" ", msg or "")[1] or "")

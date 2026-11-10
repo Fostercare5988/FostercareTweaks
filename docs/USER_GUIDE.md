@@ -3,13 +3,24 @@
 Configuration and controls for **FostercareTweaks**.
 
 Open the settings with `/ft`, or in **Game Menu > AddOn Options**: expand
-**FostercareTweaks** for its five pages, **General**, **Unit Frames**, **Auras**,
-**Raid** and **Action Bars** (the same pages as the `/ft` window). `/ft uf`, `/ft auras`, `/ft raid` and
-`/ft bars` open a page directly; `/ft testraid` shows sample raid frames.
+**FostercareTweaks** for its six pages, **General**, **Frames**, **Auras**,
+**Watched**, **Raid** and **Bars** (the same pages as the `/ft` window). `/ft frames`,
+`/ft auras`, `/ft watched`, `/ft raid` and `/ft bars` open a page directly;
+`/ft testraid` shows sample raid frames.
 
-Every change saves at once. A feature that can only start or stop with a fresh
-interface shows a **Reload UI** button; click it when ready. Hover any switch
-for a short explanation; a dimmed control waits for the switch above it.
+| Page | What is on it |
+| --- | --- |
+| General | Gameplay, minimap, chat, world map |
+| Frames | The player and target frames, cast bars, raid marks, energy ticks |
+| Auras | Every list of buffs and debuffs, one heading per place on screen |
+| Watched | The auras you pick by name, each with its own icon |
+| Raid | The party and raid frames: size, health text, corner marks |
+| Bars | The action bars |
+
+Every change saves at once. Most apply at once too; a feature that can only start
+or stop with a fresh interface shows a **Reload UI** button; click it when ready.
+Hover any switch for a short explanation; a dimmed control waits for the switch
+above it.
 
 ---
 
@@ -21,7 +32,8 @@ for a short explanation; a dimmed control waits for the switch above it.
   compare with what you wear, quality borders in bags, bank, character and
   inspect, a **Sell Junk** button at merchants (walking away cancels unsent
   sales), copyable web links in chat, and coordinates and class-colored group
-  members on the world map.
+  members on the world map. A quest link clicked in chat shows the quest's
+  title and objectives.
 - **Minimap**: a 24-hour clock, a square minimap, tidy buttons and wheel zoom.
 - **Chat**: wheel scrolling (Shift: to the top or bottom) and arrow-key message
   history, history restored after a
@@ -34,15 +46,16 @@ for a short explanation; a dimmed control waits for the switch above it.
   game's own windowed map).
   **Map window size** sets its size; so does **Ctrl + mouse wheel** on the map.
 
-## Unit Frames
+## Frames
 
-These improve Blizzard's player, target and pet frames.
+These improve Blizzard's player, target and pet frames. Their buffs and debuffs
+are on the Auras page.
 
 - **Class colors behind names**. Exact **health numbers** are always shown
   (they hide when the target dies, under Blizzard's "Dead").
 - **Ctrl+Shift moves things**: hold both keys to show handles on the frames, aura
   areas, raid frames and minimap pieces, and drag them. Action bars move with
-  **Move bars** on the Action Bars page. **Reset all positions** puts them back
+  **Move bars** on the Bars page. **Reset all positions** puts them back
   after a reload; `/ft resetuf` does both at once.
 - **Target castbar**: your target's casts under its frame; grey when they cannot
   be interrupted. Hold Ctrl+Shift to move it; it follows the target frame.
@@ -59,23 +72,38 @@ These improve Blizzard's player, target and pet frames.
 
 ## Auras
 
-- **Player and target**: buffs and debuffs under the player and target frames,
-  with sweeps, countdowns and dispel colors (also on the raid frames). Choose
-  which rows show, and the icon sizes.
+Every list of buffs and debuffs is here, under a heading for the place it
+shows on screen.
+
+- **Under the player frame** and **Under the target frame**: buffs and debuffs
+  with sweeps, countdowns and dispel colors. **Icon size under the frames**
+  sets their size.
 - **Top right of the screen**: show or hide Blizzard's buffs, debuffs and weapon
   enchants; **Ctrl+Shift** moves them. Each weapon shows the icon of its poison,
   oil or imbue (the poison from your bags, else its spell), main hand on the
   left and off hand on the right; hover it for the weapon.
-- **Borders** for buffs, debuffs and weapon enchants (the weapon's quality color).
-- **Watched auras**: type a spell's name (or ID) and click **Add your buff** or
+- **Borders, everywhere**: borders for buffs, debuffs and weapon enchants (the
+  weapon's quality color), in every list.
+- **On raid members**: buff and debuff icons inside each member of the raid
+  frames, how many, their size and the gap between them. Heals and your own
+  buffs come first; **Every buff** shows all that fit, and `+N` counts icons
+  that did not fit. Dispellable debuffs come first. **Test grid** shows sample
+  members to judge the sizes. These are dimmed while the raid frames are off.
+
+## Watched
+
+- Type a spell's name (or ID) and click **Add your buff** or
   **Add target debuff**. Each gets its own icon with the time left, shown while
   the aura is up, in front of unit frames and bars. A new icon starts in a row
   above your character; hold **Ctrl+Shift** to move it.
-  Target debuffs count only yours unless you turn **Only mine** off.
-  The list is a grid; click an aura for its card. **Own icon**, **Top right**
+- A watched aura leaves the lists on the Auras page, so it shows once. The list
+  is a grid; click an aura for its card. **Own icon**, **Top right**
   (Blizzard's buffs, for your buffs) and **Player row** / **Target row** choose
   where it shows: at first only its own icon. Turn the icon off too to hide an
-  aura everywhere. **Cooldown** (your buffs, on at first): when the buff ends,
+  aura everywhere.
+- Target debuffs count only yours unless you turn **Only mine** off. With
+  **Only mine**, another player's debuff of the same name stays in the target row.
+- **Cooldown** (your buffs, on at first): when the buff ends,
   its icon stays greyed with the spell's cooldown until it is ready, such as
   Stealth after you leave it. **Remove** takes it off the list.
 
@@ -88,18 +116,17 @@ One grid serves both parties and raids.
 - **Clicking**: left-click targets a member (or casts the spell you have ready on
   them); right-click opens their menu.
 - **Health text**: missing health, percent or current health.
-- **Indicators**: an aggro corner on the member your enemy target is attacking,
-  a heal-over-time corner and debuff icons (dispellable ones first).
-- **Buffs**: heals and your own buffs first; **Every buff** shows all that fit.
-  `+N` counts icons that did not fit.
-- **Size**: width, height, scale and gaps; icon sizes and counts.
-- **Test grid** shows 40 sample members; **Reset raid settings** keeps the
-  frames' position.
+- **Corner marks**: an aggro corner on the member your enemy target is
+  attacking, and a heal-over-time corner.
+- **Size**: width, height, scale and gaps.
+- The buff and debuff icons on members are on the Auras page.
+- **Test grid** shows 40 sample members; **Reset raid settings** puts the frames
+  and their icons back to the defaults and keeps the frames' position.
 
-## Action Bars
+## Bars
 
 - **Look**: hide the gryphons, remove the bar background, a short main bar
-  (without the bag and game menu buttons), centered right-side bars and reagent
+  (without the bag and game menu buttons) and reagent
   counts (how many casts your reagents allow). Cooldowns always count down on
   the buttons, in the auras' look: tenths in red under 5 seconds.
 - **Bars**: one row per bar, with its switch to show it and its size. **More**

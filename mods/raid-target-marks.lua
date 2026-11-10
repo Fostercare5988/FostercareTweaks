@@ -4,11 +4,10 @@ if not FT then return end
 -- Use the native eight-symbol atlas and authoritative unit identities.
 local module = FT:register({
     title = "Clear Raid Target Marks", always = true,
-    config = { raidmark_size = 22, raidmark_position = "portrait" },
 })
 
 function FT.GetRaidMarkSettings()
-    local size = FT.GetNumber("raidmark_size", 22, 12, 36)
+    local size = FT.GetNumber("raidmark_size")
     local position = FT.GetOverride("raidmark_position")
     return size, position == "outside" and "outside" or "portrait"
 end

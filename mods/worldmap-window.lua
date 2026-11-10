@@ -11,14 +11,12 @@ do
 local module = FT:register({
     title = "WorldMap Window Size",
     always = true,
-    config = { worldmap_scale = 1 },
 })
-local MIN, MAX = 0.6, 2
 
 -- Native Minimize/Maximize keep the frame's own scale; set it after them.
 -- A size change keeps the window's centre where it is on screen.
 local function Apply()
-    local scale = WORLDMAP_WINDOWED == 1 and FT.GetNumber("worldmap_scale", 1, MIN, MAX) or 1
+    local scale = WORLDMAP_WINDOWED == 1 and FT.GetNumber("worldmap_scale") or 1
     local old = WorldMapFrame:GetScale()
     if old == scale then return end
     local x, y = WorldMapFrame:GetCenter()
@@ -36,8 +34,10 @@ module.enable = function()
     WorldMapFrame:EnableMouseWheel(true)
     FT.HookScript(WorldMapFrame, "OnMouseWheel", function(_, delta)
         if WORLDMAP_WINDOWED ~= 1 or not IsControlKeyDown() then return end
-        local value = FT.GetNumber("worldmap_scale", 1, MIN, MAX) + (delta or 0) * 0.05
-        FT.SetOverride("worldmap_scale", math.max(MIN, math.min(MAX, math.floor(value * 20 + 0.5) / 20)))
+        -- A step of 0.05, kept inside the setting's range.
+        local range = FT.NUMBERS.worldmap_scale
+        local value = math.floor((FT.GetNumber("worldmap_scale") + (delta or 0) * 0.05) * 20 + 0.5) / 20
+        FT.SetOverride("worldmap_scale", math.max(range[2], math.min(range[3], value)))
         Apply()
     end)
     Apply()

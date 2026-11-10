@@ -41,19 +41,30 @@ function FT.SetEventHandler(frame, handler)
     end)
 end
 
-function FT.IsEnabled(key, default)
+-- A switch: its saved value, else its module's default (FT:register).
+function FT.IsEnabled(key)
     local value = FostercareTweaks_Config[key]
     if value == nil then
         local module = FT.mods[key]
-        if module then return module.enabled == true end
-        return default == true
+        return module ~= nil and module.enabled == true
     end
     return value == 1
 end
 
+-- Every numeric setting in one place: default, lowest, highest. The code
+-- (FT.GetNumber) and the settings window's sliders both read them here.
+FT.NUMBERS = {
+    minimap_scale = { 1, 0.7, 1.6 }, worldmap_scale = { 1, 0.6, 2 },
+    raidmark_size = { 22, 12, 36 },
+    energytick_width = { 3, 2, 6 }, energytick_contrast = { 1, 0, 1 }, energytick_flash = { 1, 0, 1 },
+    uf_buff_size = { 20, 14, 32 }, uf_debuff_size = { 20, 14, 32 },
+    raid_buff_count = { 4, 1, 8 }, raid_buff_size = { 10, 8, 18 },
+    raid_debuff_count = { 3, 1, 8 }, raid_debuff_size = { 11, 8, 18 }, raid_aura_spacing = { 2, 0, 6 },
+}
+
+-- A saved value from the overrides table; clearing one (nil) brings its default back.
 function FT.GetOverride(key, default)
     local value = FostercareTweaks_Config.overwrites[key]
-    if value == nil then value = FT.overwrites[key] end
     if value == nil then return default end
     return value
 end
@@ -64,13 +75,13 @@ function FT.ClampNumber(input, default, minimum, maximum)
     return math.max(minimum, math.min(maximum, value))
 end
 
-function FT.GetNumber(key, default, minimum, maximum)
-    return FT.ClampNumber(FT.GetOverride(key), default, minimum, maximum)
+function FT.GetNumber(key)
+    local number = FT.NUMBERS[key]
+    return FT.ClampNumber(FostercareTweaks_Config.overwrites[key], number[1], number[2], number[3])
 end
 
 function FT.SetOverride(key, value)
     FostercareTweaks_Config.overwrites[key] = value
-    FT.overwrites[key] = value
 end
 
 -- One load watcher serves optional integrations, including late globals.

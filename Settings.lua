@@ -3,21 +3,27 @@ if not FT then return end
 local _, ns = ...
 local UI = ns.UI
 
--- ForgeUI settings (VanillaForge templates/ForgeUI): five pages, shown in the
+-- ForgeUI settings (VanillaForge templates/ForgeUI): six pages, shown in the
 -- /ft window in two columns, or one at a time in AddOn Options in one column.
 -- Every change saves at once; a feature that can only start or stop with a
 -- fresh UI shows the Reload UI button instead.
+--
+-- What goes where: General (gameplay, minimap, chat, map), Frames (the player
+-- and target frames, cast bars, marks), Auras (every buff and debuff list, one
+-- heading per place on screen), Watched (the auras picked by name), Raid (the
+-- party and raid frames), Bars (action bars).
 local LEFT, RIGHT, SIDE, INDENT = 28, 264, 208, 16
 local panel = UI.Window("FostercareTweaksSettingsGUI", "FostercareTweaks", 500, 480,
     GetAddOnMetadata("FostercareTweaks", "Version"))
 
-local TABS = { "general", "unit", "auras", "raid", "bars" }
+local TABS = { "general", "unit", "auras", "watched", "raid", "bars" }
 local TAB_LIST = {
     { label = "General", height = 590 },
-    { label = "Unit Frames", height = 440 },
-    { label = "Auras", height = 470 },
-    { label = "Raid", height = 590 },
-    { label = "Action Bars", height = 620 },
+    { label = "Frames", height = 440 },
+    { label = "Auras", height = 620 },
+    { label = "Watched", height = 300 },
+    { label = "Raid", height = 480 },
+    { label = "Bars", height = 620 },
 }
 local pages, ShowTab
 local tab = 1
@@ -60,38 +66,47 @@ local function ButtonItem(page, column, button, options) layout:Button(page, col
 local function SliderItem(page, column, slider, options) layout:Slider(page, column, slider, options) end
 local MoveSlider = UI.MoveSlider
 
--- A switch for one module's own saved key. after(value) applies the change
--- live; without it the change waits for a reload. needs() dims the switch.
-local function Feature(page, title, text, tip, column, options, after, needs, default)
+-- A switch for one module's own saved key; its default is the module's
+-- (FT:register). after(value) applies the change live; without it the change
+-- waits for a reload. needs() dims the switch.
+local function Feature(page, title, text, tip, column, options, after, needs)
     local widget = UI.Switch("FTOpt_" .. string.gsub(title, "[^%w]", ""), page, text, tip, 0, 0, function(value)
         Config()[title] = value and 1 or 0
         if after then after(value) else NeedReload() end
         Refresh()
     end, column == L and 190 or 172)
     table.insert(syncs, function()
-        UI.Sync(widget, FT.IsEnabled(title, default), (needs or Always)())
+        UI.Sync(widget, FT.IsEnabled(title), (needs or Always)())
     end)
     SwitchItem(page, column, widget, options)
     return widget
 end
 
--- A switch for one value in the overrides table (1 on, 0 off).
-local function Option(page, key, default, text, tip, column, options, after, needs)
+-- after() for a module that starts and stops by itself (module:apply(on)).
+local function Live(title)
+    return function(value) FT.mods[title]:apply(value) end
+end
+
+-- A switch for one number in the overrides table (1 on, 0 off; FT.NUMBERS).
+local function Option(page, key, text, tip, column, options, after, needs)
     local widget = UI.Switch("FTOpt_" .. key, page, text, tip, 0, 0, function(value)
         FT.SetOverride(key, value and 1 or 0); after(); Refresh()
     end, column == L and 190 or 172)
     table.insert(syncs, function()
-        UI.Sync(widget, FT.GetNumber(key, default, 0, 1) ~= 0, (needs or Always)())
+        UI.Sync(widget, FT.GetNumber(key) ~= 0, (needs or Always)())
     end)
     SwitchItem(page, column, widget, options)
 end
 
-local function Slider(page, key, default, minimum, maximum, step, text, column, options, after, needs, format)
-    local slider = UI.Slider("FTOpt_" .. key, page, text, 0, 0, SIDE, minimum, maximum, step, function(value)
+-- A slider for one number in the overrides table; its default and range are
+-- the setting's own (FT.NUMBERS).
+local function Slider(page, key, step, text, column, options, after, needs, format)
+    local number = FT.NUMBERS[key]
+    local slider = UI.Slider("FTOpt_" .. key, page, text, 0, 0, SIDE, number[2], number[3], step, function(value)
         FT.SetOverride(key, value); after(value)
     end, format or Pixels)
     table.insert(syncs, function()
-        UI.SetSlider(slider, FT.GetNumber(key, default, minimum, maximum))
+        UI.SetSlider(slider, FT.GetNumber(key))
         Dim(slider, (needs or Always)())
     end)
     SliderItem(page, column, slider, options)
@@ -115,14 +130,15 @@ panel:SetScript("OnShow", function() ShowTab(tab); pages[tab]:Show() end)
 local general = pages[1]
 Heading(general, L, "Gameplay")
 Feature(general, "Auto Stance", "Switch stance for spells",
-    "A warrior or druid spell that needs another stance or form switches to the first one you can use.", L)
+    "A warrior or druid spell that needs another stance or form switches to the first one you can use.", L, nil,
+    Live("Auto Stance"))
 Feature(general, "Hide Stealth / Stance Bar", "Hide the stance bar", "Hide the stealth, stance and form buttons.",
-    L, nil, function(value) FT.mods["Hide Stealth / Stance Bar"]:apply(value) end)
+    L, nil, Live("Hide Stealth / Stance Bar"))
 Heading(general, L, "Minimap")
-Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", L)
+Feature(general, "MiniMap Clock", "Clock", "A 24-hour clock under the minimap.", L, nil, Live("MiniMap Clock"))
 Feature(general, "MiniMap Square", "Square minimap", "A square minimap instead of a round one.", L)
 Feature(general, "MiniMap Tweaks", "Tidy buttons, wheel zoom", "Hide extra minimap buttons and zoom with the mouse wheel.", L)
-Slider(general, "minimap_scale", 1, 0.7, 1.6, 0.05, "Minimap size", L, { before = 4 },
+Slider(general, "minimap_scale", 0.05, "Minimap size", L, { before = 4 },
     function(value) FT.ApplyMinimapScale(value) end, nil, Times)
 Hint(general, L, "Always on: sell prices, Shift to compare, quality borders, the Sell Junk button, copyable web links, "
     .. "and coordinates and class colors on the world map.")
@@ -130,27 +146,32 @@ Heading(general, R, "Chat")
 Feature(general, "Chat Tweaks", "Wheel scroll, arrow keys",
     "Scroll with the mouse wheel (Shift: to the top or bottom) and repeat messages with the arrow keys.", R)
 Feature(general, "Chat History", "Keep chat history", "Restore chat windows after a reload or login.", R)
-Feature(general, "Chat Timestamps", "Timestamps", "The time before each chat message. The combat log has none.", R)
+Feature(general, "Chat Timestamps", "Timestamps", "The time before each new chat message. The combat log has none.",
+    R, nil, Live("Chat Timestamps"))
 Feature(general, "Chat Class Colors", "Class colors for names",
-    "Player names in their class color. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.", R)
-Feature(general, "Blue Shaman Class Colors", "Blue shamans", "Shamans in blue instead of pink.", R)
+    "Player names in their class color, in new messages. To remember players between sessions, turn on the player cache in AddOn Options > ClassicAPI.",
+    R, nil, Live("Chat Class Colors"))
+Feature(general, "Blue Shaman Class Colors", "Blue shamans",
+    "Shamans in blue instead of pink. Names already on screen change when they are drawn again.",
+    R, nil, Live("Blue Shaman Class Colors"))
 Heading(general, R, "World map")
-Slider(general, "worldmap_scale", 1, 0.6, 2, 0.05, "Map window size, Ctrl+wheel", R, nil,
+Slider(general, "worldmap_scale", 0.05, "Map window size, Ctrl+wheel", R, nil,
     function() FT.ApplyWorldMapScale() end, nil, Times)
 Heading(general, R, "Moving")
 Hint(general, R, MOVE_HINT)
 
--- Unit Frames -------------------------------------------------------------------
+-- Frames ------------------------------------------------------------------------
 local unit = pages[2]
 local function Marks() FT:RefreshRaidMarks() end
 local function Ticks() if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end end
-local function On(title, default) return function() return FT.IsEnabled(title, default) end end
+local function On(title) return function() return FT.IsEnabled(title) end end
 Heading(unit, L, "Player and target")
 Feature(unit, "Unit Frame Class Colors", "Class colors behind names", "Players' names on a bar in their class color.",
     L, nil, function() FT.mods["Unit Frame Class Colors"]:apply() end)
-Heading(unit, L, "Target castbar")
+Heading(unit, L, "Cast bars")
 Feature(unit, "Enemy Castbars", "Castbar under the target", "Your target's casts under the target frame; grey when you cannot interrupt them.",
     L, nil, function() FT.mods["Enemy Castbars"]:apply() end)
+Feature(unit, "Borderless Castbars", "No castbar borders", "Remove the border art from your cast bar and the target's. Takes effect after a reload.", L)
 Heading(unit, L, "Raid marks")
 local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait",
     "The target's mark beside its frame instead of on the portrait.", 0, 0, function(value)
@@ -158,17 +179,16 @@ local outside = UI.Switch("FTOpt_raidmark_position", unit, "Beside the portrait"
     end, 190)
 table.insert(syncs, function() UI.Sync(outside, FT.GetOverride("raidmark_position") == "outside") end)
 SwitchItem(unit, L, outside)
-Slider(unit, "raidmark_size", 22, 12, 36, 1, "Mark size", L, { before = 4 }, Marks)
+Slider(unit, "raidmark_size", 1, "Mark size", L, { before = 4 }, Marks)
 Hint(unit, L, "On the target and raid frames. Solo, the raid mark keys set marks only you see.")
 Heading(unit, R, "Energy ticks")
 Feature(unit, "Show Energy Ticks", "Energy and mana ticks",
     "Estimated energy ticks and the five-second mana rule on your power bar.", R, nil, ApplyUnitFrames)
-local ticks = On("Show Energy Ticks", true)
-Option(unit, "energytick_contrast", 1, "Bright line", "A white center and glow on the tick line.", R, nil, Ticks, ticks)
-Option(unit, "energytick_flash", 1, "Flash on tick", "The bar's edge lights up at each tick.", R, nil, Ticks, ticks)
-Slider(unit, "energytick_width", 3, 2, 6, 1, "Line width", R, { before = 4 }, Ticks, ticks)
-Heading(unit, R, "Castbars")
-Feature(unit, "Borderless Castbars", "No castbar borders", "Remove the border art from your cast bar and the target's. Takes effect after a reload.", R)
+local ticks = On("Show Energy Ticks")
+Option(unit, "energytick_contrast", "Bright line", "A white center and glow on the tick line.", R, nil, Ticks, ticks)
+Option(unit, "energytick_flash", "Flash on tick", "The bar's edge lights up at each tick.", R, nil, Ticks, ticks)
+Slider(unit, "energytick_width", 1, "Line width", R, { before = 4 }, Ticks, ticks)
+Hint(unit, R, "Buffs and debuffs under these frames: the Auras page.", { before = 14 })
 Section(unit, true)
 Hint(unit, L, MOVE_HINT, { before = 14 })
 FooterButton(unit, "FTOpt_ResetPositions", "Reset all positions", LEFT, 172, function()
@@ -176,16 +196,13 @@ FooterButton(unit, "FTOpt_ResetPositions", "Reset all positions", LEFT, 172, fun
 end, "Put every moved frame, aura area, the raid frames and the minimap pieces back in place. Takes effect after a reload.")
 
 -- Auras -------------------------------------------------------------------------
+-- Every list of buffs and debuffs, one heading per place on screen.
 local auras = pages[3]
+local function Raid() return UF():GetGroupDimensions().enabled end
 local function StandardAuras()
     FT.ApplyStandardAuraSettings()
     UF().Auras:RefreshBorders()
 end
-Heading(auras, L, "Player and target")
-Feature(auras, "Show Player Buffs", "Player buffs", "Under the player frame, with sweeps and countdowns.", L, nil, ApplyUnitFrames)
-Feature(auras, "Show Player Debuffs", "Player debuffs", "Under the player frame; dispel colors on the border.", L, nil, ApplyUnitFrames)
-Feature(auras, "Show Target Buffs", "Target buffs", "Under the target frame.", L, nil, ApplyUnitFrames)
-Feature(auras, "Show Target Debuffs", "Target debuffs", "Under the target frame.", L, nil, ApplyUnitFrames)
 local function AuraSize(kind)
     return function(value)
         local apply = UF().Auras["Apply" .. kind .. "Size"]
@@ -195,29 +212,61 @@ local function AuraSize(kind)
         ApplyUnitFrames()
     end
 end
-Heading(auras, L, "Size")
-Slider(auras, "uf_buff_size", 20, 14, 32, 1, "Buffs", L, nil, AuraSize("Buff"))
-Slider(auras, "uf_debuff_size", 20, 14, 32, 1, "Debuffs", L, nil, AuraSize("Debuff"))
+Heading(auras, L, "Under the player frame")
+Feature(auras, "Show Player Buffs", "Buffs", "Your buffs under the player frame, with sweeps and countdowns.", L, nil, ApplyUnitFrames)
+Feature(auras, "Show Player Debuffs", "Debuffs", "Your debuffs under the player frame; dispel colors on the border.", L, nil, ApplyUnitFrames)
+Heading(auras, L, "Under the target frame")
+Feature(auras, "Show Target Buffs", "Buffs", "Your target's buffs under the target frame.", L, nil, ApplyUnitFrames)
+Feature(auras, "Show Target Debuffs", "Debuffs", "Your target's debuffs under the target frame.", L, nil, ApplyUnitFrames)
+Heading(auras, L, "Icon size under the frames")
+Slider(auras, "uf_buff_size", 1, "Buffs", L, nil, AuraSize("Buff"))
+Slider(auras, "uf_debuff_size", 1, "Debuffs", L, nil, AuraSize("Debuff"))
 Heading(auras, R, "Top right of the screen")
-Feature(auras, "Show Standard Buffs", "Buffs", "Blizzard's buff icons. Hold Ctrl+Shift to move them.", R, nil, StandardAuras, nil, true)
-Feature(auras, "Show Standard Debuffs", "Debuffs", "Blizzard's debuff icons.", R, nil, StandardAuras, nil, true)
+Feature(auras, "Show Standard Buffs", "Buffs", "The game's own buff icons. Hold Ctrl+Shift to move them.", R, nil, StandardAuras)
+Feature(auras, "Show Standard Debuffs", "Debuffs", "The game's own debuff icons.", R, nil, StandardAuras)
 Feature(auras, "Show Weapon Enchants", "Weapon enchants", "Poisons, oils and other weapon enchants, in their own movable area.",
-    R, nil, StandardAuras, nil, true)
-Heading(auras, R, "Borders")
-Feature(auras, "Show Buff Borders", "Buff borders", "A dark border around buffs everywhere.", R, nil, StandardAuras, nil, false)
-Feature(auras, "Show Debuff Borders", "Debuff borders", "A dispel-colored border around debuffs everywhere.", R, nil, StandardAuras, nil, false)
+    R, nil, StandardAuras)
+Heading(auras, R, "Borders, everywhere")
+Feature(auras, "Show Buff Borders", "Buff borders", "A dark border around buffs in every list.", R, nil, StandardAuras)
+Feature(auras, "Show Debuff Borders", "Debuff borders", "A dispel-colored border around debuffs in every list.", R, nil, StandardAuras)
 Feature(auras, "Show Weapon Enchant Borders", "Enchant borders", "The weapon's quality color around its enchant.",
-    R, nil, StandardAuras, nil, true)
+    R, nil, StandardAuras)
+Hint(auras, R, "One aura with its own icon and timer: the Watched page.", { before = 14 })
 
--- Watched auras: type a name and add it; the list is a grid of chips, and the
+Section(auras)
+Heading(auras, L, "On raid members: buffs")
+local raidBuffs = On("Show Raid Buffs")
+Feature(auras, "Show Raid Buffs", "Buff icons", "Buffs inside each member; heals and your own first.", L, nil, RefreshRaid, Raid)
+Feature(auras, "Show All Raid Buffs", "Every buff", "Show all buffs that fit; +N counts the rest.", L, { indent = INDENT }, RefreshRaid,
+    function() return Raid() and raidBuffs() end)
+Slider(auras, "raid_buff_count", 1, "Buffs per member", L, { before = 8 }, RefreshRaid,
+    function() return Raid() and raidBuffs() and not FT.IsEnabled("Show All Raid Buffs") end, tostring)
+Slider(auras, "raid_buff_size", 1, "Buff size", L, nil, RefreshRaid, Raid)
+Heading(auras, R, "On raid members: debuffs")
+Feature(auras, "Show Raid Debuff Badges", "Debuff icons", "Debuffs inside each member; dispellable ones first.", R, nil, RefreshRaid, Raid)
+Slider(auras, "raid_debuff_count", 1, "Debuffs per member", R, { before = 8 }, RefreshRaid, Raid, tostring)
+Slider(auras, "raid_debuff_size", 1, "Debuff size", R, nil, RefreshRaid, Raid)
+Slider(auras, "raid_aura_spacing", 1, "Gap between icons", R, nil, RefreshRaid, Raid)
+local function TestGrid(page, name)
+    local button = FooterButton(page, name, "Test grid", LEFT, 120, function()
+        UF():ToggleRaidTest(); Refresh()
+    end, "Show 40 sample members to check size and position. Hold Ctrl+Shift to move them.")
+    table.insert(syncs, function() UI.Select(button, UF():IsRaidTest()) end)
+end
+TestGrid(auras, "FTOpt_RaidTestAuras")
+
+-- Watched -----------------------------------------------------------------------
+-- Type a name and add it; the list is a grid of chips, and the
 -- chosen one's card says where it shows.
 local WA = FT.WatchedAuras
 local CHIP_W, CHIP_H = 218, 24
 local selected
-Section(auras, true)
-Heading(auras, L, "Watched auras")
-Hint(auras, L, "Each gets its own icon with the time left. Click one to choose where it shows.")
-local watchName = CreateFrame("EditBox", "FTOpt_WatchName", auras)
+local watch = pages[4]
+Section(watch, true)
+Heading(watch, L, "Watched auras")
+Hint(watch, L, "A buff on you or a debuff on your target, picked by name: it gets its own icon with the time left, "
+    .. "and leaves the lists on the Auras page. Click one to choose where it shows.")
+local watchName = CreateFrame("EditBox", "FTOpt_WatchName", watch)
 watchName:SetHeight(22)
 watchName:SetAutoFocus(false)
 watchName:SetFontObject(GameFontHighlightSmall)
@@ -232,18 +281,18 @@ local function AddWatch(unit)
 end
 watchName:SetScript("OnEscapePressed", function() watchName:ClearFocus() end)
 watchName:SetScript("OnEnterPressed", function() AddWatch("player") end)
-local addBuff = UI.Button("FTOpt_WatchBuff", auras, "Add your buff", 0, 0, 120, function() AddWatch("player") end)
-local addDebuff = UI.Button("FTOpt_WatchDebuff", auras, "Add target debuff", 0, 0, 128, function() AddWatch("target") end)
+local addBuff = UI.Button("FTOpt_WatchBuff", watch, "Add your buff", 0, 0, 120, function() AddWatch("player") end)
+local addDebuff = UI.Button("FTOpt_WatchDebuff", watch, "Add target debuff", 0, 0, 128, function() AddWatch("target") end)
 -- One line in the window; narrower, the buttons share a line under the name.
-Add(auras, L, { before = 8, place = function(x, y, width)
+Add(watch, L, { before = 8, place = function(x, y, width)
     local wide = width >= 440
-    watchName:ClearAllPoints(); watchName:SetPoint("TOPLEFT", auras, "TOPLEFT", x, y)
+    watchName:ClearAllPoints(); watchName:SetPoint("TOPLEFT", watch, "TOPLEFT", x, y)
     watchName:SetWidth(wide and 180 or width)
     local half = math.floor((width - 6) / 2)
     local line = wide and y or y - 28
-    addBuff:ClearAllPoints(); addBuff:SetPoint("TOPLEFT", auras, "TOPLEFT", wide and x + 190 or x, line)
+    addBuff:ClearAllPoints(); addBuff:SetPoint("TOPLEFT", watch, "TOPLEFT", wide and x + 190 or x, line)
     addBuff:SetWidth(wide and 120 or half)
-    addDebuff:ClearAllPoints(); addDebuff:SetPoint("TOPLEFT", auras, "TOPLEFT", wide and x + 316 or x + half + 6, line)
+    addDebuff:ClearAllPoints(); addDebuff:SetPoint("TOPLEFT", watch, "TOPLEFT", wide and x + 316 or x + half + 6, line)
     addDebuff:SetWidth(wide and 128 or width - half - 6)
     return wide and 32 or 60
 end })
@@ -251,7 +300,7 @@ end })
 local chips = {}
 local function Chip(i)
     if chips[i] then return chips[i] end
-    local chip = UI.Button("FTOpt_WatchChip" .. i, auras, "", 0, 0, CHIP_W, function()
+    local chip = UI.Button("FTOpt_WatchChip" .. i, watch, "", 0, 0, CHIP_W, function()
         selected = selected ~= i and i or nil; Refresh()
     end, { ghost = true, height = CHIP_H })
     chip.icon = chip:CreateTexture(nil, "ARTWORK")
@@ -269,7 +318,7 @@ local function Chip(i)
     return chip
 end
 -- Two chips a row in the window, one in AddOn Options.
-Add(auras, L, { place = function(x, y, width)
+Add(watch, L, { place = function(x, y, width)
     local count = #WA.List()
     local columns = width >= 440 and 2 or 1
     local chipWidth = columns == 2 and CHIP_W or width
@@ -277,14 +326,14 @@ Add(auras, L, { place = function(x, y, width)
         local chip = chips[i]
         chip:SetWidth(chipWidth)
         chip:ClearAllPoints()
-        chip:SetPoint("TOPLEFT", auras, "TOPLEFT", x + ((i - 1) % columns) * (width - chipWidth),
+        chip:SetPoint("TOPLEFT", watch, "TOPLEFT", x + ((i - 1) % columns) * (width - chipWidth),
             y - math.floor((i - 1) / columns) * (CHIP_H + 4))
     end
     return math.ceil(count / columns) * (CHIP_H + 4)
 end })
 
 -- The chosen aura's card: where it shows, Only mine, Remove.
-local card = UI.Row("FTOpt_WatchCard", auras, 0, 0, 444)
+local card = UI.Row("FTOpt_WatchCard", watch, 0, 0, 444)
 card.title = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 card.title:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -9)
 UI.Color(card.title, "heading")
@@ -304,9 +353,9 @@ card.remove = UI.Button("FTOpt_WatchRemove", card, "Remove", 0, 0, 78, function(
 end, { ghost = true })
 -- Its switches three to a line in the window, two in AddOn Options; Remove at
 -- the end of the last line, or on its own.
-Add(auras, L, { place = function(x, y, width)
+Add(watch, L, { place = function(x, y, width)
     if not card:IsShown() then return 0 end
-    card:ClearAllPoints(); card:SetPoint("TOPLEFT", auras, "TOPLEFT", x, y - 4)
+    card:ClearAllPoints(); card:SetPoint("TOPLEFT", watch, "TOPLEFT", x, y - 4)
     card:SetWidth(width)
     local perLine, n = width >= 440 and 3 or 2, 0
     for _, switch in ipairs({ card.icon, card.top, card.row, card.cool, card.mine }) do
@@ -357,8 +406,8 @@ table.insert(syncs, function()
 end)
 
 -- Raid --------------------------------------------------------------------------
-local raid = pages[4]
-local function Raid() return UF():GetGroupDimensions().enabled end
+-- The frames themselves; the icons on their members are on the Auras page.
+local raid = pages[5]
 local function Dimension(index)
     return function(value)
         local args = {}
@@ -378,7 +427,7 @@ local useRaid = UI.Switch("FTOpt_RaidFrames", raid, "Use these frames", "Replace
     0, 0, function(value) UF():ApplyGroupDimensions(nil, nil, nil, nil, nil, value); Refresh() end)
 table.insert(syncs, function() UI.Sync(useRaid, Raid()) end)
 SwitchItem(raid, L, useRaid)
-Feature(raid, "Show Group Labels", "Group labels", "G1 to G8 above the groups.", L, { indent = INDENT }, RefreshRaid, Raid, true)
+Feature(raid, "Show Group Labels", "Group labels", "G1 to G8 above the groups.", L, { indent = INDENT }, RefreshRaid, Raid)
 Heading(raid, L, "Health text")
 local FORMATS = { "deficit", "percent", "current" }
 local formatButtons, SelectFormat, formatTrack = UI.Segmented("FTOpt_RaidHealth", raid, { "Missing", "Percent", "Current" },
@@ -393,56 +442,45 @@ table.insert(syncs, function()
     formatTrack:SetAlpha(Raid() and 1 or 0.4)
     for _, button in ipairs(formatButtons) do if Raid() then button:Enable() else button:Disable() end end
 end)
-Heading(raid, L, "Indicators")
+Heading(raid, L, "Corner marks")
 Feature(raid, "Show Raid Aggro Indicator", "Aggro corner", "A red corner on the member your enemy target is attacking.",
     L, nil, RefreshRaid, Raid)
 Feature(raid, "Show Raid HoT Indicator", "Heal-over-time corner", "Renew, Rejuvenation, Regrowth, shields and Blessing of Protection.",
     L, nil, RefreshRaid, Raid)
-Feature(raid, "Show Raid Debuff Badges", "Debuff icons", "Debuffs inside each member; dispellable ones first.", L, nil, RefreshRaid, Raid)
-Heading(raid, L, "Buffs")
-local raidBuffs = On("Show Raid Buffs", true)
-Feature(raid, "Show Raid Buffs", "Buff icons", "Buffs inside each member; heals and your own first.", L, nil, RefreshRaid, Raid, true)
-Feature(raid, "Show All Raid Buffs", "Every buff", "Show all buffs that fit; +N counts the rest.", L, { indent = INDENT }, RefreshRaid,
-    function() return Raid() and raidBuffs() end)
-Slider(raid, "raid_buff_count", 4, 1, 8, 1, "Buffs per member", L, { before = 8 }, RefreshRaid,
-    function() return Raid() and raidBuffs() and not FT.IsEnabled("Show All Raid Buffs") end, tostring)
-Slider(raid, "raid_debuff_count", 3, 1, 8, 1, "Debuffs per member", L, nil, RefreshRaid, Raid, tostring)
+Hint(raid, L, "Buff and debuff icons on members: the Auras page.", { before = 14 })
 Heading(raid, R, "Size")
 GroupSlider("width", 1, 40, 120, 1, "Width")
 GroupSlider("height", 2, 20, 60, 1, "Height")
 GroupSlider("scale", 3, 0.5, 2, 0.05, "Scale", Times)
 GroupSlider("spacingX", 4, 0, 20, 1, "Gap between groups")
 GroupSlider("spacingY", 5, 0, 20, 1, "Gap between members")
-Heading(raid, R, "Icons")
-Slider(raid, "raid_buff_size", 10, 8, 18, 1, "Buff size", R, nil, RefreshRaid, Raid)
-Slider(raid, "raid_debuff_size", 11, 8, 18, 1, "Debuff size", R, nil, RefreshRaid, Raid)
-Slider(raid, "raid_aura_spacing", 2, 0, 6, 1, "Gap between icons", R, nil, RefreshRaid, Raid)
-local preview = FooterButton(raid, "FTOpt_RaidTest", "Test grid", LEFT, 172, function()
-    UF():ToggleRaidTest(); Refresh()
-end, "Show 40 sample members to check size and position. Hold Ctrl+Shift to move them.")
-table.insert(syncs, function() UI.Select(preview, UF():IsRaidTest()) end)
-local RAID_DEFAULTS = { raid_health_format = "deficit", raid_buff_count = 4, raid_buff_size = 10,
-    raid_debuff_count = 3, raid_debuff_size = 11, raid_aura_spacing = 2 }
-FooterButton(raid, "FTOpt_RaidReset", "Reset raid settings", LEFT + 180, 140, function()
-    for key, value in pairs(RAID_DEFAULTS) do FT.SetOverride(key, value) end
+TestGrid(raid, "FTOpt_RaidTest")
+-- Clearing a saved value brings its default back (FT.NUMBERS, FT:register, raid.lua).
+FooterButton(raid, "FTOpt_RaidReset", "Reset raid settings", LEFT + 128, 140, function()
+    for _, key in ipairs({ "raid_health_format", "raid_buff_count", "raid_buff_size", "raid_debuff_count",
+        "raid_debuff_size", "raid_aura_spacing" }) do FT.SetOverride(key, nil) end
     for _, title in ipairs({ "Show Group Labels", "Show Raid Aggro Indicator", "Show Raid HoT Indicator",
-        "Show Raid Debuff Badges", "Show Raid Buffs" }) do Config()[title] = 1 end
-    Config()["Show All Raid Buffs"] = 0
-    UF():ApplyGroupDimensions(64, 34, 1, 4, 3, true)
+        "Show Raid Debuff Badges", "Show Raid Buffs", "Show All Raid Buffs" }) do
+        Config()[title] = FT.mods[title].enabled and 1 or 0
+    end
+    Config().groupframe_dimensions = nil
+    UF():ApplyGroupDimensions(nil, nil, nil, nil, nil, true)
     RefreshRaid(); Refresh()
-end, "Defaults for everything on this page. The frames stay where you put them.")
+end, "Defaults for the raid frames and the icons on their members. The frames stay where you put them.")
 
 -- Action Bars -------------------------------------------------------------------
 -- One row per bar: its own Show switch and size, and "More" for the rest of its
 -- settings under the row. Changing a bar turns custom layouts on; they keep
 -- every bar where it stands.
-local bars = pages[5]
+local bars = pages[6]
 local AB = FT.ActionBars
 Heading(bars, L, "Look")
-Feature(bars, "Hide Gryphons", "Hide gryphons", "Remove the gryphons at both ends of the bar.", L)
+Feature(bars, "Hide Gryphons", "Hide gryphons", "Remove the gryphons at both ends of the bar.", L, nil,
+    Live("Hide Gryphons"))
 Feature(bars, "Floating Actionbar", "No bar background", "Remove the bar's background art.", L)
 Feature(bars, "Reduced Actionbar Size", "Short main bar", "A shorter main bar without the bag and game menu buttons.", L)
-Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", R, { before = 20 })
+Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", R, { before = 20 },
+    Live("Reagent Counter"))
 Section(bars)
 Heading(bars, L, "Bars")
 local layouts = UI.Switch("FTOpt_Layouts", bars, "Custom layouts", "Off puts every bar back in the game's layout.",
@@ -576,7 +614,7 @@ end
 FT.HookScript(panel, "OnHide", function() AB:SetEditing(false) end)
 panel:RegisterEvent("PLAYER_REGEN_DISABLED")
 
--- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI): the same five pages,
+-- Game Menu > AddOn Options > FostercareTweaks (ClassicAPI): the same six pages,
 -- one category each, in one column (ForgeLayout.lua).
 book = UI.Book({
     name = "FostercareTweaks", text = "Open a page under FostercareTweaks, or type /ft for the settings window.",

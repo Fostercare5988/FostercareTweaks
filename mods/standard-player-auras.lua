@@ -6,6 +6,12 @@ if not FT then return end
 local module = FT:register({
     title = "Blizzard Aura Controls", always = true,
 })
+-- Its switches: the three areas, and the borders (these two for auras everywhere).
+for _, switch in ipairs({ { "Show Standard Buffs", true }, { "Show Standard Debuffs", true },
+    { "Show Weapon Enchants", true }, { "Show Weapon Enchant Borders", true },
+    { "Show Buff Borders", false }, { "Show Debuff Borders", false } }) do
+    FT:register({ title = switch[1], enabled = switch[2] })
+end
 local areas
 
 -- The poison, oil or imbue on each weapon. ClassicAPI gives the enchant ID; its

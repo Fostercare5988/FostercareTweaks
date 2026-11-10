@@ -54,81 +54,41 @@ end
 end
 
 do
--- Copy website URLs from chat, transform CLINKs into real items, handle quest and player links
+-- Copy website URLs from chat, transform CLINKs into real links, name links with Shift
 
 local module = FT:register({
     title = "Chat Hyperlinks",
     always = true,
 })
 
-local URLPattern = {
-    WWW = {
-        ["rx"] = " (www%d-)%.([_A-Za-z0-9-]+)%.(%S+)%s?",
-        ["fm"] = "%s.%s.%s"
-    },
-    PROTOCOL = {
-        ["rx"] = " (%a+)://(%S+)%s?",
-        ["fm"] = "%s://%s"
-    },
-    EMAIL = {
-        ["rx"] = " ([_A-Za-z0-9-%.:]+)@([_A-Za-z0-9-]+)(%.)([_A-Za-z0-9-]+%.?[_A-Za-z0-9-]*)%s?",
-        ["fm"] = "%s@%s%s%s"
-    },
-    PORTIP = {
-        ["rx"] = " (%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?):(%d%d?%d?%d?%d?)%s?",
-        ["fm"] = "%s.%s.%s.%s:%s"
-    },
-    IP = {
-        ["rx"] = " (%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%s?",
-        ["fm"] = "%s.%s.%s.%s"
-    },
-    SHORTURL = {
-        ["rx"] = " (%a+)%.(%a+)/(%S+)%s?",
-        ["fm"] = "%s.%s/%s"
-    },
-    URLIP = {
-        ["rx"] = " ([_A-Za-z0-9-]+)%.([_A-Za-z0-9-]+)%.(%S+)%:([_0-9-]+)%s?",
-        ["fm"] = "%s.%s.%s:%s"
-    },
-    URL = {
-        ["rx"] = " ([_A-Za-z0-9-]+)%.([_A-Za-z0-9-]+)%.(%S+)%s?",
-        ["fm"] = "%s.%s.%s"
-    },
+-- Web addresses become links to copy. In order: the first pattern that matches
+-- a word makes the link. { pattern, how its captures join, [3] = gsub's function }.
+local PATTERNS = {
+    { " (www%d-)%.([_A-Za-z0-9-]+)%.(%S+)%s?", "%s.%s.%s" },
+    { " (%a+)://(%S+)%s?", "%s://%s" },
+    { " ([_A-Za-z0-9-%.:]+)@([_A-Za-z0-9-]+)(%.)([_A-Za-z0-9-]+%.?[_A-Za-z0-9-]*)%s?", "%s@%s%s%s", email = true },
+    { " (%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?):(%d%d?%d?%d?%d?)%s?", "%s.%s.%s.%s:%s" },
+    { " (%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%.(%d%d?%d?)%s?", "%s.%s.%s.%s" },
+    { " (%a+)%.(%a+)/(%S+)%s?", "%s.%s/%s" },
+    { " ([_A-Za-z0-9-]+)%.([_A-Za-z0-9-]+)%.(%S+)%:([_0-9-]+)%s?", "%s.%s.%s:%s" },
+    { " ([_A-Za-z0-9-]+)%.([_A-Za-z0-9-]+)%.(%S+)%s?", "%s.%s.%s" },
 }
-
-local function FormatLink(formatter, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-    if not (formatter and a1) then return end
-    local newtext = string.format(formatter, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-
-    local lastArg = a10 or a9 or a8 or a7 or a6 or a5 or a4 or a3 or a2 or a1
-    local invalidtld = lastArg and string.find(lastArg, "(%.%.)$")
-
-    if invalidtld then return newtext end
-
-    if formatter == URLPattern.EMAIL.fm then
-        local colon = string.find(a1, ":")
-        if colon and #a1 > colon then
-            if string.sub(a1, 1, 6) ~= "mailto" then
-                local prefix, address = string.sub(newtext, 1, colon), string.sub(newtext, colon + 1)
-                return string.format(" %s|cffccccff|Hurl:%s|h[%s]|h|r ", prefix, address, address)
-            end
+local function Link(address) return "|cffccccff|Hurl:" .. address .. "|h[" .. address .. "]|h|r " end
+for _, pattern in ipairs(PATTERNS) do
+    local form, email = pattern[2], pattern.email
+    pattern[3] = function(a1, a2, a3, a4, a5)
+        local address = string.format(form, a1, a2, a3, a4, a5)
+        -- "word.." ends a sentence; it is no address.
+        if string.find(a5 or a4 or a3 or a2, "%.%.$") then return address end
+        -- "Bob:me@mail.com": the name before the colon stays text.
+        local colon = email and string.find(a1, ":")
+        if colon and #a1 > colon and string.sub(a1, 1, 6) ~= "mailto" then
+            return " " .. string.sub(address, 1, colon) .. Link(string.sub(address, colon + 1))
         end
+        return " " .. Link(address)
     end
-    return " |cffccccff|Hurl:" .. newtext .. "|h[" .. newtext .. "]|h|r "
 end
 
-local URLFuncs = {
-    ["WWW"] = function(a1, a2, a3) return FormatLink(URLPattern.WWW.fm, a1, a2, a3) end,
-    ["PROTOCOL"] = function(a1, a2) return FormatLink(URLPattern.PROTOCOL.fm, a1, a2) end,
-    ["EMAIL"] = function(a1, a2, a3, a4) return FormatLink(URLPattern.EMAIL.fm, a1, a2, a3, a4) end,
-    ["PORTIP"] = function(a1, a2, a3, a4, a5) return FormatLink(URLPattern.PORTIP.fm, a1, a2, a3, a4, a5) end,
-    ["IP"] = function(a1, a2, a3, a4) return FormatLink(URLPattern.IP.fm, a1, a2, a3, a4) end,
-    ["SHORTURL"] = function(a1, a2, a3) return FormatLink(URLPattern.SHORTURL.fm, a1, a2, a3) end,
-    ["URLIP"] = function(a1, a2, a3, a4) return FormatLink(URLPattern.URLIP.fm, a1, a2, a3, a4) end,
-    ["URL"] = function(a1, a2, a3) return FormatLink(URLPattern.URL.fm, a1, a2, a3) end,
-}
-
-local URLKinds = {"WWW", "PROTOCOL", "EMAIL", "PORTIP", "IP", "SHORTURL", "URLIP", "URL"}
 -- Every link pattern needs a dot or @ before a letter or digit, or "://".
 -- "[1. General]", "Bob:" and the end of a sentence have none.
 local function MayLink(text)
@@ -138,8 +98,8 @@ local function ConvertWord(word)
     if not MayLink(word) then return word end
     -- Prefixing a space also handles a URL at the start of a message;
     -- subsequent patterns cannot nest generated links.
-    for _, kind in ipairs(URLKinds) do
-        local converted, count = string.gsub(" " .. word, URLPattern[kind].rx, URLFuncs[kind])
+    for _, pattern in ipairs(PATTERNS) do
+        local converted, count = string.gsub(" " .. word, pattern[1], pattern[3])
         if count > 0 then return string.match(converted, "^%s*(.-)%s*$") end
     end
     return word
@@ -212,37 +172,21 @@ end
 module.enable = function(self)
     local origSetItemRef = SetItemRef
     function _G.SetItemRef(link, text, button)
-        local questlink, _, quest_id = string.find(link, "quest:(%d+):.*")
-        local playerlink = string.sub(link, 1, 6) == "player"
-
-        if string.sub(link, 1, 3) == "url" then
-            if #link > 4 and string.sub(link, 1, 4) == "url:" then
-                CopyLinkDialog.CopyText(string.sub(link, 5))
-            end
+        if string.sub(link, 1, 4) == "url:" then
+            if #link > 4 then CopyLinkDialog.CopyText(string.sub(link, 5)) end
             return
-        elseif questlink then
-            local _, _, quest_title = string.find(text, ".*|h%[(.*)%]|h.*")
-            if quest_title then
-                HideUIPanel(ItemRefTooltip)
-                ShowUIPanel(ItemRefTooltip)
-                ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
-                ItemRefTooltip:AddLine(quest_title, 1, 1, 0)
-                ItemRefTooltip:AddDoubleLine("Quest ID", quest_id, 0.6, 0.6, 0.6, 1, 1, 1)
-                ItemRefTooltip:Show()
-            end
-            return
-        elseif playerlink then
-            local name = string.sub(link, 8)
-            if name and #name > 0 then
-                local realName = string.gsub(name, ":.*$", "")
-                realName = gsub(realName, "([^%s]*)%s+([^%s]*)%s+([^%s]*)", "%3")
-                realName = gsub(realName, "([^%s]*)%s+([^%s]*)", "%2")
-                if IsShiftKeyDown() and ChatFrameEditBox and ChatFrameEditBox:IsVisible() then
-                    ChatFrameEditBox:Insert("|cffffffff|Hplayer:" .. realName .. "|h[" .. realName .. "]|h|r")
-                    return
-                end
-            end
         end
+        -- Shift-click on a name with the chat box open: the name as a link.
+        if string.sub(link, 1, 7) == "player:" and #link > 7 and IsShiftKeyDown() and ChatFrameEditBox:IsVisible() then
+            local name = string.gsub(string.sub(link, 8), ":.*$", "")
+            name = gsub(name, "([^%s]*)%s+([^%s]*)%s+([^%s]*)", "%3")
+            name = gsub(name, "([^%s]*)%s+([^%s]*)", "%2")
+            ChatFrameEditBox:Insert("|cffffffff|Hplayer:" .. name .. "|h[" .. name .. "]|h|r")
+            return
+        end
+        -- Everything else is the game's, quest links too: ClassicAPI's
+        -- SetHyperlink shows a quest's title and objectives.
+        -- UNVERIFIED: test in game: click a quest link in chat; the tooltip shows the quest's title and objectives
         origSetItemRef(link, text, button)
     end
 
@@ -336,9 +280,17 @@ local STAMP = "|cffcccccc[%H:%M:%S]|r "
 
 -- Combat log windows stay unstamped, as the other chat filters leave them:
 -- every combat line would build a new string.
-module.enable = function(self)
-    FT.AddChatFilter(function(text) return date(STAMP) .. text end)
+-- The filter joins the chat windows the first time the switch is on.
+local on
+module.apply = function(self, value)
+    if on == nil then
+        if not value then return end
+        FT.AddChatFilter(function(text) return on and date(STAMP) .. text or text end)
+    end
+    on = value and true or false
 end
+
+module.enable = function() module:apply(true) end
 end
 
 do
@@ -358,12 +310,19 @@ local function Colorize(link, shown)
     return "|r[" .. color .. "|Hplayer:" .. link .. "|h" .. color .. real .. "|h|r]|r"
 end
 
-module.enable = function(self)
-    FT.AddChatFilter(function(text)
-        if string.find(text, "|Hplayer:", 1, true) then
-            text = string.gsub(text, "|Hplayer:([^|]*)|h%[([^%]|]*)%]|h", Colorize)
-        end
-        return text
-    end)
+local on
+module.apply = function(self, value)
+    if on == nil then
+        if not value then return end
+        FT.AddChatFilter(function(text)
+            if on and string.find(text, "|Hplayer:", 1, true) then
+                text = string.gsub(text, "|Hplayer:([^|]*)|h%[([^%]|]*)%]|h", Colorize)
+            end
+            return text
+        end)
+    end
+    on = value and true or false
 end
+
+module.enable = function() module:apply(true) end
 end

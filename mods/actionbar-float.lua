@@ -7,10 +7,12 @@ local module = FT:register({
     title = "Hide Gryphons",
 })
 
-module.enable = function(self)
-    MainMenuBarLeftEndCap:Hide()
-    MainMenuBarRightEndCap:Hide()
+module.apply = function(self, on)
+    if on then MainMenuBarLeftEndCap:Hide(); MainMenuBarRightEndCap:Hide()
+    else MainMenuBarLeftEndCap:Show(); MainMenuBarRightEndCap:Show() end
 end
+
+module.enable = function() module:apply(true) end
 end
 
 do

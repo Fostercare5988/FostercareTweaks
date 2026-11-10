@@ -4,7 +4,6 @@ if not FT then return end
 local module = FT:register({
     title = "Show Energy Ticks",
     enabled = true,
-    config = { energytick_contrast = 1, energytick_flash = 1, energytick_width = 3 },
 })
 
 module.enable = function(self)
@@ -87,8 +86,8 @@ module.enable = function(self)
         driver.width, driver.halfSpark = width, sparkW / 2
         driver.pixelScale = bar:GetEffectiveScale()
         -- White core and additive glow stay inside even a one-pixel bar.
-        local coreW = math.min(FT.GetNumber("energytick_width", 3, 2, 6), sparkW)
-        local contrast = FT.GetNumber("energytick_contrast", 1, 0, 1) ~= 0
+        local coreW = math.min(FT.GetNumber("energytick_width"), sparkW)
+        local contrast = FT.GetNumber("energytick_contrast") ~= 0
         -- Most calls are power changes: the widgets are written only when the
         -- bar's size or the settings changed.
         if not driver.layout or driver.layoutW ~= width or driver.layoutH ~= height
@@ -108,7 +107,7 @@ module.enable = function(self)
             end
             driver.lastX = nil
         end
-        driver.flash = FT.GetNumber("energytick_flash", 1, 0, 1) ~= 0
+        driver.flash = FT.GetNumber("energytick_flash") ~= 0
         if not driver.running then driver.running = true; driver:SetScript("OnUpdate", Render) end
         Render()
         if not driver.pulse:IsShown() then driver.pulse:Show() end

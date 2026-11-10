@@ -46,7 +46,7 @@ function FT.ApplyMinimapScale(scale)
 end
 
 module.enable = function(self)
-    FT.ApplyMinimapScale(FT.GetNumber("minimap_scale", 1, 0.7, 1.6))
+    FT.ApplyMinimapScale(FT.GetNumber("minimap_scale"))
     -- Ctrl+Shift moves the map with its zone name; the handle covers the map itself.
     MinimapCluster.fctPositionPoint = "TOPRIGHT"
     FT.RestoreFramePosition(MinimapCluster, "minimap")
@@ -66,8 +66,26 @@ local module = FT:register({
     enabled = true,
 })
 
-module.enable = function(self)
-    local clock = CreateFrame("Frame", "FCTweaksMinimapClock", Minimap)
+local clock, ticking
+
+-- Refresh only when the displayed minute changes.
+local function UpdateClock()
+    local currentTime = date("%H:%M")
+    if clock.lastTime ~= currentTime then
+        clock.text:SetText(currentTime)
+        clock.lastTime = currentTime
+    end
+end
+
+-- One timer chain while the clock shows; it ends at the first tick after a hide.
+local function Tick()
+    if not clock:IsShown() then ticking = nil; return end
+    UpdateClock()
+    C_Timer.After(61 - tonumber(date("%S")), Tick)
+end
+
+local function CreateClock()
+    clock = CreateFrame("Frame", "FCTweaksMinimapClock", Minimap)
     clock:SetFrameLevel(64)
     clock:SetPoint("BOTTOM", MinimapCluster, "BOTTOM", 8, 4)  -- under the map border, not over the map
     clock:SetWidth(50)
@@ -83,21 +101,6 @@ module.enable = function(self)
 
     -- Ctrl+Shift moves it; placed once the map's own layout is final.
     C_Timer.After(0, function() FT.PlaceIcon(clock, "minimap_clock_s", "Clock") end)
-
-    -- Refresh only when the displayed minute changes.
-    local function UpdateClock()
-        local currentTime = date("%H:%M")
-        if clock.lastTime ~= currentTime then
-            clock.text:SetText(currentTime)
-            clock.lastTime = currentTime
-        end
-    end
-
-    local function Tick()
-        UpdateClock()
-        C_Timer.After(61 - tonumber(date("%S")), Tick)
-    end
-    Tick()
 
     clock:SetScript("OnEnter", function()
         local h, m = GetGameTime()
@@ -115,9 +118,23 @@ module.enable = function(self)
     clock:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-
-    clock:Show()
 end
+
+module.apply = function(self, on)
+    if not clock then
+        if not on then return end
+        CreateClock()
+    end
+    if on then
+        clock:Show()
+        UpdateClock()
+        if not ticking then ticking = true; Tick() end
+    else
+        clock:Hide()
+    end
+end
+
+module.enable = function() module:apply(true) end
 end
 
 do

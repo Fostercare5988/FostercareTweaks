@@ -7,24 +7,26 @@ if not FT then return end
 
 -- Switches read by the aura rows and the raid frames; on by default.
 for _, title in ipairs({ "Show Player Buffs", "Show Target Buffs", "Show Player Debuffs", "Show Target Debuffs",
-    "Show Raid Aggro Indicator", "Show Raid HoT Indicator", "Show Raid Debuff Badges" }) do
+    "Show Raid Aggro Indicator", "Show Raid HoT Indicator", "Show Raid Debuff Badges", "Show Raid Buffs",
+    "Show Group Labels" }) do
     FT:register({ title = title, enabled = true })
 end
+FT:register({ title = "Show All Raid Buffs", enabled = false })
 
 FT.UnitFrames = FT.UnitFrames or {}
 local UF = FT.UnitFrames
 
 -- Settings ---------------------------------------------------------------------
 
-function UF:IsShowPlayerBuffs() return FT.IsEnabled("Show Player Buffs", true) end
-function UF:IsShowTargetBuffs() return FT.IsEnabled("Show Target Buffs", true) end
-function UF:IsShowPlayerDebuffs() return FT.IsEnabled("Show Player Debuffs", true) end
-function UF:IsShowTargetDebuffs() return FT.IsEnabled("Show Target Debuffs", true) end
-function UF:IsRaidShowAggro() return FT.IsEnabled("Show Raid Aggro Indicator", true) end
-function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator", true) end
-function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges", true) end
-function UF:GetBuffSize() return FT.GetNumber("uf_buff_size", 20, 14, 32) end
-function UF:GetDebuffSize() return FT.GetNumber("uf_debuff_size", 20, 14, 32) end
+function UF:IsShowPlayerBuffs() return FT.IsEnabled("Show Player Buffs") end
+function UF:IsShowTargetBuffs() return FT.IsEnabled("Show Target Buffs") end
+function UF:IsShowPlayerDebuffs() return FT.IsEnabled("Show Player Debuffs") end
+function UF:IsShowTargetDebuffs() return FT.IsEnabled("Show Target Debuffs") end
+function UF:IsRaidShowAggro() return FT.IsEnabled("Show Raid Aggro Indicator") end
+function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator") end
+function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges") end
+function UF:GetBuffSize() return FT.GetNumber("uf_buff_size") end
+function UF:GetDebuffSize() return FT.GetNumber("uf_debuff_size") end
 function UF:GetRaidHealthFormat() return FT.GetOverride("raid_health_format", "deficit") end
 
 function UF.SetFontSize(fontString, size)
