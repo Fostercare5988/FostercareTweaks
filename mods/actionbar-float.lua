@@ -85,15 +85,3 @@ module.enable = function(self)
     FT.HookScript(MainMenuBarMaxLevelBar, "OnShow", function(frame) frame:Hide() end)
 end
 end
-
-do
-
-local module = FT:register({
-    title = "Center Vertical Actionbar",
-})
-
-module.enable = function(self)
-    MultiBarRight:ClearAllPoints()
-    MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", 0, -16)
-end
-end

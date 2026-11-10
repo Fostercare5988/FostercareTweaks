@@ -7,7 +7,6 @@ FostercareTweaks_Defaults = {
     ["Auto Stance"] = 1,
     ["Blue Shaman Class Colors"] = 1,
     ["Borderless Castbars"] = 1,
-    ["Center Vertical Actionbar"] = 1,
     ["Chat Class Colors"] = 1,
     ["Chat History"] = 1,
     ["Chat Timestamps"] = 1,

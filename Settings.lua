@@ -442,8 +442,7 @@ Heading(bars, L, "Look")
 Feature(bars, "Hide Gryphons", "Hide gryphons", "Remove the gryphons at both ends of the bar.", L)
 Feature(bars, "Floating Actionbar", "No bar background", "Remove the bar's background art.", L)
 Feature(bars, "Reduced Actionbar Size", "Short main bar", "A shorter main bar without the bag and game menu buttons.", L)
-Feature(bars, "Center Vertical Actionbar", "Center the right bars", "Center the right-side bars vertically.", R, { before = 20 })
-Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", R)
+Feature(bars, "Reagent Counter", "Reagent counts", "How many casts your reagents allow, on the button.", R, { before = 20 })
 Section(bars)
 Heading(bars, L, "Bars")
 local layouts = UI.Switch("FTOpt_Layouts", bars, "Custom layouts", "Off puts every bar back in the game's layout.",
@@ -589,8 +588,6 @@ book = UI.Book({
 FT.SetEventHandler(panel, function() if book:Shown() then Refresh() end end)
 
 -- Opening ------------------------------------------------------------------------
--- A layout change elsewhere shows in the open window or category.
-
 -- FT.OpenSettings() toggles the window; a page name opens that page.
 function FT.OpenSettings(name)
     for index, key in ipairs(TABS) do if key == name then tab = index end end

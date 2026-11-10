@@ -346,7 +346,7 @@ local function FillRow(unit, buttons, slots, filter, shown, unitGUID, now)
             local name, icon, stacks, dispelType, duration, expirationTime, source, _, _, spellId =
                 C_UnitAuras.UnitAuraBySlot(unit, slots[i])
             if not name then break end
-            if icon and not FT.IsAuraHidden(name, unit) then
+            if icon and not FT.IsAuraHidden(name, unit, nil, source) then
                 used = used + 1
                 local btn = buttons[used]
                 btn.unit, btn.auraIndex, btn.spellId, btn.isOccupied = unit, i, spellId, true
@@ -511,7 +511,7 @@ local function UpdateChangedAuras(container, unit, ids)
         local d = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, ids[i], deltaAura)
         if not d then return false end
         -- A hidden aura has no button; its refresh changes nothing here.
-        local found = FT.IsAuraHidden(d.name, unit)
+        local found = FT.IsAuraHidden(d.name, unit, nil, d.sourceUnit)
         for _, btn in ipairs(found and NO_BUTTONS or d.isHelpful and container.buffButtons or container.debuffButtons) do
             if btn.isOccupied and btn.spellId == d.spellId and btn.timerSourceGUID == d.sourceGUID then
                 SetCount(btn, d.applications)

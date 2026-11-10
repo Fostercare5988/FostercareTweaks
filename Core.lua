@@ -80,6 +80,9 @@ function FT:Initialize()
     FostercareTweaks_Config["Zone Layouts"] = nil
     FostercareTweaks_Config["profile"] = nil
     FostercareTweaks_Config["profiles"] = nil
+    -- Retired 2026-11-10: custom layouts place the right bar, and only the two
+    -- characters with custom layouts had it on.
+    FostercareTweaks_Config["Center Vertical Actionbar"] = nil
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.

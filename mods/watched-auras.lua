@@ -9,8 +9,7 @@ if not FT then return end
 -- (unless noIcon), and only when asked also in Blizzard's buffs at the top right
 -- (topRight, your buffs) and the player or target row (inRow). When one of your
 -- buffs ends, its icon shows its spell's cooldown, greyed (unless noCooldown).
--- Positions live with the other frames (unitframe_positions), so each zone
--- layout keeps its own.
+-- Positions live with the other frames (unitframe_positions).
 local module = FT:register({
     title = "Watched Auras",
     always = true,
@@ -29,13 +28,20 @@ local own = {}                       -- spell ID -> start of its own cooldown, s
 local gcdStart, gcdDuration          -- the global cooldown, as last seen
 
 -- Names kept out of each list: Blizzard's top right, and each unit's row.
+-- MINE keeps out only the aura you cast: an "Only mine" icon shows yours, so
+-- another player's aura of that name stays in the row.
 local hidden = { top = {}, player = {}, target = {} }
+local MINE = "mine"
+local watching = {}                  -- unit -> it has a watched aura
 
 -- For the aura lists: true when this aura is not wanted there. place "top" is
--- Blizzard's buffs at the top right; otherwise the unit's row.
-function FT.IsAuraHidden(name, unit, place)
+-- Blizzard's buffs at the top right; otherwise the unit's row. source is the
+-- aura's caster (a unit token), when the list knows it.
+function FT.IsAuraHidden(name, unit, place, source)
     local set = place == "top" and hidden.top or hidden[unit]
-    return name ~= nil and set ~= nil and set[name] or false
+    local rule = name ~= nil and set ~= nil and set[name]
+    if rule == MINE then return source ~= nil and UnitIsUnit(source, "player") end
+    return rule or false
 end
 
 local function List()
@@ -178,6 +184,7 @@ end
 
 -- Reads the unit's auras once and shows the watched ones it has.
 function W.Update(unit)
+    if not watching[unit] then return end
     table.wipe(found)
     for entry, icon in pairs(iconOf) do
         if entry.unit == unit then icon.fctAura = nil end
@@ -207,7 +214,7 @@ function W.Rebuild(refreshLists)
     local wanted, index = {}, 0
     for _, set in pairs(hidden) do table.wipe(set) end
     table.wipe(iconOf)
-    cooling = nil
+    cooling, watching.player, watching.target = nil, nil, nil
     for _, entry in ipairs(List()) do
         if entry.unit == "player" and not entry.noIcon and not entry.noCooldown then cooling = true end
         if not entry.noIcon then
@@ -215,8 +222,9 @@ function W.Rebuild(refreshLists)
             local icon = Icon(entry, index)
             iconOf[entry], wanted[icon] = icon, true
         end
+        watching[entry.unit] = true
         if entry.unit == "player" and not entry.topRight then hidden.top[entry.name] = true end
-        if not entry.inRow then hidden[entry.unit][entry.name] = true end
+        if not entry.inRow then hidden[entry.unit][entry.name] = entry.mine and MINE or true end
     end
     for _, icon in pairs(icons) do
         if not wanted[icon] then icon.fctRestoreShown = nil; icon:Hide() end
@@ -251,7 +259,7 @@ end
 
 function W.SetMine(index, mine)
     List()[index].mine = mine and true or nil
-    W.Update("target")
+    W.Rebuild(true)
 end
 
 -- Where an aura shows: "icon" (its own), "topRight" (Blizzard's buffs), "inRow"
