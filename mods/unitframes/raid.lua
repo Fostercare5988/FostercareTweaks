@@ -502,11 +502,26 @@ local function SetUnit(btn, unit)
     if btn:GetAttribute("unit") ~= unit then btn:SetAttribute("unit", unit) end
 end
 
+-- A button's size: the health bar over a thin power bar. At creation and on
+-- every size change.
+local function SizeButton(btn, width, height)
+    local powerH = math.max(3, math.floor(height * 0.12))
+    local healthH = height - powerH - 3
+    btn:SetWidth(width)
+    btn:SetHeight(height)
+    btn.healthBar:ClearAllPoints()
+    btn.healthBar:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
+    btn.healthBar:SetWidth(width - 2)
+    btn.healthBar:SetHeight(healthH)
+    btn.powerBar:ClearAllPoints()
+    btn.powerBar:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1 - healthH - 1)
+    btn.powerBar:SetWidth(width - 2)
+    btn.powerBar:SetHeight(powerH)
+end
+
 local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
     local btnName = "FCTweaksRaidUnitG" .. groupNum .. "M" .. memberIdx
     local btn = CreateFrame("Button", btnName, groupFrame)
-    btn:SetWidth(btnW)
-    btn:SetHeight(btnH)
     btn:SetFrameStrata("LOW")
     btn:SetClampedToScreen(true)
 
@@ -523,36 +538,17 @@ local function CreateRaidButton(groupFrame, groupNum, memberIdx, btnW, btnH)
 
     -- The container mover owns all Ctrl+Shift dragging and persistence.
 
-    local powerH = math.max(3, math.floor(btnH * 0.12))
-    local healthH = btnH - powerH - 3
-
-    -- Health Bar (Stacked top)
+    -- The health bar over the power bar (SizeButton places them).
     local hb = UF:CreateBar(btnName .. "HealthBar", btn)
-    hb:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
-    hb:SetWidth(btnW - 2)
-    hb:SetHeight(healthH)
     btn.healthBar = hb
+    btn.powerBar = UF:CreateBar(btnName .. "PowerBar", btn)
+    SizeButton(btn, btnW, btnH)
 
-    -- Power Bar (Stacked bottom)
-    local pb = UF:CreateBar(btnName .. "PowerBar", btn)
-    pb:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1 - healthH - 1)
-    pb:SetWidth(btnW - 2)
-    pb:SetHeight(powerH)
-    btn.powerBar = pb
-
-    -- Name text (Centered, upper half)
+    -- Name and health text; LayoutRaidText places them when the button shows.
     btn.nameText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    btn.nameText:SetPoint("CENTER", hb, "CENTER", 0, math.max(3, math.floor(healthH * 0.22)))
-    btn.nameText:SetWidth(btnW - 6)
-    btn.nameText:SetJustifyH("CENTER")
     btn.nameText:SetShadowColor(0, 0, 0, 1)
     btn.nameText:SetShadowOffset(0.8, -0.8)
-
-    -- Health / Status text (Centered, lower half)
     btn.healthText = hb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    btn.healthText:SetPoint("CENTER", hb, "CENTER", 0, -math.max(3, math.floor(healthH * 0.22)))
-    btn.healthText:SetWidth(btnW - 6)
-    btn.healthText:SetJustifyH("CENTER")
     btn.healthText:SetShadowColor(0, 0, 0, 1)
     btn.healthText:SetShadowOffset(0.8, -0.8)
 
@@ -726,8 +722,6 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
     UF:EnableRaidFrames(true)
     local colSpacingX = spacingX
     raidFrame:SetScale(scale)
-    local powerH = math.max(3, math.floor(height * 0.12))
-    local healthH = height - powerH - 3
 
     for g = 1, 8 do
         local grp = groups[g]
@@ -738,23 +732,7 @@ function UF:ApplyGroupDimensions(width, height, scale, spacingX, spacingY, enabl
 
             for m = 1, 5 do
                 local btn = grp.buttons[m]
-                if btn then
-                    btn:SetWidth(width)
-                    btn:SetHeight(height)
-
-                    -- Health Bar
-                    btn.healthBar:ClearAllPoints()
-                    btn.healthBar:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
-                    btn.healthBar:SetWidth(width - 2)
-                    btn.healthBar:SetHeight(healthH)
-
-                    -- Power Bar
-                    btn.powerBar:ClearAllPoints()
-                    btn.powerBar:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1 - healthH - 1)
-                    btn.powerBar:SetWidth(width - 2)
-                    btn.powerBar:SetHeight(powerH)
-
-                end
+                if btn then SizeButton(btn, width, height) end
             end
         end
     end
@@ -917,6 +895,16 @@ end
 --------------------------------------------------------------------------------
 
 local MOCK_CLASSES = { "WARRIOR", "PRIEST", "MAGE", "ROGUE", "DRUID", "HUNTER", "WARLOCK", "SHAMAN" }
+-- Sample health by place in the group, of 4000: the fourth member is dead, and
+-- the last member of the last group is offline.
+local MOCK_HEALTH = { 4000, 2500, 3400, 0, 4000 }
+local function MockHealth(btn, fmt)
+    local offline = btn.memberIdx == 5 and btn.groupNum == 8
+    local cur = offline and 0 or MOCK_HEALTH[btn.memberIdx]
+    SetBarRange(btn.healthBar, 4000)
+    btn.healthBar:SetValue(cur)
+    btn.healthText:SetText(HealthText(fmt, offline and -1 or btn.memberIdx == 4 and -3 or HealthShown(fmt, cur, 4000)))
+end
 
 function UF:ToggleRaidTest()
     ConstructRaidGrid()
@@ -926,6 +914,7 @@ function UF:ToggleRaidTest()
     end
 
     local bc = UF.backdropBorderColor
+    local fmt = UF:GetRaidHealthFormat()
 
     if testMode then
         wipe(unitToButton)
@@ -950,26 +939,7 @@ function UF:ToggleRaidTest()
                 SetBarColor(btn.healthBar, c.r, c.g, c.b)
                 btn.nameText:SetText(string.sub(cls, 1, 1) .. cls:sub(2):lower() .. m)
 
-                -- Mock health variations
-                local max = 4000
-                local cur = max
-                if m == 2 then
-                    cur = 2500
-                    btn.healthText:SetText("-1.5k")
-                elseif m == 3 then
-                    cur = 3400
-                    btn.healthText:SetText("-600")
-                elseif m == 4 then
-                    cur = 0
-                    btn.healthText:SetText("|cffff2020Dead|r")
-                elseif m == 5 and g == 8 then
-                    cur = 0
-                    btn.healthText:SetText("|cff888888Off|r")
-                else
-                    btn.healthText:SetText("")
-                end
-                SetBarRange(btn.healthBar, max)
-                btn.healthBar:SetValue(cur)
+                MockHealth(btn, fmt)
 
                 -- Mock power bar
                 SetBarRange(btn.powerBar, 3000)
@@ -1058,8 +1028,7 @@ function UF:UpdateAllRaidFrames()
                 for m = 1, 5 do
                     local btn = groups[g].buttons[m]
                     if btn and btn:IsShown() then
-                        local _, max = btn.healthBar:GetMinMaxValues()
-                        btn.healthText:SetText(HealthText(fmt, HealthShown(fmt, btn.healthBar:GetValue(), max)))
+                        MockHealth(btn, fmt)
                         UpdateButtonIndicators(btn)
                         UpdateButtonAuras(btn)
                     end
