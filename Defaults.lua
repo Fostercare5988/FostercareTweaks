@@ -132,7 +132,7 @@ FostercareTweaks_Defaults = {
         minimap_clock_s = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1541.86,
+            x = 1539.19,
             y = -223.51,
         },
         minimap_mail_s = {

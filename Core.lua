@@ -42,9 +42,18 @@ local function NewConfig()
     local config = DeepCopy(FostercareTweaks_Defaults)
     if type(config) ~= "table" then return {} end
     local width, height = GetScreenWidth(), GetScreenHeight()
-    for key, p in pairs(config.unitframe_positions or {}) do
+    local positions, minimapFits = config.unitframe_positions or {}, true
+    for key, p in pairs(positions) do
         if not (math.abs(p.x) <= width - 20 and p.y > 20 - height and p.y < 150) then
-            config.unitframe_positions[key] = nil
+            positions[key] = nil
+            if string.find(key, "^minimap") then minimapFits = false end
+        end
+    end
+    -- The minimap and its pieces (zone name, clock, icons) are one layout: all
+    -- keep the author's places, or none do and they sit where the game puts them.
+    if not minimapFits then
+        for key in pairs(positions) do
+            if string.find(key, "^minimap") then positions[key] = nil end
         end
     end
     for _, bar in pairs(config.actionbars and config.actionbars.bars or {}) do
