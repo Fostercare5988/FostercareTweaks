@@ -1,12 +1,12 @@
 -- FostercareTweaks: the settings a new character starts with.
--- Generated 2026-11-02 from the author's own settings by VanillaForge/tools/export_defaults.py;
+-- Generated 2026-11-13 from the author's own settings by VanillaForge/tools/export_defaults.py;
 -- do not edit by hand, run the tool again. Applied once, on a character that has no
 -- saved settings yet (Core.lua), never over existing ones. Chat history and the
 -- extra bars' spell and item lists are not included.
 FostercareTweaks_Defaults = {
     ["Auto Stance"] = 1,
     ["Blue Shaman Class Colors"] = 1,
-    ["Borderless Castbars"] = 1,
+    ["Borderless Castbars"] = 0,
     ["Chat Class Colors"] = 1,
     ["Chat History"] = 1,
     ["Chat Timestamps"] = 1,
@@ -21,7 +21,7 @@ FostercareTweaks_Defaults = {
     ["Reagent Counter"] = 1,
     ["Reduced Actionbar Size"] = 1,
     ["Show All Raid Buffs"] = 0,
-    ["Show Buff Borders"] = 0,
+    ["Show Buff Borders"] = 1,
     ["Show Debuff Borders"] = 1,
     ["Show Energy Ticks"] = 1,
     ["Show Group Labels"] = 0,
@@ -35,6 +35,7 @@ FostercareTweaks_Defaults = {
     ["Show Standard Debuffs"] = 1,
     ["Show Target Buffs"] = 1,
     ["Show Target Debuffs"] = 1,
+    ["Show Weapon Enchant Borders"] = 1,
     ["Show Weapon Enchants"] = 1,
     ["Unit Frame Class Colors"] = 1,
     actionbars = {
@@ -54,17 +55,21 @@ FostercareTweaks_Defaults = {
             extra = {
                 columns = 3,
                 scale = 0.9,
+                showEmpty = false,
                 spacing = 5,
                 visible = true,
                 x = 447.56,
                 y = 147.2,
             },
             extra2 = {
-                scale = 0.9,
+                columns = 12,
+                growUp = false,
+                scale = 0.8,
                 showEmpty = true,
-                visible = false,
-                x = 1092,
-                y = 277.03,
+                spacing = 5,
+                visible = true,
+                x = 1317.07,
+                y = 28.8,
             },
             extra3 = {
                 columns = 4,
@@ -77,8 +82,8 @@ FostercareTweaks_Defaults = {
             left = {
                 scale = 0.9,
                 visible = true,
-                x = 1631.22,
-                y = 714.95,
+                x = 1636.56,
+                y = 647.4,
             },
             main = {
                 growUp = false,
@@ -88,6 +93,8 @@ FostercareTweaks_Defaults = {
             right = {
                 scale = 0.9,
                 visible = true,
+                x = 1672.56,
+                y = 646.52,
             },
         },
         enabled = true,
@@ -156,14 +163,14 @@ FostercareTweaks_Defaults = {
         player_castbar = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 771.04,
-            y = -547.29,
+            x = 767.49,
+            y = -587.25,
         },
         raid = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = -2.01,
-            y = -86.67,
+            x = -77.04,
+            y = -49.84,
         },
         standard_global_buffs = {
             point = "TOPLEFT",
@@ -174,8 +181,8 @@ FostercareTweaks_Defaults = {
         standard_global_debuffs = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 1164.56,
-            y = -238.1,
+            x = 1064.11,
+            y = -216.22,
         },
         standard_player = {
             point = "TOPLEFT",
@@ -186,8 +193,14 @@ FostercareTweaks_Defaults = {
         standard_player_buffs = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 65.45,
-            y = 60.47,
+            x = 44.12,
+            y = 46.2,
+        },
+        standard_player_debuffs = {
+            point = "TOPLEFT",
+            relPoint = "TOPLEFT",
+            x = 44.12,
+            y = 21.25,
         },
         standard_target = {
             point = "TOPLEFT",
@@ -198,14 +211,14 @@ FostercareTweaks_Defaults = {
         standard_target_buffs = {
             point = "TOPRIGHT",
             relPoint = "TOPRIGHT",
-            x = 27,
-            y = 51.53,
+            x = -5.89,
+            y = 109.57,
         },
         standard_target_debuffs = {
             point = "TOPRIGHT",
             relPoint = "TOPRIGHT",
-            x = -57.44,
-            y = -103.55,
+            x = -61,
+            y = -105.46,
         },
         standard_targettarget = {
             point = "TOPLEFT",
@@ -216,8 +229,8 @@ FostercareTweaks_Defaults = {
         standard_weapon_enchants = {
             point = "TOPLEFT",
             relPoint = "TOPLEFT",
-            x = 323.89,
-            y = -526.78,
+            x = 659,
+            y = -485.86,
         },
     },
 }

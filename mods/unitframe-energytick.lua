@@ -6,6 +6,13 @@ local module = FT:register({
     enabled = true,
 })
 
+-- The switch, live: the first time on starts the ticks; later the line shows or hides.
+module.apply = function(self, on)
+    if not self.frame then
+        if on then self:enable() end
+    else FT.RefreshEnergyTick() end
+end
+
 module.enable = function(self)
     if self.frame then return end
     local driver = CreateFrame("Frame", "FCTweaksEnergyTick", UIParent)

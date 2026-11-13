@@ -222,14 +222,17 @@ local KEEP = 30
 local RESTORED = "FCTweaksHistory"
 
 module.enable = function(self)
-    local realm = GetRealmName()
-    local player = UnitName("player")
-
-    local function ChildTable(parent, key)
-        if type(parent[key]) ~= "table" then parent[key] = {} end
-        return parent[key]
+    -- One list of lines per chat window. Before 1.20 they sat under realm and
+    -- name, in a table that is the character's own anyway.
+    local cache = FostercareTweaks_Cache
+    if type(cache.chathistory) == "table" then
+        local old = cache.chathistory[GetRealmName()]
+        old = type(old) == "table" and old[UnitName("player")]
+        if type(cache.chat) ~= "table" and type(old) == "table" then cache.chat = old end
+        cache.chathistory = nil
     end
-    local histories = ChildTable(ChildTable(ChildTable(FostercareTweaks_Cache, "chathistory"), realm), player)
+    if type(cache.chat) ~= "table" then cache.chat = {} end
+    local histories = cache.chat
 
     local function Dim(text, r, g, b)
         if not (r and g and b) then return text end

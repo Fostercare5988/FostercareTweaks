@@ -73,25 +73,30 @@ end
 -- ClassicAPI loads SavedVariables before source; modules also read them at load.
 EnsureSavedTables()
 
+-- The saved tables beside the switches, and who owns each.
+local SAVED_TABLES = {
+    overwrites = true,              -- numbers and choices (Helpers.lua)
+    actionbars = true,              -- ActionBars.lua, ExtraActions.lua
+    unitframe_positions = true,     -- moved frames (move-unitframes.lua)
+    groupframe_dimensions = true,   -- the raid frames (unitframes/raid.lua)
+    watched = true,                 -- watched-auras.lua
+}
+
 function FT:Initialize()
     if self.initialized then return end
     self.initialized = true
     EnsureSavedTables()
-    -- WorldMap Window retired 2026-11-01 for the client's own windowed map. A
-    -- character that used it keeps a window (WORLDMAP_WINDOWED is the
-    -- client's account-wide setting; Minimize does not toggle the map at 1).
-    if FostercareTweaks_Config["WorldMap Window"] == 1 and WORLDMAP_WINDOWED ~= 1 then
-        WORLDMAP_WINDOWED = 1
-        WorldMapFrame_Minimize()
+    -- A saved key nothing reads goes, on each character as it logs in: a switch
+    -- is a module's title (FT:register), a setting in the overrides table is
+    -- in FT.NUMBERS or FT.CHOICES, and SAVED_TABLES are the rest. A retired
+    -- switch or setting needs no line of its own here.
+    local config = FostercareTweaks_Config
+    for key in pairs(config) do
+        if not self.mods[key] and not SAVED_TABLES[key] then config[key] = nil end
     end
-    FostercareTweaks_Config["WorldMap Window"] = nil
-    -- Layouts by zone retired 2026-11-03: the live settings stay as they are.
-    FostercareTweaks_Config["Zone Layouts"] = nil
-    FostercareTweaks_Config["profile"] = nil
-    FostercareTweaks_Config["profiles"] = nil
-    -- Retired 2026-11-10: custom layouts place the right bar, and only the two
-    -- characters with custom layouts had it on.
-    FostercareTweaks_Config["Center Vertical Actionbar"] = nil
+    for key in pairs(config.overwrites) do
+        if not FT.NUMBERS[key] and FT.CHOICES[key] == nil then config.overwrites[key] = nil end
+    end
 
     -- Prepare every default before dependent modules enable. TOC registration
     -- order defines layout and hook order; hash iteration must not decide it.

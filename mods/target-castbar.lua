@@ -149,7 +149,6 @@ local STOP_EVENTS = { UNIT_SPELLCAST_STOP = true, UNIT_SPELLCAST_INTERRUPTED = t
 
 module.enable = function(self)
     if self.frame then self:apply(); return end
-    FT.RefreshTargetCastbar = function() self:apply() end
     FT.LayoutTargetCastbar = UpdateAnchor
     local eventFrame = CreateFrame("Frame", "FCTweaksTargetCastbarEvents", UIParent)
     self.frame = eventFrame

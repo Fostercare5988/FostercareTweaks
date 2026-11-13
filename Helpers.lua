@@ -62,10 +62,13 @@ FT.NUMBERS = {
     raid_debuff_count = { 3, 1, 8 }, raid_debuff_size = { 11, 8, 18 }, raid_aura_spacing = { 2, 0, 6 },
 }
 
--- A saved value from the overrides table; clearing one (nil) brings its default back.
-function FT.GetOverride(key, default)
+-- The settings with named choices, by their default.
+FT.CHOICES = { raid_health_format = "deficit", raidmark_position = "portrait" }
+
+-- A choice from the overrides table; clearing one (nil) brings its default back.
+function FT.GetOverride(key)
     local value = FostercareTweaks_Config.overwrites[key]
-    if value == nil then return default end
+    if value == nil then return FT.CHOICES[key] end
     return value
 end
 

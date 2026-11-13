@@ -878,8 +878,12 @@ local function RaidFrame_OnEvent(_, ev, a1, a2)
         local btn = unitToButton[a1]
         if ev == "UNIT_HEALTH" or ev == "UNIT_MAXHEALTH" then
             UpdateButtonHealth(btn)
-        elseif ev == "UNIT_IN_RANGE_UPDATE" or ev == "UNIT_CONNECTION" then
+        elseif ev == "UNIT_IN_RANGE_UPDATE" then
             UpdateButtonRange(btn)
+        elseif ev == "UNIT_CONNECTION" then
+            -- A party has no roster event for it: the text says Off here.
+            UpdateButtonRange(btn)
+            UpdateButtonHealth(btn)
         elseif ev == "UNIT_POWER_UPDATE" or ev == "UNIT_MAXPOWER" or ev == "UNIT_DISPLAYPOWER" then
             UpdateButtonPower(btn)
         elseif ev == "UNIT_AURA_DELTA" then

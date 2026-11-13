@@ -163,7 +163,7 @@ Hint(general, R, MOVE_HINT)
 -- Frames ------------------------------------------------------------------------
 local unit = pages[2]
 local function Marks() FT:RefreshRaidMarks() end
-local function Ticks() if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end end
+local function Ticks() if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end end   -- once the ticks have started
 local function On(title) return function() return FT.IsEnabled(title) end end
 Heading(unit, L, "Player and target")
 Feature(unit, "Unit Frame Class Colors", "Class colors behind names", "Players' names on a bar in their class color.",
@@ -183,7 +183,7 @@ Slider(unit, "raidmark_size", 1, "Mark size", L, { before = 4 }, Marks)
 Hint(unit, L, "On the target and raid frames. Solo, the raid mark keys set marks only you see.")
 Heading(unit, R, "Energy ticks")
 Feature(unit, "Show Energy Ticks", "Energy and mana ticks",
-    "Estimated energy ticks and the five-second mana rule on your power bar.", R, nil, ApplyUnitFrames)
+    "Estimated energy ticks and the five-second mana rule on your power bar.", R, nil, Live("Show Energy Ticks"))
 local ticks = On("Show Energy Ticks")
 Option(unit, "energytick_contrast", "Bright line", "A white center and glow on the tick line.", R, nil, Ticks, ticks)
 Option(unit, "energytick_flash", "Flash on tick", "The bar's edge lights up at each tick.", R, nil, Ticks, ticks)

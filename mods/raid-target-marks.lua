@@ -8,8 +8,7 @@ local module = FT:register({
 
 function FT.GetRaidMarkSettings()
     local size = FT.GetNumber("raidmark_size")
-    local position = FT.GetOverride("raidmark_position")
-    return size, position == "outside" and "outside" or "portrait"
+    return size, FT.GetOverride("raidmark_position") == "outside" and "outside" or "portrait"
 end
 
 -- The target frame's mark: on the portrait, or beside the frame.

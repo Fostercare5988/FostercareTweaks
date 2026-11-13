@@ -27,7 +27,7 @@ function UF:IsRaidShowHoT() return FT.IsEnabled("Show Raid HoT Indicator") end
 function UF:IsRaidShowDebuffs() return FT.IsEnabled("Show Raid Debuff Badges") end
 function UF:GetBuffSize() return FT.GetNumber("uf_buff_size") end
 function UF:GetDebuffSize() return FT.GetNumber("uf_debuff_size") end
-function UF:GetRaidHealthFormat() return FT.GetOverride("raid_health_format", "deficit") end
+function UF:GetRaidHealthFormat() return FT.GetOverride("raid_health_format") end
 
 function UF.SetFontSize(fontString, size)
     if not fontString or not size then return end
@@ -129,11 +129,6 @@ end
 -- Applying settings --------------------------------------------------------------
 
 function UF:ApplyConfiguration()
-    local tick = FT.mods["Show Energy Ticks"]
-    if tick and FostercareTweaks_Config["Show Energy Ticks"] ~= 0 then tick:enable() end
-    local cast = FT.mods["Enemy Castbars"]
-    if cast and FostercareTweaks_Config["Enemy Castbars"] ~= 0 then cast:enable() end
-
     -- One grid serves party and raid; its own switch lives in groupframe_dimensions.
     if UF:GetGroupDimensions().enabled then
         UF:SuppressPartyFrames()
@@ -145,8 +140,6 @@ function UF:ApplyConfiguration()
 
     UF.Auras:UpdateBlizzTargetAuras()
     UF.Auras:UpdateBlizzPlayerAuras()
-    if FT.RefreshEnergyTick then FT.RefreshEnergyTick() end
-    if FT.RefreshTargetCastbar then FT.RefreshTargetCastbar() end
 end
 
 FT.HookScript(TargetFrame, "OnShow", function() UF.Auras:UpdateBlizzTargetAuras() end)
