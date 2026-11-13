@@ -51,6 +51,8 @@ local function SetBarColor(bar, r, g, b)
     if bar.fctR ~= r or bar.fctG ~= g or bar.fctB ~= b then
         bar.fctR, bar.fctG, bar.fctB = r, g, b
         bar:SetStatusBarColor(r, g, b, 1)
+        -- The background follows the fill at a fifth of the brightness.
+        bar.bg:SetVertexColor(r * 0.2, g * 0.2, b * 0.2, 1)
     end
 end
 

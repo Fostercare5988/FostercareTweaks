@@ -89,7 +89,7 @@ module.enable = function(self)
 
             -- The native "Dead" label shows at 0 health (TargetFrame_CheckDead),
             -- which arrives before UnitIsDead turns true; hide both numbers then.
-            if max == 0 or (bar.unit == "target" and (UnitIsDeadOrGhost("target") or (UnitHealth("target") or 0) <= 0)) then
+            if max == 0 or (bar.unit == "target" and (UnitIsDeadOrGhost("target") or UnitHealth("target") <= 0)) then
                 str:Hide()
                 if str:GetText() ~= "" then
                     str:SetText("")

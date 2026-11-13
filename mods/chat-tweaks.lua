@@ -33,10 +33,9 @@ local module = FT:register({
 })
 
 local function ChatOnMouseWheel()
-    local delta = _G.arg1 or 0
-    if delta > 0 then
+    if arg1 > 0 then
         if IsShiftKeyDown() then this:ScrollToTop() else this:ScrollUp() end
-    elseif delta < 0 then
+    elseif arg1 < 0 then
         if IsShiftKeyDown() then this:ScrollToBottom() else this:ScrollDown() end
     end
 end
@@ -179,8 +178,6 @@ module.enable = function(self)
         -- Shift-click on a name with the chat box open: the name as a link.
         if string.sub(link, 1, 7) == "player:" and #link > 7 and IsShiftKeyDown() and ChatFrameEditBox:IsVisible() then
             local name = string.gsub(string.sub(link, 8), ":.*$", "")
-            name = gsub(name, "([^%s]*)%s+([^%s]*)%s+([^%s]*)", "%3")
-            name = gsub(name, "([^%s]*)%s+([^%s]*)", "%2")
             ChatFrameEditBox:Insert("|cffffffff|Hplayer:" .. name .. "|h[" .. name .. "]|h|r")
             return
         end
@@ -192,12 +189,12 @@ module.enable = function(self)
 
     FT.AddChatFilter(function(text)
         if string.find(text, "{CLINK:", 1, true) then
-            text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-            text = gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-            text = gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
-            text = gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
-            text = gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
-            text = gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
+            text = string.gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = string.gsub(text, "{CLINK:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = string.gsub(text, "{CLINK:item:(%x+):([%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-:[%d-]-):([^}]-)}", "|c%1|Hitem:%2|h[%3]|h|r")
+            text = string.gsub(text, "{CLINK:enchant:(%x+):([%d-]-):([^}]-)}", "|c%1|Henchant:%2|h[%3]|h|r")
+            text = string.gsub(text, "{CLINK:spell:(%x+):([%d-]-):([^}]-)}", "|c%1|Hspell:%2|h[%3]|h|r")
+            text = string.gsub(text, "{CLINK:quest:(%x+):([%d-]-):([%d-]-):([^}]-)}", "|c%1|Hquest:%2:%3|h[%4]|h|r")
         end
         return HandleLink(text)
     end)
@@ -209,8 +206,6 @@ do
 -- (ClassicAPI smf:GetMessageInfo): they are read once when the UI closes
 -- (logout or reload) and put back behind newer lines at login
 -- (smf:BackFillMessage). No wrapper runs on every chat line.
-
-local rgbhex = FT.rgbhex
 
 local module = FT:register({
     title = "Chat History",
@@ -236,7 +231,8 @@ module.enable = function(self)
 
     local function Dim(text, r, g, b)
         if not (r and g and b) then return text end
-        local color = rgbhex(r * 0.5 + 0.2, g * 0.5 + 0.2, b * 0.5 + 0.2)
+        local color = string.format("|cff%02x%02x%02x", math.floor((r * 0.5 + 0.2) * 255),
+            math.floor((g * 0.5 + 0.2) * 255), math.floor((b * 0.5 + 0.2) * 255))
         return color .. (string.gsub(text, "|r", "|r" .. color))
     end
 
@@ -309,7 +305,8 @@ local function Colorize(link, shown)
     local real = string.gsub(link, ":.*$", "")
     if shown ~= real then return "|Hplayer:" .. link .. "|h[" .. shown .. "]|h" end
     local class = FT.GetPlayerClass(real)
-    local color = class and RAID_CLASS_COLORS[class] and FT.rgbhex(RAID_CLASS_COLORS[class]) or "|cffaaaaaa"
+    local classColor = class and C_ClassColor.GetClassColor(class)
+    local color = classColor and classColor:GenerateHexColorMarkup() or "|cffaaaaaa"
     return "|r[" .. color .. "|Hplayer:" .. link .. "|h" .. color .. real .. "|h|r]|r"
 end
 

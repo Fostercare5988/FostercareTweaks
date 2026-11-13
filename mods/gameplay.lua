@@ -26,7 +26,7 @@ module.apply = function(self, enabled)
 
     if suppressed then
         SuppressBar()
-    elseif ShapeshiftBar_Update then
+    else
         -- Let FrameXML determine visibility and button state from current forms.
         ShapeshiftBar_Update()
     end

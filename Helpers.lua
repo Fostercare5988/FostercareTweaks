@@ -120,28 +120,6 @@ function FT.IsCombatChatFrame(frame)
     return combat > 5
 end
 
--- Math & Color Utilities
-FT.rgbhex = function(r, g, b, a)
-    local _r, _g, _b, _a
-    if type(r) == "table" then
-        if r.r then
-            _r, _g, _b, _a = r.r, r.g, r.b, (r.a or 1)
-        elseif #r >= 3 then
-            _r, _g, _b, _a = r[1], r[2], r[3], (r[4] or 1)
-        end
-    elseif tonumber(r) then
-        _r, _g, _b, _a = r, g, b, (a or 1)
-    end
-
-    if _r and _g and _b and _a then
-        _r = _r > 1 and 1 or _r < 0 and 0 or _r
-        _g = _g > 1 and 1 or _g < 0 and 0 or _g
-        _b = _b > 1 and 1 or _b < 0 and 0 or _b
-        _a = _a > 1 and 1 or _a < 0 and 0 or _a
-        return string.format("|c%02x%02x%02x%02x", _a * 255, _r * 255, _g * 255, _b * 255)
-    end
-    return ""
-end
 
 -- One countdown look for aura buttons, raid badges and the stock action
 -- buttons: tenths in red under 5 s, yellow under 10 s, then whole seconds,
@@ -250,6 +228,6 @@ end
 -- SuperWoW supplies real values through native UnitHealth/UnitHealthMax.
 function FT.GetUnitHealthValues(unit)
     if not unit or not UnitExists(unit) then return 0, 0 end
-    return UnitHealth(unit) or 0, UnitHealthMax(unit) or 0
+    return UnitHealth(unit), UnitHealthMax(unit)
 end
 

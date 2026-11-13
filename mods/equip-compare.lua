@@ -105,8 +105,6 @@ module.enable = function(self)
             leftShiftDown = (state == 1)
         elseif key == "RSHIFT" then
             rightShiftDown = (state == 1)
-        elseif key and string.find(key, "SHIFT") then
-            leftShiftDown = (state == 1)
         else
             return
         end

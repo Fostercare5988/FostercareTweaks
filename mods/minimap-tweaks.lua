@@ -201,8 +201,7 @@ module.enable = function(self)
 
     Minimap:EnableMouseWheel(true)
     Minimap:SetScript("OnMouseWheel", function()
-        local delta = _G.arg1 or 0
-        if delta > 0 then
+        if arg1 > 0 then
             Minimap_ZoomIn()
         else
             Minimap_ZoomOut()

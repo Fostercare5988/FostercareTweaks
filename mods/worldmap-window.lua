@@ -197,7 +197,7 @@ end
 local function AddName(lines, unit, name)
     if not name then return end
     local class = GetUnitClassToken(unit, name)
-    lines[#lines + 1] = class and (FT.rgbhex(RAID_CLASS_COLORS[class]) .. name .. "|r") or name
+    lines[#lines + 1] = class and C_ClassColor.GetClassColor(class):WrapTextInColorCode(name) or name
 end
 
 local function ColorTooltip()

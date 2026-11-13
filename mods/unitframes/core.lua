@@ -76,17 +76,9 @@ UF.DispelColors = {
 
 local BAR_TEXTURE = "Interface\\AddOns\\FostercareTweaks\\img\\bar-luna.tga"
 
--- The bar's background follows its fill at a fifth of the brightness.
-local function SetBarColor(bar, r, g, b, a)
-    a = a or 1
-    if bar.fillR == r and bar.fillG == g and bar.fillB == b and bar.fillA == a then return end
-    bar.fillR, bar.fillG, bar.fillB, bar.fillA = r, g, b, a
-    bar:SetStatusBarColorNative(r, g, b, a)
-    bar.bg:SetVertexColor(r * 0.2, g * 0.2, b * 0.2, 1)
-end
-
 -- The engine's own StatusBar draws the fill; ClassicAPI gives it reverse fill
--- and fill styles, which the old Lua-drawn bar existed for.
+-- and fill styles, which the old Lua-drawn bar existed for. Colour it with
+-- raid.lua's SetBarColor, which colours the background too.
 function UF:CreateBar(name, parent)
     local bar = CreateFrame("StatusBar", name, parent)
     bar:SetStatusBarTexture(BAR_TEXTURE)
@@ -96,8 +88,6 @@ function UF:CreateBar(name, parent)
     bar.bg:SetAllPoints(bar)
     bar.bg:SetTexture(BAR_TEXTURE)
     bar.bg:SetVertexColor(0.08, 0.08, 0.08, 1)
-    bar.SetStatusBarColorNative = bar.SetStatusBarColor
-    bar.SetStatusBarColor = SetBarColor
     return bar
 end
 
