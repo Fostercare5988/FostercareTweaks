@@ -30,8 +30,9 @@ end
 -- Solo, the server refuses raid marks. NamPower's SetRaidTarget then sets a
 -- local mark that only this client sees (NP_EnableLocalSetRaidTarget, on by
 -- default), so the mark keys and menu work alone too.
--- UNVERIFIED: test in game that RAID_TARGET_UPDATE fires for local marks;
--- until it is known, a solo mark redraws the target and raid frames itself.
+-- Until RAID_TARGET_UPDATE is known to fire for local marks, a solo mark
+-- redraws the target and raid frames itself.
+-- UNVERIFIED: test in game: solo, press a raid mark key on your target; the mark shows on the target frame and the same key clears it
 local function RedrawSoloMark()
     if GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 then
         TargetFrame_UpdateRaidTargetIcon()
