@@ -5,7 +5,7 @@
 ## Notes: Interface and gameplay tweaks for WoW 1.12.1. Requires ClassicAPI, SuperWoW, NamPower and UnitXP SP3.
 ## OptionalDeps: AtlasLoot
 ## Author: Fostercare5988
-## Version: 1.20.0
+## Version: 1.20.1
 ## DefaultState: enabled
 ## SavedVariablesPerCharacter: FostercareTweaks_Config, FostercareTweaks_Cache
 

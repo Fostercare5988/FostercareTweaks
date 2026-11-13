@@ -116,6 +116,12 @@ function EA:ValidateProfile(profile)
     return CopyProfile(profile, true)
 end
 
+-- A failed load is told to the caller and, with its stack, to the error handler.
+local function Report(err)
+    geterrorhandler()(err)
+    return err
+end
+
 function EA:ApplyProfile(profile)
     local copy, reason = self:ValidateProfile(profile)
     if not copy then return false, reason end
@@ -140,13 +146,13 @@ function EA:ApplyProfile(profile)
         end
     end
     self.profileLoading = true
-    local ok, err = pcall(function()
+    local ok, err = xpcall(function()
         for row = 2, 7 do settings[row].actions = copy.rows[row] end
         refresh()
-    end)
+    end, Report)
     if not ok then
         for row = 2, 7 do settings[row].actions = previous[row] end
-        local restored = pcall(refresh)
+        local restored = xpcall(refresh, Report)
         self.profileLoading = nil
         return false, "Extra-row refresh failed; previous actions were restored. "
             .. (restored and "" or "Reload UI to refresh the buttons. ") .. tostring(err)

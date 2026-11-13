@@ -37,12 +37,13 @@ function AB:GetSettings(id)
     return config.bars[id]
 end
 
+-- FrameXML reads the button from `this`. An error reaches the error handler
+-- with its stack (KNOWN_PATTERNS KP-63); `this` is restored either way.
 local function WithButton(button, callback)
     local previous = this
     this = button
-    local ok, err = pcall(callback)
+    xpcall(callback, geterrorhandler())
     this = previous
-    if not ok then error(err) end
 end
 
 local function Snapshot(button)
