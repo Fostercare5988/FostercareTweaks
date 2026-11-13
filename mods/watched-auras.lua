@@ -72,7 +72,6 @@ local function Icon(entry, index)
         icon.cooldown:SetReverse(true)
         icon.cooldown:SetDrawBling(false)
         icon.cooldown:SetCountdownFormatter(FT.Countdown)
-        icon.cooldown.noCooldownCount = true
         -- A cooldown shown after its buff ended: gone when the spell is ready.
         icon.cooldown:SetScript("OnCooldownDone", function()
             if icon.fctCooling then W.ShowMissing("player") end

@@ -4,7 +4,7 @@
 local FT = FostercareTweaks
 if not FT then return end
 
-local EA = { bars = {}, visible = {}, generation = 0 }
+local EA = { bars = {}, visible = {} }
 FT.ExtraActions = EA
 local itemCounts, castCounts = {}, {}
 -- These four signals retain attack state while all rows are hidden. They do
@@ -439,12 +439,40 @@ local function RefreshVisible(full)
     end
 end
 
+-- The 0.2 s ticker has work only while something changes without an event:
+-- the range to a target, and the flash of an active auto attack or auto shot.
+-- Usable, cooldown, count and target changes arrive by events.
+local function TickerCallback()
+    if EA.ticker then RefreshVisible(false) end
+end
+
+local function SyncTicker()
+    local wanted = false
+    if EA.anyActions then
+        wanted = UnitExists("target") and true or false
+        if not wanted then
+            for bar in pairs(EA.visible) do
+                for _, button in ipairs(bar.buttons) do
+                    if button.fctCurrent then wanted = true; break end
+                end
+                if wanted then break end
+            end
+        end
+    end
+    if wanted and not EA.ticker then
+        EA.ticker = C_Timer.NewTicker(0.2, TickerCallback)
+    elseif not wanted and EA.ticker then
+        EA.ticker:Cancel(); EA.ticker = nil
+    end
+end
+
 -- One callback for every queued refresh (a closure per event burst was
 -- garbage). Hiding the rows clears pending, so an older callback does nothing.
 local function FlushRefresh()
     if not EA.pending then return end
     EA.pending = nil
     RefreshVisible(true)
+    SyncTicker()
 end
 
 local function QueueRefresh()
@@ -468,27 +496,19 @@ local function SyncOwner()
         EA.listening = true
         for _, ev in ipairs(events) do EA.controller:RegisterEvent(ev) end
         EA.controller:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
+        EA.controller:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         table.wipe(itemCounts)
         table.wipe(castCounts)
     elseif not anyVisible and EA.listening then
         EA.listening = nil
         EA.controller:UnregisterAllEvents()
         for _, ev in ipairs(stateEvents) do EA.controller:RegisterEvent(ev) end
-        EA.generation = EA.generation + 1
         EA.pending = nil
         EA:CancelDrag()
     end
-    if anyActions and not EA.ticker then
-        local generation = EA.generation
-        EA.ticker = C_Timer.NewTicker(0.2, function()
-            if generation == EA.generation then RefreshVisible(false) end
-        end)
-    elseif not anyActions and EA.ticker then
-        EA.ticker:Cancel(); EA.ticker = nil
-        -- Reject a canceled timer callback even if a new timer starts soon.
-        EA.generation = EA.generation + 1
-        EA.pending = nil
-    end
+    EA.anyActions = anyActions
+    if not anyActions then EA.pending = nil end
+    SyncTicker()
 end
 
 function EA:RefreshBar(bar, force)
@@ -553,6 +573,10 @@ local function InitializeController()
                 if used then break end
             end
             if not used then return end
+        end
+        if ev == "UNIT_POWER_UPDATE" then
+            if not EA.ticker then RefreshVisible(false) end
+            return
         end
         if ev == "PLAYER_REGEN_DISABLED" then EA:CancelDrag()
         elseif ev == "CURSOR_CHANGED" then

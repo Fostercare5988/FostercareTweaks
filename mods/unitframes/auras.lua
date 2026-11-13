@@ -127,7 +127,6 @@ local function CreateAuraButton(parent, name, size, isDebuff)
     btn.cooldown:SetAllPoints(btn)
     btn.cooldown:SetReverse(true)
     btn.cooldown:EnableMouse(false)
-    btn.cooldown.noCooldownCount = true
     -- No flash at the end. The client counts the time down (CVar
     -- countdownForCooldowns 1) in the addon's one countdown look.
     btn.cooldown:SetDrawBling(false)

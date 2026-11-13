@@ -18,6 +18,7 @@ Helpers.lua
 mods\actionbar-float.lua
 mods\actionbar-reagents.lua
 mods\cooldown-numbers.lua
+mods\actionbar-range.lua
 mods\reduced-actionbar.lua
 ExtraActions.lua
 ActionBars.lua

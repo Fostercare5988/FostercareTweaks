@@ -127,8 +127,9 @@ One grid serves both parties and raids.
 
 - **Look**: hide the gryphons, remove the bar background, a short main bar
   (without the bag and game menu buttons) and reagent
-  counts (how many casts your reagents allow). Cooldowns always count down on
-  the buttons, in the auras' look: tenths in red under 5 seconds.
+  counts (how many casts your reagents allow). Cooldowns count down on the
+  buttons in the auras' look (tenths in red under 5 seconds) while the game's
+  cooldown numbers are on (ClassicAPI's `countdownForCooldowns`).
 - **Bars**: one row per bar, with its switch to show it and its size. **More**
   opens the rest under the row: **Buttons per row** (12 is a row, 1 a column),
   **Spacing**, **Show empty buttons**, **Fill bottom to top** and **Reset this
