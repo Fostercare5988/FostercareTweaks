@@ -20,12 +20,16 @@ FT.apply = {}
 -- Ctrl+Shift ------------------------------------------------------------------
 
 -- Every MODIFIER_STATE_CHANGED goes to these, with whether Shift and Ctrl are down.
+-- The left and right reads: the merged IsShiftKeyDown lags this event
+-- (CLASSICAPI_MASTER_REFERENCE, "Modifier event state ordering").
 local listeners = {}
 function FT.OnModifiers(fn) listeners[#listeners + 1] = fn end
+function FT.Shift() return (IsLeftShiftKeyDown() or IsRightShiftKeyDown()) and true or false end
 local modifiers = CreateFrame("Frame")
 modifiers:RegisterEvent("MODIFIER_STATE_CHANGED")
 modifiers:SetScript("OnEvent", function()
-    local shift, ctrl = IsShiftKeyDown() and true or false, IsControlKeyDown() and true or false
+    local shift = FT.Shift()
+    local ctrl = (IsLeftControlKeyDown() or IsRightControlKeyDown()) and true or false
     for i = 1, #listeners do listeners[i](shift, ctrl) end
 end)
 

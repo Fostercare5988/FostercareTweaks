@@ -2,7 +2,7 @@
 ## Title: |cffff9e38Tweaks|r |cffffd6a8[Fostercare5988]|r
 ## Notes: Sell prices, item compare and borders, Sell Junk, chat, minimap, world map and Auto Stance
 ## Author: Fostercare5988
-## Version: 1.0.1
+## Version: 1.0.2
 ## OptionalDeps: AtlasLoot
 ## SavedVariablesPerCharacter: TweaksDB
 ## LoadSavedVariablesFirst: 1

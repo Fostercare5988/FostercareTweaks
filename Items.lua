@@ -39,12 +39,12 @@ local function HideCompare() ShoppingTooltip1:Hide(); ShoppingTooltip2:Hide() en
 local function Compare()
     local tip = wanted
     queued, wanted = nil, nil
-    if tip and tip:IsShown() and IsShiftKeyDown() and tip:GetItem() then GameTooltip_ShowCompareItem(tip) end
+    if tip and tip:IsShown() and FT.Shift() and tip:GetItem() then GameTooltip_ShowCompareItem(tip) end
 end
 
 local function Want(tip)
     HideCompare()
-    wanted = IsShiftKeyDown() and tip or nil
+    wanted = FT.Shift() and tip or nil
     if wanted and not queued then
         queued = true
         C_Timer.After(0, Compare)
