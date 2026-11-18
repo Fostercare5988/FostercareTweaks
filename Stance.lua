@@ -1,7 +1,7 @@
 -- Auto Stance: a spell that needs another stance or form switches to it.
 local _, FT = ...
 if not FT.apply then return end
-local db = FostercareTweaksDB
+local db = TweaksDB
 
 local _, class = UnitClass("player")
 if class ~= "WARRIOR" and class ~= "DRUID" then

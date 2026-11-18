@@ -1,10 +1,10 @@
 ## Interface: 11200
-## Title: |cffff9e38FostercareTweaks|r |cffffd6a8[Fostercare5988]|r
+## Title: |cffff9e38Tweaks|r |cffffd6a8[Fostercare5988]|r
 ## Notes: Sell prices, item compare and borders, Sell Junk, chat, minimap, world map and Auto Stance
 ## Author: Fostercare5988
-## Version: 1.0.0
+## Version: 1.0.1
 ## OptionalDeps: AtlasLoot
-## SavedVariablesPerCharacter: FostercareTweaksDB
+## SavedVariablesPerCharacter: TweaksDB
 ## LoadSavedVariablesFirst: 1
 Core.lua
 Items.lua

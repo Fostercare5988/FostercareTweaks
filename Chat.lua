@@ -2,7 +2,7 @@
 -- the last lines back after a reload, timestamps, names in class colours.
 local _, FT = ...
 if not FT.apply then return end
-local db = FostercareTweaksDB
+local db = TweaksDB
 local find, gsub, match, sub = string.find, string.gsub, string.match, string.sub
 
 function FT.apply.arrowKeys() ChatFrameEditBox:SetAltArrowKeyMode(not db.arrowKeys) end
@@ -53,7 +53,7 @@ local function Addresses(text)
     end
 end
 
-StaticPopupDialogs.FOSTERCARETWEAKS_URL = {
+StaticPopupDialogs.TWEAKS_URL = {
     text = "Copy the address with Ctrl+C:",
     button1 = CLOSE,
     hasEditBox = 1, hasWideEditBox = 1, timeout = 0, whileDead = 1, hideOnEscape = 1,
@@ -71,7 +71,7 @@ StaticPopupDialogs.FOSTERCARETWEAKS_URL = {
 local stockRef = SetItemRef
 function SetItemRef(link, text, button)
     if sub(link, 1, 4) == "url:" then
-        StaticPopup_Show("FOSTERCARETWEAKS_URL", nil, nil, sub(link, 5))
+        StaticPopup_Show("TWEAKS_URL", nil, nil, sub(link, 5))
         return
     end
     local name = IsShiftKeyDown() and ChatFrameEditBox:IsVisible() and match(link, "^player:([^:]+)")
@@ -122,7 +122,7 @@ end
 -- History ----------------------------------------------------------------------
 
 local KEEP = 30
-local RESTORED = "FostercareTweaks" -- kept with a restored line (### smf:GetMessageInfo)
+local RESTORED = "Tweaks" -- kept with a restored line (### smf:GetMessageInfo)
 
 -- A saved line keeps its colour, dimmed.
 local function Dim(text, r, g, b)

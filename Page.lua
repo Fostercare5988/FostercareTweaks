@@ -1,8 +1,8 @@
--- The FostercareTweaks page in ClassicAPI's Settings window (AddOn Options, or /ft).
+-- The Tweaks page in ClassicAPI's Settings window (AddOn Options, or /ft).
 local _, FT = ...
 if not FT.apply then return end -- no ClassicAPI: Core.lua said so
 
-local db = FostercareTweaksDB
+local db = TweaksDB
 local category
 
 -- In play order: a section header, then its rows. A slider is { key, name, tip, low, high }.
@@ -27,14 +27,14 @@ local PAGE = {
 
 SettingsRegistrar:AddRegistrant(function()
     local layout
-    category, layout = Settings.RegisterVerticalLayoutCategory("FostercareTweaks")
+    category, layout = Settings.RegisterVerticalLayoutCategory("Tweaks")
     for _, row in ipairs(PAGE) do
         if type(row) == "string" then
             layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(row))
         else
             local key, name, tip, low, high = row[1], row[2], row[3], row[4], row[5]
             local kind = low and Settings.VarType.Number or Settings.VarType.Boolean
-            local setting = Settings.RegisterAddOnSetting(category, "FostercareTweaks_" .. key, key, db, kind, name,
+            local setting = Settings.RegisterAddOnSetting(category, "Tweaks_" .. key, key, db, kind, name,
                 FT.DEFAULTS[key])
             if FT.apply[key] then setting:SetValueChangedCallback(FT.apply[key]) end -- else read per use
             if low then
@@ -50,7 +50,7 @@ SettingsRegistrar:AddRegistrant(function()
     Settings.RegisterAddOnCategory(category)
 end)
 
-SLASH_FOSTERCARETWEAKS1 = "/ft"
-SlashCmdList.FOSTERCARETWEAKS = function()
+SLASH_TWEAKS1 = "/ft"
+SlashCmdList.TWEAKS = function()
     if category then Settings.OpenToCategory(category:GetID()) end
 end

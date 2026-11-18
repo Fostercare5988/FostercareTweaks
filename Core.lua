@@ -1,10 +1,10 @@
--- FostercareTweaks: tooltips, merchant, chat, minimap, world map and Auto Stance.
+-- Tweaks: tooltips, merchant, chat, minimap, world map and Auto Stance.
 -- Doc headings are ClassicAPI's docs/API.md; "FrameXML" is the client's own code.
-if not CLASSIC_API_VERSION then error("FostercareTweaks needs ClassicAPI.", 0) end
+if not CLASSIC_API_VERSION then error("Tweaks needs ClassicAPI.", 0) end
 
 local _, FT = ...
-FostercareTweaksDB = FostercareTweaksDB or {} -- restored first: LoadSavedVariablesFirst
-local db = FostercareTweaksDB
+TweaksDB = TweaksDB or {} -- restored first: LoadSavedVariablesFirst
+local db = TweaksDB
 
 -- The page's switches and sliders. Filled in here, since the features start
 -- before the Settings window registers the page.

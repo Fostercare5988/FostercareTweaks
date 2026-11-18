@@ -1,4 +1,4 @@
-# FostercareTweaks
+# Tweaks
 
 Small interface improvements for World of Warcraft 1.12.1: item tooltips, the
 merchant, chat, the minimap, the world map and stances.
@@ -23,19 +23,19 @@ Every feature has a switch on its page in AddOn Options; `/ft` opens it.
 
 ## Requirements
 
-WoW 1.12.1 (build 5875) with **ClassicAPI** loaded.
+WoW 1.12.1 (build 5875) with **[ClassicAPI](https://github.com/brues-code/ClassicAPI)** loaded.
 
 ## Installation
 
-Download `FostercareTweaks.zip` from the
-[latest release](https://github.com/Fostercare5988/FostercareTweaks/releases/latest),
+Download `Tweaks.zip` from the
+[latest release](https://github.com/Fostercare5988/Tweaks/releases/latest),
 extract it into `Interface/AddOns` and enable it in the game's AddOns list. The
-folder must contain `Interface/AddOns/FostercareTweaks/FostercareTweaks.toc`.
+folder must contain `Interface/AddOns/Tweaks/Tweaks.toc`.
 
 ## Related addons
 
 Version 1.0.0 is a rebuild. The unit frames, auras and watched auras of the old
-FostercareTweaks are now
-[FostercareFrames](https://github.com/Fostercare5988/FostercareFrames), the party
-and raid grid is [FostercareRaid](https://github.com/Fostercare5988/FostercareRaid),
-and the action bars belong to FostercareBars.
+Tweaks are now
+[UnitFrames](https://github.com/Fostercare5988/UnitFrames), the party
+and raid grid is [RaidFrames](https://github.com/Fostercare5988/RaidFrames),
+and the action bars belong to ActionBars.

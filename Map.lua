@@ -2,7 +2,7 @@
 -- Ctrl+Shift drag) and the world map (window size, coordinates, group colours).
 local _, FT = ...
 if not FT.apply then return end
-local db = FostercareTweaksDB
+local db = TweaksDB
 
 -- Minimap ---------------------------------------------------------------------
 
@@ -149,7 +149,7 @@ end
 -- battleground map. The map moves its group buttons and gives them other units
 -- every frame (FrameXML WorldMapFrame.lua, "Position groupmates"), so the dots
 -- are coloured on a timer while a map shows.
-local DOT = "Interface\\AddOns\\FostercareTweaks\\img\\circle"
+local DOT = "Interface\\AddOns\\Tweaks\\img\\circle"
 local maps, mine = {}, {}
 local function GroupButtons(prefix)
     local list = {}
