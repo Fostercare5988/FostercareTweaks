@@ -149,10 +149,10 @@ end
 -- battleground map. The map moves its group buttons and gives them other units
 -- every frame (FrameXML WorldMapFrame.lua, "Position groupmates"), so the dots
 -- are coloured on a timer while a map shows.
-local DOT = "Interface\\AddOns\\Tweaks\\img\\circle"
+local DOTS = { party = "Interface\\AddOns\\Tweaks\\img\\circleparty", raid = "Interface\\AddOns\\Tweaks\\img\\circleraid" }
 local maps, mine = {}, {}
-local function GroupButtons(prefix)
-    local list = {}
+local function GroupButtons(prefix, map)
+    local list = { map = map }
     for i = 1, 4 do list[i] = _G[prefix .. "Party" .. i] end
     for i = 1, 40 do list[4 + i] = _G[prefix .. "Raid" .. i] end
     maps[#maps + 1] = list
@@ -173,7 +173,7 @@ local function Dot(button, unit)
     end
     if button.ftIcon and button.ftIcon:GetTexture() then button.ftIcon:SetTexture(nil) end
     local kind = mine[name] and "party" or "raid"
-    if dot.group ~= kind then dot.group = kind; dot:SetTexture(DOT .. kind) end
+    if dot.group ~= kind then dot.group = kind; dot:SetTexture(DOTS[kind]) end
     local class
     if unit then _, class = UnitClass(unit) end
     if not class then _, class = C_PlayerCache.GetPlayerInfoByName(name) end
@@ -184,7 +184,7 @@ local function Dot(button, unit)
 end
 
 local PARTY = { "party1", "party2", "party3", "party4" }
-local ticks, ticker = 0
+local ticks, ticker, every = 0
 local function Tick()
     if WorldMapFrame:IsShown() then
         Coordinates(playerLabel, GetPlayerMapPosition("player"))
@@ -195,9 +195,9 @@ local function Tick()
         else
             Coordinates(cursorLabel)
         end
+        ticks = ticks + 1
+        if ticks % 2 == 1 then return end -- the dots five times a second
     end
-    ticks = ticks + 1
-    if ticks % 2 == 1 then return end -- the dots five times a second
     table.wipe(mine)
     mine[UnitName("player")] = true
     for i = 1, 4 do
@@ -205,21 +205,26 @@ local function Tick()
         if name then mine[name] = true end
     end
     for _, list in ipairs(maps) do
-        for i = 1, #list do Dot(list[i], PARTY[i]) end
+        if list.map:IsVisible() then
+            for i = 1, #list do Dot(list[i], PARTY[i]) end
+        end
     end
 end
 
--- One timer while a map shows; none while both are closed.
+-- One timer while a map shows: ten times a second with the world map's
+-- coordinates, five for the battleground map alone; none while both are closed.
 local function Watch()
-    local open = WorldMapFrame:IsShown() or (BattlefieldMinimap and BattlefieldMinimap:IsShown())
-    if open and not ticker then ticker = C_Timer.NewTicker(0.1, Tick); Tick()
-    elseif not open and ticker then ticker:Cancel(); ticker = nil end
+    local rate = WorldMapFrame:IsShown() and 0.1 or BattlefieldMinimap and BattlefieldMinimap:IsShown() and 0.2 or nil
+    if rate == every then return end
+    if ticker then ticker:Cancel() end
+    every, ticker = rate, rate and C_Timer.NewTicker(rate, Tick)
+    if rate then Tick() end
 end
-GroupButtons("WorldMap")
+GroupButtons("WorldMap", WorldMapFrame)
 WorldMapFrame:HookScript("OnShow", Watch)
 WorldMapFrame:HookScript("OnHide", Watch)
 FT.WhenLoaded("Blizzard_BattlefieldMinimap", function()
-    GroupButtons("BattlefieldMinimap")
+    GroupButtons("BattlefieldMinimap", BattlefieldMinimap)
     BattlefieldMinimap:HookScript("OnShow", Watch)
     BattlefieldMinimap:HookScript("OnHide", Watch)
 end)

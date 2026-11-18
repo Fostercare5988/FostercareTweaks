@@ -4,10 +4,7 @@ if not FT.apply then return end
 local db = TweaksDB
 
 local _, class = UnitClass("player")
-if class ~= "WARRIOR" and class ~= "DRUID" then
-    FT.apply.autoStance = function() end
-    return
-end
+if class ~= "WARRIOR" and class ~= "DRUID" then return end -- no row on the page either
 
 -- "Must be in Battle Stance, Defensive Stance" (GlobalStrings.lua) as a pattern.
 local NEEDS = "^" .. string.gsub(string.gsub(SPELL_FAILED_ONLY_SHAPESHIFT, "([%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"),

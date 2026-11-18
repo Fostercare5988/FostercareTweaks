@@ -1,5 +1,5 @@
 -- Items: sell prices on tooltips, Shift to compare with what you wear, quality
--- borders on item slots, and a Sell Junk button at merchants.
+-- borders on the character and inspect slots, and a Sell Junk button at merchants.
 local _, FT = ...
 if not FT.apply then return end -- no ClassicAPI: Core.lua said so
 
@@ -19,12 +19,24 @@ local function Price()
     SetTooltipMoney(this, price * (arg1 and math.max(C_Item.GetStackCount(arg1), 1) or 1))
 end
 
--- An auction has no GUID: its count comes with the call that showed it.
-local function AuctionCount(tip, count)
-    if tip.ftPrice and count and count > 1 then MoneyFrame_Update(tip:GetName() .. "MoneyFrame", tip.ftPrice * count) end
+-- Loot, rolls, mail, quests, the trade partner and auctions have no GUID: the
+-- count comes with the call that showed them, third of what each one returns
+-- (FrameXML LootFrame, MailFrame, QuestFrame, QuestLogFrame, TradeFrame).
+local COUNTS = {
+    SetLootItem = GetLootSlotInfo, SetLootRollItem = GetLootRollItemInfo, SetInboxItem = GetInboxItem,
+    SetQuestItem = GetQuestItemInfo, SetTradeTargetItem = GetTradeTargetItemInfo,
+    SetAuctionItem = GetAuctionItemInfo, SetAuctionSellItem = GetAuctionSellItemInfo,
+    SetQuestLogItem = function(kind, i)
+        if kind == "choice" then return GetQuestLogChoiceInfo(i) end
+        return GetQuestLogRewardInfo(i)
+    end,
+}
+for method, info in pairs(COUNTS) do
+    hooksecurefunc(GameTooltip, method, function(tip, a, b)
+        local count = tip.ftPrice and select(3, info(a, b))
+        if count and count > 1 then MoneyFrame_Update(tip:GetName() .. "MoneyFrame", tip.ftPrice * count) end
+    end)
 end
-hooksecurefunc(GameTooltip, "SetAuctionItem", function(tip, kind, i) AuctionCount(tip, select(3, GetAuctionItemInfo(kind, i))) end)
-hooksecurefunc(GameTooltip, "SetAuctionSellItem", function(tip) AuctionCount(tip, select(3, GetAuctionSellItemInfo())) end)
 
 -- Compare ---------------------------------------------------------------------
 
@@ -77,6 +89,8 @@ end)
 
 -- Quality borders -------------------------------------------------------------
 
+-- Character and inspect slots. Bags and bank have none here: Bagnon draws
+-- its own, in the windows it puts in place of the game's.
 local EDGE = { edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", tile = true, tileSize = 8, edgeSize = 16 }
 
 -- A border in the item's quality colour, grey for an empty slot. Written only
@@ -98,36 +112,18 @@ local function Border(button, quality)
     border:SetBackdropBorderColor(r, g, b, 1)
 end
 
-local function LinkQuality(link)
-    local id = link and tonumber(string.match(link, "item:(%d+)"))
-    return id and C_Item.GetItemQualityByID(id)
-end
-
--- Bags: ContainerFrame_Update redraws a bag's buttons (FrameXML ContainerFrame.lua).
-local info = {}
-hooksecurefunc("ContainerFrame_Update", function(frame)
-    local buttons, bag = frame.ftButtons, frame:GetID()
-    if not buttons then
-        buttons = {}
-        for i = 1, MAX_CONTAINER_ITEMS do buttons[i] = _G[frame:GetName() .. "Item" .. i] end
-        frame.ftButtons = buttons
-    end
-    for i = 1, frame.size do
-        local item = C_Container.GetContainerItemInfo(bag, buttons[i]:GetID(), info)
-        Border(buttons[i], item and C_Item.GetItemQualityByID(item.itemID))
-    end
-end)
-
--- Bank slots (`this`; FrameXML BankFrame.lua): only green and better, as before.
-hooksecurefunc("BankFrameItemButton_OnUpdate", function()
-    if this.isBag then return end
-    local quality = LinkQuality(GetContainerItemLink(BANK_CONTAINER, this:GetID()))
-    Border(this, quality and quality >= 2 and quality)
-end)
-
--- Character slots (`this`; FrameXML PaperDollFrame.lua).
+-- Character slots (`this`; FrameXML PaperDollFrame.lua). The game redraws them at
+-- every change of your gear, also while the window is closed (each poison charge
+-- used is one), so a border is drawn only while they show, the rest when they open.
+local stale = {}
+local function Worn(button) Border(button, GetInventoryItemQuality("player", button:GetID())) end
 hooksecurefunc("PaperDollItemSlotButton_Update", function(cooldownOnly)
-    if not cooldownOnly then Border(this, LinkQuality(GetInventoryItemLink("player", this:GetID()))) end
+    if cooldownOnly then return end
+    if PaperDollFrame:IsVisible() then Worn(this) else stale[this] = true end
+end)
+PaperDollFrame:HookScript("OnShow", function()
+    for button in pairs(stale) do Worn(button) end
+    table.wipe(stale)
 end)
 
 -- Inspect: the inspected member, who need not be the target (InspectFrame.unit,
@@ -135,7 +131,9 @@ end)
 local inspected, arrived = {}, CreateFrame("Frame")
 local function InspectBorder(button)
     inspected[button] = true
-    Border(button, LinkQuality(GetInventoryItemLink(InspectFrame.unit, button:GetID())))
+    local link = GetInventoryItemLink(InspectFrame.unit, button:GetID())
+    local id = link and tonumber(string.match(link, "item:(%d+)"))
+    Border(button, id and C_Item.GetItemQualityByID(id))
 end
 arrived:SetScript("OnEvent", function() for button in pairs(inspected) do InspectBorder(button) end end)
 FT.WhenLoaded("Blizzard_InspectUI", function()

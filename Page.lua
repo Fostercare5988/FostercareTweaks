@@ -21,9 +21,11 @@ local PAGE = {
     "World map",
     { "mapScale", "Map window size", "The size of the windowed world map. Ctrl+wheel on the map changes it too.",
         FT.MAP_MIN, FT.MAP_MAX },
-    "Gameplay",
-    { "autoStance", "Auto Stance", "A warrior or druid spell that needs another stance or form switches to it." },
 }
+if FT.apply.autoStance then -- a warrior or a druid (Stance.lua)
+    PAGE[#PAGE + 1] = "Gameplay"
+    PAGE[#PAGE + 1] = { "autoStance", "Auto Stance", "A spell that needs another stance or form switches to it." }
+end
 
 SettingsRegistrar:AddRegistrant(function()
     local layout
